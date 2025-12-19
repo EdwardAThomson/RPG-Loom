@@ -6,6 +6,7 @@
   "exports": {
     ".": "./data/index.js"
   },
+  "types": "./data/index.d.ts",
   "scripts": {
     "build": "node data/build-index.mjs",
     "typecheck": "echo \"(content) typecheck: n/a\"",

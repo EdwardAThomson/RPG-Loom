@@ -1,16 +1,20 @@
-import items from './items.json' assert { type: 'json' };
-import enemies from './enemies.json' assert { type: 'json' };
-import locations from './locations.json' assert { type: 'json' };
-import questTemplates from './quest_templates.json' assert { type: 'json' };
-import recipes from './recipes.json' assert { type: 'json' };
+import items from './items.json' with { type: "json" };
+import enemies from './enemies.json' with { type: "json" };
+import locations from './locations.json' with { type: "json" };
+import recipes from './recipes.json' with { type: "json" };
+import questTemplates from './quest_templates.json' with { type: "json" };
 
-export { items, enemies, locations, questTemplates, recipes };
+export const itemsById = Object.fromEntries(items.map(x => [x.id, x]));
+export const enemiesById = Object.fromEntries(enemies.map(x => [x.id, x]));
+export const locationsById = Object.fromEntries(locations.map(x => [x.id, x]));
+export const recipesById = Object.fromEntries(recipes.map(x => [x.id, x]));
+export const questTemplatesById = Object.fromEntries(questTemplates.map(x => [x.id, x]));
 
-export function createContentIndex() {
-  const itemsById = Object.fromEntries(items.map((x) => [x.id, x]));
-  const enemiesById = Object.fromEntries(enemies.map((x) => [x.id, x]));
-  const locationsById = Object.fromEntries(locations.map((x) => [x.id, x]));
-  const questTemplatesById = Object.fromEntries(questTemplates.map((x) => [x.id, x]));
-  const recipesById = Object.fromEntries(recipes.map((x) => [x.id, x]));
-  return { itemsById, enemiesById, locationsById, questTemplatesById, recipesById };
-}
+// Default export for convenience
+export default {
+  itemsById,
+  enemiesById,
+  locationsById,
+  recipesById,
+  questTemplatesById
+};

@@ -1,22 +1,400 @@
 [
   {
-    "id": "qt_kill_wolves",
-    "objectiveType": "kill",
-    "targetEnemyId": "ene_glimmerwolf",
-    "qtyMin": 3,
-    "qtyMax": 6,
-    "locationPool": ["loc_glimmerwood_edge"],
-    "rewardPack": {"xp": 25, "gold": 10, "items": [{"itemId": "itm_minor_heal_potion", "qty": 1}]},
-    "difficulty": 1
+    "id": "qt_intro_gather",
+    "name": "Winter Supplies",
+    "description": "Gather wood to prepare for the journey.",
+    "objectiveType": "gather",
+    "targetItemId": "item_wood",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 10,
+    "rewardPack": {
+      "xp": 50,
+      "gold": 10,
+      "items": [
+        {
+          "itemId": "item_plank",
+          "qty": 5
+        }
+      ]
+    }
   },
   {
-    "id": "qt_gather_herbs",
-    "objectiveType": "gather",
-    "targetItemId": "mat_herb_bundle",
+    "id": "qt_intro_craft_sword",
+    "name": "First Weapon",
+    "description": "Craft a Bronze Sword to defend yourself.",
+    "objectiveType": "craft",
+    "targetRecipeId": "recipe_bronze_sword",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 1,
+    "qtyMax": 1,
+    "rewardPack": {
+      "xp": 100,
+      "gold": 20,
+      "items": [
+        {
+          "itemId": "item_simple_potion",
+          "qty": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_forest_hunt_rat",
+    "name": "Pest Control",
+    "description": "Clear out the Giant Rats in the forest.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_rat",
+    "locationPool": [
+      "loc_forest"
+    ],
     "qtyMin": 3,
     "qtyMax": 5,
-    "locationPool": ["loc_glimmerwood_edge"],
-    "rewardPack": {"xp": 20, "gold": 12},
-    "difficulty": 1
+    "rewardPack": {
+      "xp": 75,
+      "gold": 15,
+      "reputation": {
+        "forest_wardens": 10
+      }
+    }
+  },
+  {
+    "id": "qt_forest_gather_copper",
+    "name": "Copper Rush",
+    "description": "Mine Copper Ore for the smith.",
+    "objectiveType": "gather",
+    "targetItemId": "item_copper_ore",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 8,
+    "rewardPack": {
+      "xp": 80,
+      "gold": 25,
+      "items": [
+        {
+          "itemId": "item_copper_ingot",
+          "qty": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_forest_hunt_bandit",
+    "name": "Bandit Raid",
+    "description": "Deal with the bandits harassing travelers.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_bandit",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 2,
+    "qtyMax": 4,
+    "rewardPack": {
+      "xp": 100,
+      "gold": 40,
+      "items": [
+        {
+          "itemId": "item_leather_tunic",
+          "qty": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_quarry_scout",
+    "name": "Into the Quarry",
+    "description": "Scout the Old Quarry.",
+    "objectiveType": "gather",
+    "targetItemId": "item_stone",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 10,
+    "qtyMax": 20,
+    "rewardPack": {
+      "xp": 120,
+      "gold": 30
+    }
+  },
+  {
+    "id": "qt_quarry_hunt_golem",
+    "name": "Rock Breaker",
+    "description": "Defeat Rock Golems to clear the path.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_golem",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 2,
+    "qtyMax": 3,
+    "rewardPack": {
+      "xp": 200,
+      "gold": 60,
+      "items": [
+        {
+          "itemId": "item_iron_ore",
+          "qty": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_quarry_iron",
+    "name": "Iron Will",
+    "description": "Gather Iron Ore for better gear.",
+    "objectiveType": "gather",
+    "targetItemId": "item_iron_ore",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 10,
+    "rewardPack": {
+      "xp": 150,
+      "gold": 50,
+      "items": [
+        {
+          "itemId": "item_iron_ingot",
+          "qty": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_swamp_slime",
+    "name": "Slime Harvest",
+    "description": "Collect slime gel from Green Slimes.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_slime",
+    "locationPool": [
+      "loc_swamp"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 10,
+    "rewardPack": {
+      "xp": 180,
+      "gold": 40,
+      "items": [
+        {
+          "itemId": "item_simple_potion",
+          "qty": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_swamp_herbs",
+    "name": "Medicinal Herbs",
+    "description": "Gather Green Herbs from the swamp.",
+    "objectiveType": "gather",
+    "targetItemId": "item_herb_green",
+    "locationPool": [
+      "loc_swamp"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 8,
+    "rewardPack": {
+      "xp": 160,
+      "gold": 35
+    }
+  },
+  {
+    "id": "qt_craft_iron_set",
+    "name": "Iron Defenses",
+    "description": "Craft a full set of Iron Gear (Sword).",
+    "objectiveType": "craft",
+    "targetRecipeId": "recipe_iron_sword",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 1,
+    "qtyMax": 1,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 100,
+      "items": [
+        {
+          "itemId": "item_chainmail",
+          "qty": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_catacombs_enter",
+    "name": "The Dead Walk",
+    "description": "Investigate the Forgotten Catacombs.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_skeleton",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 8,
+    "rewardPack": {
+      "xp": 250,
+      "gold": 80,
+      "items": [
+        {
+          "itemId": "item_bone_fragment",
+          "qty": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_catacombs_silver",
+    "name": "Ghostly Silver",
+    "description": "Gather Silver Ore from the catacombs.",
+    "objectiveType": "gather",
+    "targetItemId": "item_silver_ore",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 3,
+    "qtyMax": 6,
+    "rewardPack": {
+      "xp": 280,
+      "gold": 90
+    }
+  },
+  {
+    "id": "qt_catacombs_ghost hunt",
+    "name": "Exorcism",
+    "description": "Put Wailing Ghosts to rest.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_ghost",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 3,
+    "qtyMax": 5,
+    "rewardPack": {
+      "xp": 350,
+      "gold": 120,
+      "items": [
+        {
+          "itemId": "item_ghostly_essence",
+          "qty": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_peak_climb",
+    "name": "The Ascent",
+    "description": "Begin your climb up Jagged Peak.",
+    "objectiveType": "gather",
+    "targetItemId": "item_frost_stone",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 10,
+    "rewardPack": {
+      "xp": 400,
+      "gold": 150
+    }
+  },
+  {
+    "id": "qt_peak_yeti",
+    "name": "Abominable",
+    "description": "Hunt Yetis for their warm fur.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_yeti",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 2,
+    "qtyMax": 4,
+    "rewardPack": {
+      "xp": 500,
+      "gold": 200,
+      "items": [
+        {
+          "itemId": "item_yeti_fur",
+          "qty": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_peak_gold",
+    "name": "Gold Fever",
+    "description": "Mine Gold Ore from the peak.",
+    "objectiveType": "gather",
+    "targetItemId": "item_gold_ore",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 3,
+    "qtyMax": 5,
+    "rewardPack": {
+      "xp": 450,
+      "gold": 180
+    }
+  },
+  {
+    "id": "qt_craft_gold_sword",
+    "name": "Legendary Blade",
+    "description": "Craft a Gold Sword.",
+    "objectiveType": "craft",
+    "targetRecipeId": "recipe_gold_sword",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 1,
+    "qtyMax": 1,
+    "rewardPack": {
+      "xp": 1000,
+      "gold": 500,
+      "items": [
+        {
+          "itemId": "item_plate_armor",
+          "qty": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "qt_boss_roc",
+    "name": "Storm King",
+    "description": "Defeat the Storm Roc at the peak.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_roc",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 1,
+    "qtyMax": 1,
+    "rewardPack": {
+      "xp": 2000,
+      "gold": 1000,
+      "reputation": {
+        "realm_hero": 100
+      }
+    }
+  },
+  {
+    "id": "qt_final_mastery",
+    "name": "Master Crafter",
+    "description": "Prove your mastery by crafting a stack of Gold Ingots.",
+    "objectiveType": "craft",
+    "targetRecipeId": "recipe_gold_ingot",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 10,
+    "qtyMax": 10,
+    "rewardPack": {
+      "xp": 1500,
+      "gold": 800
+    }
   }
 ]

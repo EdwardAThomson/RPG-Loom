@@ -234,6 +234,20 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   // minimal deterministic per-tick outputs
   if (a.type === 'idle') return { state: next, events };
 
+  if (a.type === 'recovery') {
+    // Check if recovery is done
+    if (tickAtMs >= next.activity.startedAtMs + a.durationMs) {
+      next.activity = {
+        id: `act_idle_${next.tickIndex}`,
+        params: { type: 'idle' },
+        startedAtMs: tickAtMs
+      };
+      events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECOVERY_COMPLETE', message: 'You have recovered.' })); // Using ERROR as a generic notification for now? No, let's just log activity set.
+    }
+    return { state: next, events };
+  }
+
   if (a.type === 'train') {
     gainSkillXp(next, a.skillId, 1);
     gainXp(next, 1, events, tickAtMs);
@@ -365,8 +379,30 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     }
     gainXp(next, 2, events, tickAtMs);
   } else if (outcome === 'loss') {
-    // MVP: no death penalty; later: downtime, repairs, etc.
-    gainXp(next, 1, events, tickAtMs);
+    // Death penalty: 10% of current level progress lost
+    const xpForCurrentLevel = (next.player.level - 1) * 100; // Simplified curve from gainXp
+    const xpForNextLevel = next.player.level * 100;
+    const levelSpan = xpForNextLevel - xpForCurrentLevel;
+    const penalty = Math.floor(levelSpan * 0.1);
+
+    // Ensure we don't de-level (MVP choice)
+    const newXp = Math.max(xpForCurrentLevel, next.player.xp - penalty);
+    const lostAmount = next.player.xp - newXp;
+    next.player.xp = newXp;
+
+    events.push(ev(next, tickAtMs, 'XP_GAINED', { amount: -lostAmount, newTotal: next.player.xp })); // Reusing XP_GAINED for loss
+    events.push(ev(next, tickAtMs, 'ENCOUNTER_RESOLVED', { locationId: loc.id, enemyId, enemyLevel, outcome: 'loss' }));
+
+    // Switch to recovery for 60s
+    next.activity = {
+      id: `act_recovery_${next.tickIndex}`,
+      params: { type: 'recovery', durationMs: 60000 },
+      startedAtMs: tickAtMs
+    };
+    events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
+
+    // Return early to stop processing for this tick
+    return { state: next, events };
   }
 
   // Check any quest completion after applying progress
@@ -379,7 +415,18 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 
 function resolveSimpleCombat(state: EngineState, enemyStats: any, seed: string): 'win' | 'loss' {
   const p = state.player.baseStats;
-  const playerPower = p.atk * 2 + p.def * 2 + state.player.level * 2 + hashInt(`${seed}:player_power`, 0, 3);
+  let atkMult = 1.0;
+  let defMult = 1.0;
+
+  if (state.player.tactics === 'aggressive') {
+    atkMult = 1.2;
+    defMult = 0.8;
+  } else if (state.player.tactics === 'defensive') {
+    atkMult = 0.8;
+    defMult = 1.2;
+  }
+
+  const playerPower = (p.atk * atkMult) * 2 + (p.def * defMult) * 2 + state.player.level * 2 + hashInt(`${seed}:player_power`, 0, 3);
   const enemyPower = (enemyStats?.atk ?? 1) * 2 + (enemyStats?.def ?? 1) * 2 + hashInt(`${seed}:enemy_power`, 0, 3);
   return playerPower >= enemyPower ? 'win' : 'loss';
 }

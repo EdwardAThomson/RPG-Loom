@@ -41,17 +41,17 @@
 
 ## 2) Plan overview by milestones
 
-## Milestone A — Engine Foundations (Determinism + Save/Load + Offline)
+## Milestone A — Engine Foundations (Determinism + Save/Load + Offline) [COMPLETED]
  
  **Goal:** Engine is authoritative, deterministic, testable, and supports offline progress.
  
- * **A1. Canonical Types + Zod Schemas**: Shared `EngineState`, `CommandEnvelope`, `GameEvent` definitions.
- * **A2. Seeded RNG**: Secure, seeded random utility (no `Math.random()`).
- * **A3. Engine Step Loop**: Pure function `step(state, nowMs)` with tick bounding.
- * **A4. Offline Simulation**: `simulateOffline` with chunking for large time gaps.
- * **A5. Command Application**: Idempotent `applyCommand` handlers.
- * **A6. Save/Load Format**: Versioned snapshots + migration stubs.
- * **A7. Invariants Test Suite**: Golden snapshot tests + property tests.
+ * [x] **A1. Canonical Types + Zod Schemas**: Shared `EngineState`, `CommandEnvelope`, `GameEvent` definitions.
+ * [x] **A2. Seeded RNG**: Secure, seeded random utility (no `Math.random()`).
+ * [x] **A3. Engine Step Loop**: Pure function `step(state, nowMs)` with tick bounding.
+ * [x] **A4. Offline Simulation**: `simulateOffline` with chunking for large time gaps.
+ * [x] **A5. Command Application**: Idempotent `applyCommand` handlers.
+ * [x] **A6. Save/Load Format**: Versioned snapshots + migration stubs.
+ * [x] **A7. Invariants Test Suite**: Golden snapshot tests + property tests.
 
 ---
 

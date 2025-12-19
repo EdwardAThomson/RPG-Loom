@@ -1,8 +1,188 @@
 [
-  {"id":"itm_rusty_sword","name":"Rusty Sword","type":"weapon","rarity":"common","tags":["melee"],"stackable":false,"value":10,"modifiers":{"atk":1}},
-  {"id":"itm_leather_jerkin","name":"Leather Jerkin","type":"armor","rarity":"common","tags":["light"],"stackable":false,"value":12,"modifiers":{"def":1}},
-  {"id":"itm_minor_heal_potion","name":"Minor Healing Potion","type":"consumable","rarity":"common","tags":["heal"],"stackable":true,"value":6,"onUse":{"kind":"heal","amount":10}},
-  {"id":"mat_softwood","name":"Softwood","type":"material","rarity":"common","tags":["wood"],"stackable":true,"value":1},
-  {"id":"mat_herb_bundle","name":"Herb Bundle","type":"material","rarity":"common","tags":["herb"],"stackable":true,"value":2},
-  {"id":"mat_scrap_iron","name":"Scrap Iron","type":"material","rarity":"common","tags":["metal"],"stackable":true,"value":2}
+  {
+    "id": "item_wood",
+    "name": "Wood",
+    "stackable": true,
+    "value": 1
+  },
+  {
+    "id": "item_stone",
+    "name": "Stone",
+    "stackable": true,
+    "value": 1
+  },
+  {
+    "id": "item_copper_ore",
+    "name": "Copper Ore",
+    "stackable": true,
+    "value": 3
+  },
+  {
+    "id": "item_copper_ingot",
+    "name": "Copper Ingot",
+    "stackable": true,
+    "value": 10
+  },
+  {
+    "id": "item_plank",
+    "name": "Wooden Plank",
+    "stackable": true,
+    "value": 2
+  },
+  {
+    "id": "item_hardwood",
+    "name": "Hardwood",
+    "stackable": true,
+    "value": 5
+  },
+  {
+    "id": "item_iron_ore",
+    "name": "Iron Ore",
+    "stackable": true,
+    "value": 8
+  },
+  {
+    "id": "item_iron_ingot",
+    "name": "Iron Ingot",
+    "stackable": true,
+    "value": 25
+  },
+  {
+    "id": "item_strengthened_plank",
+    "name": "Strengthened Plank",
+    "stackable": true,
+    "value": 15
+  },
+  {
+    "id": "item_silver_ore",
+    "name": "Silver Ore",
+    "stackable": true,
+    "value": 15
+  },
+  {
+    "id": "item_silver_ingot",
+    "name": "Silver Ingot",
+    "stackable": true,
+    "value": 45
+  },
+  {
+    "id": "item_gold_ore",
+    "name": "Gold Ore",
+    "stackable": true,
+    "value": 30
+  },
+  {
+    "id": "item_gold_ingot",
+    "name": "Gold Ingot",
+    "stackable": true,
+    "value": 90
+  },
+  {
+    "id": "item_frost_stone",
+    "name": "Frost Stone",
+    "stackable": true,
+    "value": 50
+  },
+  {
+    "id": "item_herb_green",
+    "name": "Green Herb",
+    "stackable": true,
+    "value": 5
+  },
+  {
+    "id": "item_herb_red",
+    "name": "Red Herb",
+    "stackable": true,
+    "value": 15
+  },
+  {
+    "id": "item_slime_gel",
+    "name": "Slime Gel",
+    "stackable": true,
+    "value": 2
+  },
+  {
+    "id": "item_bone_fragment",
+    "name": "Bone Fragment",
+    "stackable": true,
+    "value": 3
+  },
+  {
+    "id": "item_ghostly_essence",
+    "name": "Ghostly Essence",
+    "stackable": true,
+    "value": 20
+  },
+  {
+    "id": "item_yeti_fur",
+    "name": "Yeti Fur",
+    "stackable": true,
+    "value": 40
+  },
+  {
+    "id": "item_simple_potion",
+    "name": "Simple Potion",
+    "stackable": true,
+    "value": 10
+  },
+  {
+    "id": "item_rusty_sword",
+    "name": "Rusty Sword",
+    "stackable": false,
+    "value": 15
+  },
+  {
+    "id": "item_bronze_sword",
+    "name": "Bronze Sword",
+    "stackable": false,
+    "value": 50
+  },
+  {
+    "id": "item_iron_sword",
+    "name": "Iron Sword",
+    "stackable": false,
+    "value": 150
+  },
+  {
+    "id": "item_silver_sword",
+    "name": "Silver Sword",
+    "stackable": false,
+    "value": 400
+  },
+  {
+    "id": "item_gold_sword",
+    "name": "Gold Sword",
+    "stackable": false,
+    "value": 1000
+  },
+  {
+    "id": "item_leather_tunic",
+    "name": "Leather Tunic",
+    "stackable": false,
+    "value": 40
+  },
+  {
+    "id": "item_chainmail",
+    "name": "Chainmail Armor",
+    "stackable": false,
+    "value": 120
+  },
+  {
+    "id": "item_plate_armor",
+    "name": "Plate Armor",
+    "stackable": false,
+    "value": 350
+  },
+  {
+    "id": "item_bronze_pickaxe",
+    "name": "Bronze Pickaxe",
+    "stackable": false,
+    "value": 50
+  },
+  {
+    "id": "item_iron_pickaxe",
+    "name": "Iron Pickaxe",
+    "stackable": false,
+    "value": 150
+  }
 ]

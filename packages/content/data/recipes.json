@@ -1,14 +1,275 @@
 [
   {
-    "id": "rcp_minor_heal_potion",
-    "inputs": [{"itemId": "mat_herb_bundle", "qty": 2}],
-    "outputs": [{"itemId": "itm_minor_heal_potion", "qty": 1}],
-    "requiredSkill": {"skillId": "crafting", "minLevel": 1}
+    "id": "recipe_plank",
+    "inputs": [
+      {
+        "itemId": "item_wood",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_plank",
+        "qty": 1
+      }
+    ]
   },
   {
-    "id": "rcp_rusty_sword",
-    "inputs": [{"itemId": "mat_scrap_iron", "qty": 2}, {"itemId": "mat_softwood", "qty": 1}],
-    "outputs": [{"itemId": "itm_rusty_sword", "qty": 1}],
-    "requiredSkill": {"skillId": "crafting", "minLevel": 1}
+    "id": "recipe_strengthened_plank",
+    "inputs": [
+      {
+        "itemId": "item_hardwood",
+        "qty": 2
+      },
+      {
+        "itemId": "item_slime_gel",
+        "qty": 1
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_strengthened_plank",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_copper_ingot",
+    "inputs": [
+      {
+        "itemId": "item_copper_ore",
+        "qty": 3
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_copper_ingot",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_iron_ingot",
+    "inputs": [
+      {
+        "itemId": "item_iron_ore",
+        "qty": 3
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_silver_ingot",
+    "inputs": [
+      {
+        "itemId": "item_silver_ore",
+        "qty": 4
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_silver_ingot",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_gold_ingot",
+    "inputs": [
+      {
+        "itemId": "item_gold_ore",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_gold_ingot",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_simple_potion",
+    "inputs": [
+      {
+        "itemId": "item_herb_green",
+        "qty": 2
+      },
+      {
+        "itemId": "item_slime_gel",
+        "qty": 1
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_simple_potion",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_bronze_sword",
+    "inputs": [
+      {
+        "itemId": "item_copper_ingot",
+        "qty": 5
+      },
+      {
+        "itemId": "item_plank",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_bronze_sword",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_iron_sword",
+    "inputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 5
+      },
+      {
+        "itemId": "item_strengthened_plank",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_iron_sword",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_silver_sword",
+    "inputs": [
+      {
+        "itemId": "item_silver_ingot",
+        "qty": 5
+      },
+      {
+        "itemId": "item_strengthened_plank",
+        "qty": 2
+      },
+      {
+        "itemId": "item_ghostly_essence",
+        "qty": 1
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_silver_sword",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_gold_sword",
+    "inputs": [
+      {
+        "itemId": "item_gold_ingot",
+        "qty": 8
+      },
+      {
+        "itemId": "item_strengthened_plank",
+        "qty": 4
+      },
+      {
+        "itemId": "item_yeti_fur",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_gold_sword",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_chainmail",
+    "inputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 10
+      },
+      {
+        "itemId": "item_wood",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_chainmail",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_plate_armor",
+    "inputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 20
+      },
+      {
+        "itemId": "item_hardwood",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_plate_armor",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_bronze_pickaxe",
+    "inputs": [
+      {
+        "itemId": "item_copper_ingot",
+        "qty": 3
+      },
+      {
+        "itemId": "item_wood",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_bronze_pickaxe",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_iron_pickaxe",
+    "inputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 3
+      },
+      {
+        "itemId": "item_hardwood",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_iron_pickaxe",
+        "qty": 1
+      }
+    ]
   }
 ]

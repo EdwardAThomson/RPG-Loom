@@ -40,6 +40,7 @@ export type SkillId =
 
 export type ActivityType =
   | 'idle'
+  | 'recovery'
   | 'quest'
   | 'hunt'
   | 'gather'
@@ -184,6 +185,7 @@ export interface QuestInstanceState {
 
 export type ActivityParams =
   | { type: 'idle' }
+  | { type: 'recovery'; durationMs: number }
   | { type: 'hunt'; locationId: LocationId }
   | { type: 'gather'; locationId: LocationId }
   | { type: 'quest'; questId: QuestInstanceId }

@@ -1,27 +1,191 @@
 [
   {
-    "id": "loc_bramblewick_outpost",
-    "name": "Bramblewick Outpost",
-    "description": "A frontier hub where the guild keeps its ledgers and bandages its wounds.",
-    "activities": ["idle", "train", "trade", "craft"],
-    "encounterTable": {"entries": []},
-    "resourceTable": {"entries": []}
-  },
-  {
-    "id": "loc_glimmerwood_edge",
-    "name": "Glimmerwood Edge",
-    "description": "Where the treeline begins to whisper and the road stops being honest.",
-    "activities": ["hunt", "gather", "explore", "quest"],
+    "id": "loc_forest",
+    "name": "Whispering Forest",
     "encounterTable": {
       "entries": [
-        {"enemyId": "ene_glimmerwolf", "weight": 70},
-        {"enemyId": "ene_bandit_lookout", "weight": 30}
+        {
+          "enemyId": "enemy_rat",
+          "weight": 6
+        },
+        {
+          "enemyId": "enemy_bandit",
+          "weight": 3
+        },
+        {
+          "enemyId": "enemy_wolf",
+          "weight": 1
+        }
       ]
     },
     "resourceTable": {
       "entries": [
-        {"itemId": "mat_softwood", "minQty": 1, "maxQty": 3, "weight": 60},
-        {"itemId": "mat_herb_bundle", "minQty": 1, "maxQty": 2, "weight": 40}
+        {
+          "itemId": "item_wood",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 10
+        },
+        {
+          "itemId": "item_copper_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 5
+        },
+        {
+          "itemId": "item_herb_green",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_quarry",
+    "name": "Old Quarry",
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_bandit",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_bandit_leader",
+          "weight": 1
+        },
+        {
+          "enemyId": "enemy_golem",
+          "weight": 4
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_stone",
+          "minQty": 3,
+          "maxQty": 8,
+          "weight": 10
+        },
+        {
+          "itemId": "item_iron_ore",
+          "minQty": 1,
+          "maxQty": 4,
+          "weight": 5
+        },
+        {
+          "itemId": "item_copper_ore",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_swamp",
+    "name": "Misty Swamp",
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_slime",
+          "weight": 6
+        },
+        {
+          "enemyId": "enemy_frog",
+          "weight": 4
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_hardwood",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 8
+        },
+        {
+          "itemId": "item_herb_green",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 5
+        },
+        {
+          "itemId": "item_herb_red",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_catacombs",
+    "name": "Forgotten Catacombs",
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_skeleton",
+          "weight": 7
+        },
+        {
+          "enemyId": "enemy_ghost",
+          "weight": 3
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_bone_fragment",
+          "minQty": 3,
+          "maxQty": 6,
+          "weight": 8
+        },
+        {
+          "itemId": "item_silver_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_peak",
+    "name": "Jagged Peak",
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_yeti",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_harpy",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_roc",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_frost_stone",
+          "minQty": 2,
+          "maxQty": 4,
+          "weight": 8
+        },
+        {
+          "itemId": "item_gold_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 4
+        }
       ]
     }
   }

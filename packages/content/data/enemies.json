@@ -1,29 +1,295 @@
 [
   {
-    "id": "ene_glimmerwolf",
-    "name": "Glimmerwolf",
-    "tags": ["beast"],
-    "levelMin": 1,
-    "levelMax": 3,
-    "baseStats": {"hpMax": 14, "atk": 4, "def": 1, "spd": 6, "critChance": 0.08, "critMult": 1.5, "res": 0.05},
+    "id": "enemy_rat",
+    "name": "Giant Rat",
+    "baseStats": {
+      "hpMax": 10,
+      "atk": 2,
+      "def": 0,
+      "spd": 2,
+      "critChance": 0.05,
+      "critMult": 1.5,
+      "res": 0
+    },
     "lootTable": {
       "entries": [
-        {"itemId": "mat_softwood", "minQty": 1, "maxQty": 3, "weight": 50},
-        {"itemId": "mat_herb_bundle", "minQty": 1, "maxQty": 2, "weight": 30}
+        {
+          "itemId": "item_wood",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        }
       ]
     }
   },
   {
-    "id": "ene_bandit_lookout",
-    "name": "Bandit Lookout",
-    "tags": ["humanoid"],
-    "levelMin": 1,
-    "levelMax": 3,
-    "baseStats": {"hpMax": 12, "atk": 3, "def": 2, "spd": 5, "critChance": 0.05, "critMult": 1.5, "res": 0.05},
+    "id": "enemy_bandit",
+    "name": "Bandit",
+    "baseStats": {
+      "hpMax": 30,
+      "atk": 5,
+      "def": 1,
+      "spd": 4,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0
+    },
     "lootTable": {
       "entries": [
-        {"itemId": "mat_scrap_iron", "minQty": 1, "maxQty": 2, "weight": 60},
-        {"itemId": "itm_minor_heal_potion", "minQty": 1, "maxQty": 1, "weight": 10}
+        {
+          "itemId": "item_rusty_sword",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_copper_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 5
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_bandit_leader",
+    "name": "Bandit Leader",
+    "baseStats": {
+      "hpMax": 60,
+      "atk": 8,
+      "def": 3,
+      "spd": 5,
+      "critChance": 0.15,
+      "critMult": 1.5,
+      "res": 0.1
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_bronze_sword",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_copper_ingot",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_wolf",
+    "name": "Dire Wolf",
+    "baseStats": {
+      "hpMax": 45,
+      "atk": 7,
+      "def": 1,
+      "spd": 7,
+      "critChance": 0.2,
+      "critMult": 1.8,
+      "res": 0
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_bone_fragment",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_slime",
+    "name": "Green Slime",
+    "baseStats": {
+      "hpMax": 40,
+      "atk": 4,
+      "def": 5,
+      "spd": 1,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.2
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_slime_gel",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_frog",
+    "name": "Giant Frog",
+    "baseStats": {
+      "hpMax": 50,
+      "atk": 6,
+      "def": 2,
+      "spd": 5,
+      "critChance": 0.05,
+      "critMult": 1.5,
+      "res": 0
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_green_herb",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_golem",
+    "name": "Rock Golem",
+    "baseStats": {
+      "hpMax": 100,
+      "atk": 10,
+      "def": 10,
+      "spd": 1,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.3
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_iron_ore",
+          "minQty": 3,
+          "maxQty": 6,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_skeleton",
+    "name": "Skeleton Warrior",
+    "baseStats": {
+      "hpMax": 70,
+      "atk": 12,
+      "def": 4,
+      "spd": 4,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.1
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_bone_fragment",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 1
+        },
+        {
+          "itemId": "item_iron_sword",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_ghost",
+    "name": "Wailing Ghost",
+    "baseStats": {
+      "hpMax": 60,
+      "atk": 15,
+      "def": 0,
+      "spd": 8,
+      "critChance": 0.1,
+      "critMult": 2.0,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_ghostly_essence",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_yeti",
+    "name": "Yeti",
+    "baseStats": {
+      "hpMax": 150,
+      "atk": 20,
+      "def": 8,
+      "spd": 3,
+      "critChance": 0.1,
+      "critMult": 2.0,
+      "res": 0.1
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_yeti_fur",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_harpy",
+    "name": "Storm Harpy",
+    "baseStats": {
+      "hpMax": 90,
+      "atk": 18,
+      "def": 2,
+      "spd": 10,
+      "critChance": 0.25,
+      "critMult": 1.5,
+      "res": 0.1
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_gold_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_roc",
+    "name": "Storm Roc",
+    "baseStats": {
+      "hpMax": 300,
+      "atk": 35,
+      "def": 15,
+      "spd": 8,
+      "critChance": 0.2,
+      "critMult": 2.0,
+      "res": 0.2
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_gold_ingot",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 1
+        }
       ]
     }
   }
