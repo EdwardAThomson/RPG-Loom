@@ -1,0 +1,30 @@
+[
+  {
+    "id": "ene_glimmerwolf",
+    "name": "Glimmerwolf",
+    "tags": ["beast"],
+    "levelMin": 1,
+    "levelMax": 3,
+    "baseStats": {"hpMax": 14, "atk": 4, "def": 1, "spd": 6, "critChance": 0.08, "critMult": 1.5, "res": 0.05},
+    "lootTable": {
+      "entries": [
+        {"itemId": "mat_softwood", "minQty": 1, "maxQty": 3, "weight": 50},
+        {"itemId": "mat_herb_bundle", "minQty": 1, "maxQty": 2, "weight": 30}
+      ]
+    }
+  },
+  {
+    "id": "ene_bandit_lookout",
+    "name": "Bandit Lookout",
+    "tags": ["humanoid"],
+    "levelMin": 1,
+    "levelMax": 3,
+    "baseStats": {"hpMax": 12, "atk": 3, "def": 2, "spd": 5, "critChance": 0.05, "critMult": 1.5, "res": 0.05},
+    "lootTable": {
+      "entries": [
+        {"itemId": "mat_scrap_iron", "minQty": 1, "maxQty": 2, "weight": 60},
+        {"itemId": "itm_minor_heal_potion", "minQty": 1, "maxQty": 1, "weight": 10}
+      ]
+    }
+  }
+]

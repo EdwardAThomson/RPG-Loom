@@ -1,0 +1,28 @@
+[
+  {
+    "id": "loc_bramblewick_outpost",
+    "name": "Bramblewick Outpost",
+    "description": "A frontier hub where the guild keeps its ledgers and bandages its wounds.",
+    "activities": ["idle", "train", "trade", "craft"],
+    "encounterTable": {"entries": []},
+    "resourceTable": {"entries": []}
+  },
+  {
+    "id": "loc_glimmerwood_edge",
+    "name": "Glimmerwood Edge",
+    "description": "Where the treeline begins to whisper and the road stops being honest.",
+    "activities": ["hunt", "gather", "explore", "quest"],
+    "encounterTable": {
+      "entries": [
+        {"enemyId": "ene_glimmerwolf", "weight": 70},
+        {"enemyId": "ene_bandit_lookout", "weight": 30}
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {"itemId": "mat_softwood", "minQty": 1, "maxQty": 3, "weight": 60},
+        {"itemId": "mat_herb_bundle", "minQty": 1, "maxQty": 2, "weight": 40}
+      ]
+    }
+  }
+]

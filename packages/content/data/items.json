@@ -1,0 +1,8 @@
+[
+  {"id":"itm_rusty_sword","name":"Rusty Sword","type":"weapon","rarity":"common","tags":["melee"],"stackable":false,"value":10,"modifiers":{"atk":1}},
+  {"id":"itm_leather_jerkin","name":"Leather Jerkin","type":"armor","rarity":"common","tags":["light"],"stackable":false,"value":12,"modifiers":{"def":1}},
+  {"id":"itm_minor_heal_potion","name":"Minor Healing Potion","type":"consumable","rarity":"common","tags":["heal"],"stackable":true,"value":6,"onUse":{"kind":"heal","amount":10}},
+  {"id":"mat_softwood","name":"Softwood","type":"material","rarity":"common","tags":["wood"],"stackable":true,"value":1},
+  {"id":"mat_herb_bundle","name":"Herb Bundle","type":"material","rarity":"common","tags":["herb"],"stackable":true,"value":2},
+  {"id":"mat_scrap_iron","name":"Scrap Iron","type":"material","rarity":"common","tags":["metal"],"stackable":true,"value":2}
+]

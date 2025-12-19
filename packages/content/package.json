@@ -1,0 +1,15 @@
+{
+  "name": "@rpg-loom/content",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./data/index.js"
+  },
+  "scripts": {
+    "build": "node data/build-index.mjs",
+    "typecheck": "echo \"(content) typecheck: n/a\"",
+    "lint": "echo \"(content) lint: n/a\"",
+    "test": "echo \"(content) test: n/a\""
+  }
+}

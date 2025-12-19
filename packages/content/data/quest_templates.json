@@ -1,0 +1,22 @@
+[
+  {
+    "id": "qt_kill_wolves",
+    "objectiveType": "kill",
+    "targetEnemyId": "ene_glimmerwolf",
+    "qtyMin": 3,
+    "qtyMax": 6,
+    "locationPool": ["loc_glimmerwood_edge"],
+    "rewardPack": {"xp": 25, "gold": 10, "items": [{"itemId": "itm_minor_heal_potion", "qty": 1}]},
+    "difficulty": 1
+  },
+  {
+    "id": "qt_gather_herbs",
+    "objectiveType": "gather",
+    "targetItemId": "mat_herb_bundle",
+    "qtyMin": 3,
+    "qtyMax": 5,
+    "locationPool": ["loc_glimmerwood_edge"],
+    "rewardPack": {"xp": 20, "gold": 12},
+    "difficulty": 1
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "rcp_minor_heal_potion",
+    "inputs": [{"itemId": "mat_herb_bundle", "qty": 2}],
+    "outputs": [{"itemId": "itm_minor_heal_potion", "qty": 1}],
+    "requiredSkill": {"skillId": "crafting", "minLevel": 1}
+  },
+  {
+    "id": "rcp_rusty_sword",
+    "inputs": [{"itemId": "mat_scrap_iron", "qty": 2}, {"itemId": "mat_softwood", "qty": 1}],
+    "outputs": [{"itemId": "itm_rusty_sword", "qty": 1}],
+    "requiredSkill": {"skillId": "crafting", "minLevel": 1}
+  }
+]

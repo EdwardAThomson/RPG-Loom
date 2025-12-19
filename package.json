@@ -1,0 +1,23 @@
+{
+  "name": "rpg-loom",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "gateway",
+    "sdk",
+    "web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm -ws run build",
+    "typecheck": "npm -ws run typecheck",
+    "lint": "npm -ws run lint",
+    "test": "npm -ws run test",
+    "dev": "npm --workspace web run dev",
+    "dev:web": "npm --workspace web run dev",
+    "dev:gateway": "npm --workspace gateway run dev"
+  }
+}
