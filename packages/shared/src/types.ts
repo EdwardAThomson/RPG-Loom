@@ -202,6 +202,12 @@ export interface ActivityPlan {
   durationTicks?: number;
 }
 
+export interface EngineMetrics {
+  startTimeMs: number;
+  startXp: number;
+  startGold: number;
+}
+
 export interface EngineState {
   version: 1;
   saveId: SaveId;
@@ -223,6 +229,9 @@ export interface EngineState {
 
   // current activity
   activity: ActivityPlan;
+
+  // metrics tracking
+  metrics: EngineMetrics;
 }
 
 // ---- Commands (UI -> engine) ----
@@ -259,6 +268,10 @@ export type PlayerCommand =
   | {
     type: 'USE_ITEM';
     itemId: ItemId;
+    atMs: number;
+  }
+  | {
+    type: 'RESET_METRICS';
     atMs: number;
   };
 
@@ -301,6 +314,8 @@ export type GameEvent =
   | BaseEvent<'ENCOUNTER_RESOLVED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number; outcome: 'win' | 'loss' | 'escape' }>
   | BaseEvent<'LOOT_GAINED', { items: Array<{ itemId: ItemId; qty: number }> }>
   | BaseEvent<'XP_GAINED', { amount: number; newTotal: number }>
+  | BaseEvent<'GOLD_CHANGED', { amount: number; newTotal: number }>
+  | BaseEvent<'LEVEL_UP', { newLevel: number }>
   | BaseEvent<'LEVEL_UP', { newLevel: number }>
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
   | BaseEvent<'ERROR', { code: string; message: string }>

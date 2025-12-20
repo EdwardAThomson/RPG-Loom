@@ -53,21 +53,23 @@
  * [x] **A6. Save/Load Format**: Versioned snapshots + migration stubs.
  * [x] **A7. Invariants Test Suite**: Golden snapshot tests + property tests.
 
+
+
 ---
 
-## Milestone B — Playable MVP Loop (Progression + Content)
- 
- **Goal:** A player can “play” for 30–60 minutes and feel progression without boredom.
- 
- * **B1. Activities v1**: Hunt, Gather, Train, Craft, Quest resolvers.
- * **B2. Combat v1**: Deterministic module, tactics presets, death penalties.
- * **B3. Encounters v1**: Per-location tables (rates, weights, loot).
- * **B4. Quest System v1**: Templates → Instances → Progress events.
- * **B5. Inventory & Gear**:/Stacking logic + equipment stats.
- * **B6. Crafting v1**: Recipes + quality chance.
- * **B7. Economy Sinks**: Repair/training costs to prevent inflation.
- * **B8. Content Pack v1**: 5 locations, 12 enemies, 40 items, 20 quests.
- * **B9. Balance Instrumentation**: XP/hr and Gold/hr rate tracking.
+## Milestone B — Playable MVP Loop (Progression + Content) [COMPLETED]
+
+**Goal:** A player can “play” for 30–60 minutes and feel progression without boredom.
+
+*   [x] **B1. Activities v1**: Hunt, Gather, Train, Craft, Quest resolvers.
+*   [x] **B2. Combat v1**: Deterministic module, tactics presets, death penalties.
+*   [x] **B3. Encounters v1**: Per-location tables (rates, weights, loot).
+*   [x] **B4. Quest System v1**: Templates → Instances → Progress events.
+*   [x] **B5. Inventory & Gear**:/Stacking logic + equipment stats.
+*   [x] **B6. Crafting v1**: Recipes + quality chance.
+*   [x] **B7. Economy Sinks**: Repair/training costs to prevent inflation.
+*   [x] **B8. Content Pack v1**: 5 locations, 12 enemies, 40 items, 20 quests.
+*   [x] **B9. Balance Instrumentation**: XP/hr and Gold/hr rate tracking.
 
 ---
 

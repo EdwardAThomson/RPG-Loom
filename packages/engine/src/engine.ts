@@ -101,6 +101,12 @@ export function createNewState(params: {
       id: 'act_idle_0',
       params: { type: 'idle' },
       startedAtMs: params.nowMs
+
+    },
+    metrics: {
+      startTimeMs: params.nowMs,
+      startXp: 0,
+      startGold: 0
     }
   };
 }
@@ -181,6 +187,14 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       // Actual effects are interpreted via content later.
       break;
     }
+    case 'RESET_METRICS': {
+      next.metrics = {
+        startTimeMs: cmd.atMs,
+        startXp: next.player.xp,
+        startGold: next.player.gold
+      };
+      break;
+    }
   }
 
   next.updatedAtMs = cmd.atMs;
@@ -249,6 +263,22 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   }
 
   if (a.type === 'train') {
+    // Training Cost: 1 gold/tick
+    if (next.player.gold < 1) {
+      next.activity = {
+        id: `act_idle_${next.tickIndex}`,
+        params: { type: 'idle' },
+        startedAtMs: tickAtMs
+      };
+      events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'INSUFFICIENT_GOLD', message: 'Not enough gold to continue training.' }));
+      return { state: next, events };
+    }
+
+    next.player.gold -= 1;
+    // Debatable: emit GOLD_CHANGED every tick? It might be spammy, but it's correct.
+    events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: -1, newTotal: next.player.gold }));
+
     gainSkillXp(next, a.skillId, 1);
     gainXp(next, 1, events, tickAtMs);
     return { state: next, events };
@@ -380,13 +410,13 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     gainXp(next, 2, events, tickAtMs);
   } else if (outcome === 'loss') {
     // Death penalty: 10% of current level progress lost
-    const xpForCurrentLevel = (next.player.level - 1) * 100; // Simplified curve from gainXp
-    const xpForNextLevel = next.player.level * 100;
-    const levelSpan = xpForNextLevel - xpForCurrentLevel;
+    const prevLevelThreshold = 100 * Math.pow(next.player.level - 1, 2);
+    const nextLevelThreshold = 100 * Math.pow(next.player.level, 2);
+    const levelSpan = nextLevelThreshold - prevLevelThreshold;
     const penalty = Math.floor(levelSpan * 0.1);
 
     // Ensure we don't de-level (MVP choice)
-    const newXp = Math.max(xpForCurrentLevel, next.player.xp - penalty);
+    const newXp = Math.max(prevLevelThreshold, next.player.xp - penalty);
     const lostAmount = next.player.xp - newXp;
     next.player.xp = newXp;
 
@@ -502,8 +532,11 @@ function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: n
   state.player.xp += amount;
   events.push(ev(state, atMs, 'XP_GAINED', { amount, newTotal: state.player.xp }));
 
-  // MVP leveling curve: next = level * 100
-  while (state.player.xp >= state.player.level * 100) {
+  // Quadratic leveling curve: Threshold = 100 * level^2
+  // Lvl 1 -> 100 xp (Total)
+  // Lvl 2 -> 400 xp (Total)
+  // Lvl 3 -> 900 xp (Total)
+  while (state.player.xp >= 100 * Math.pow(state.player.level, 2)) {
     state.player.level += 1;
     events.push(ev(state, atMs, 'LEVEL_UP', { newLevel: state.player.level }));
   }
