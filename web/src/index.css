@@ -85,6 +85,7 @@ h3 {
 .title {
   font-size: 2.5rem;
   background: linear-gradient(180deg, #ffd700, #b8860b);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 700;

@@ -3,6 +3,20 @@
 ## 2025-12-31
 
 *   **Log Initialization**: Started this dev log to track progress.
+## 2025-12-31
+
+### Milestone C: UI MVP & Refinements (Completed)
+
+*   **UI Architecture**:
+    *   Implemented **Tabbed Navigation** (Activity, Inventory, Character, Quests, Settings).
+    *   Clean, responsive layout with consistent header/footer and reliable event log.
+*   **Gameplay Depth**:
+    *   **Tactics Selector**: Added real-time combat stance switching (Aggressive/Balanced/Defensive).
+    *   **Inventory Inspection**: Implemented `InventoryModal` to view item stats, types, and descriptions.
+    *   **Data Fix**: Populated missing metadata (description, type, stats) for core items (Wood, Swords, Potions).
+*   **System Features**:
+    *   **Persistence UX**: Implemented `SettingsModal` with Import/Export (Base64) and Hard Reset functionality.
+    *   **Debug Panel**: Added 'Fast Forward' (0.1s tick) and 'Normal' (1.0s tick) speed controls and transparent seed/tick tracking.
 
 ### Milestone C: UI MVP & Refinements (In Progress)
 

@@ -4,13 +4,14 @@ A deterministic, text-first **idle RPG** with an optional **AI narrative layer**
 
 The core game runs fully **without AI**. When enabled, AI adds quest flavor, NPC dialogue, rumors, and journal entries — but **never changes outcomes**.
 
-## 🚧 Current Status: Milestone C (UI MVP) 🚧
+## 🚧 Current Status: Milestone C (Completed) 🚧
 
-**We are currently refining the playable Web UI.**
-*   **Web Client**: Functional React-based UI with Activity Monitor, Inventory, and Logs.
-*   **Combat**: Multi-tick deterministic combat (1 round/sec) with loot and XP.
-*   **Content**: 5 Biomes, 40+ Items, 20 Quests implemented.
-*   **Engine**: Fully deterministic, supports offline catch-up validation.
+**The Core Loop and UI are fully functional.**
+*   **Web Client**: Robust React-based UI with Tabbed Navigation (Activity, Inventory, Character, Quests).
+*   **Combat**: Multi-tick deterministic combat (1 round/sec) with real-time **Tactics Switching**.
+*   **Progression**: xp/gold tracking, item equipment, and consumable usage.
+*   **Persistence**: Auto-save to LocalStorage with manual Import/Export (Base64) for backup.
+*   **Debug Tools**: Built-in speed control (Fast Forward) for testing.
 
 ## Key ideas
 
