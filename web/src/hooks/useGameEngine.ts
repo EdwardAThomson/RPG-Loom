@@ -8,9 +8,8 @@ import content from '@rpg-loom/content';
 const TICK_RATE_MS = 1000;
 
 export function useGameEngine() {
-    // We keep the authoritative state in a ref to avoid stale closure issues in the loop
     // and only update the specialized React state for rendering.
-    const stateRef = useRef<EngineState>(null);
+    const stateRef = useRef<EngineState | null>(null);
 
     // React state for UI rendering
     const [uiState, setUiState] = useState<EngineState | null>(null);
@@ -64,5 +63,5 @@ export function useGameEngine() {
         }
     };
 
-    return { state: uiState, events, dispatch };
+    return { state: uiState, events, dispatch, content };
 }

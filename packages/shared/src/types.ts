@@ -281,6 +281,11 @@ export type PlayerCommand =
   | {
     type: 'RESET_METRICS';
     atMs: number;
+  }
+  | {
+    type: 'SET_TACTICS';
+    tactics: TacticsPreset;
+    atMs: number;
   };
 
 // ---- Rewards / loot ----
@@ -324,7 +329,7 @@ export type GameEvent =
   | BaseEvent<'XP_GAINED', { amount: number; newTotal: number }>
   | BaseEvent<'GOLD_CHANGED', { amount: number; newTotal: number }>
   | BaseEvent<'LEVEL_UP', { newLevel: number }>
-  | BaseEvent<'LEVEL_UP', { newLevel: number }>
+  | BaseEvent<'TACTICS_CHANGED', { tactics: TacticsPreset }>
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
   | BaseEvent<'ERROR', { code: string; message: string }>
   ;

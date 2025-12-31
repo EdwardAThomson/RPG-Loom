@@ -193,6 +193,11 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       // Actual effects are interpreted via content later.
       break;
     }
+    case 'SET_TACTICS': {
+      next.player.tactics = cmd.tactics;
+      events.push(ev(next, cmd.atMs, 'TACTICS_CHANGED', { tactics: cmd.tactics }));
+      break;
+    }
     case 'RESET_METRICS': {
       next.metrics = {
         startTimeMs: cmd.atMs,

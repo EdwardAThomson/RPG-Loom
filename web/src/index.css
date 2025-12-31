@@ -1,75 +1,327 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+
 :root {
-  /* Obsidian & Gold Theme */
-  
+  /* -- Theme: Obsidian & Gold -- */
+
   /* Backgrounds */
-  --bg-main: #121214;       /* Deep obsidian, main background */
-  --bg-panel: #1c1e22;      /* Dark slate, cards/panels */
-  --bg-input: #2a2d33;      /* Lighter slate, inputs/hovers */
-  
+  --bg-dark: #050505;
+  /* Deepest black/charcoal */
+  --bg-panel: rgba(20, 20, 25, 0.95);
+  /* Panel background */
+  --bg-glass: rgba(20, 20, 25, 0.7);
+  /* Glassmorphism base */
+
   /* Text */
-  --text-main: #e3e3e3;     /* Silver white */
-  --text-muted: #a0a0b0;    /* Steel grey */
-  
+  --text-main: #e0e0e0;
+  /* Off-white */
+  --text-muted: #8899a6;
+  /* Slate grey */
+  --text-gold: #e6c200;
+  /* Primary Gold */
+
   /* Accents */
-  --accent-primary: #d4af37; /* Burnished Gold */
-  --accent-secondary: #632020; /* Crimson/Dried Blood */
-  --accent-tertiary: #2d4f6c; /* Mana/Night Blue */
-  
-  /* Borders & Misc */
-  --border-color: #3e3830;  /* Bronze-ish dark border */
+  --color-gold: #ffd700;
+  --color-gold-dim: #b8860b;
+  --color-crimson: #a61c1c;
+  /* Combat/Danger */
+  --color-success: #4caf50;
+  /* XP/Gain */
+  --color-rare: #9c27b0;
+  /* Rare items */
+
+  /* Borders & Shadows */
+  --border-gold: 1px solid rgba(255, 215, 0, 0.3);
+  --border-glass: 1px solid rgba(255, 255, 255, 0.1);
+  --shadow-glow: 0 0 15px rgba(255, 215, 0, 0.1);
+
+  /* Spacing */
   --radius-sm: 4px;
-  --radius-md: 8px;
-  
-  /* Typography */
-  --font-header: 'Cinzel', serif; /* Need to import this */
-  --font-body: 'Inter', system-ui, sans-serif;
+  --radius-md: 12px;
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: var(--bg-dark);
+  background-image:
+    radial-gradient(circle at 50% 0%, #1a1a20 0%, transparent 70%),
+    linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23222' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   color: var(--text-main);
-  font-family: var(--font-body);
+  font-family: 'Inter', sans-serif;
   margin: 0;
   min-height: 100vh;
-  line-height: 1.5;
+  overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-header);
+h1,
+h2,
+h3 {
+  font-family: 'Cinzel', serif;
+  color: var(--color-gold);
+  letter-spacing: 1px;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Layout --- */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 2rem;
+  border-bottom: var(--border-gold);
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  background: linear-gradient(180deg, #ffd700, #b8860b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat span {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr 350px;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  /* Important for scrolling internals */
+}
+
+.tab-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- Components --- */
+.card {
+  background: var(--bg-panel);
+  border: var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-glow);
+  border-color: rgba(255, 215, 0, 0.5);
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.8rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+}
+
+/* --- Activity Panel --- */
+.activity-status {
+  text-align: center;
+  margin-bottom: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.current-action {
+  font-family: 'Cinzel', serif;
+  font-size: 1.8rem;
   color: var(--text-main);
-  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.location {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.combat-widget {
+  background: linear-gradient(145deg, rgba(166, 28, 28, 0.1), rgba(0, 0, 0, 0));
+  border: 1px solid var(--color-crimson);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1.5rem;
+  animation: pulse-combat 2s infinite;
+}
+
+@keyframes pulse-combat {
+  0% {
+    box-shadow: 0 0 5px rgba(166, 28, 28, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 15px rgba(166, 28, 28, 0.5);
+  }
+
+  100% {
+    box-shadow: 0 0 5px rgba(166, 28, 28, 0.2);
+  }
+}
+
+/* --- Buttons --- */
+.actions {
+  display: grid;
+  gap: 0.8rem;
 }
 
 button {
-  cursor: pointer;
-  background-color: var(--bg-panel);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, #1f1f1f, #141414);
+  border: 1px solid #333;
   color: var(--text-main);
-  padding: 0.5rem 1rem;
+  padding: 1rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
   border-radius: var(--radius-sm);
-  font-family: var(--font-header); 
+  cursor: pointer;
   transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 button:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  background: linear-gradient(180deg, #2a2a2a, #1f1f1f);
+  border-color: var(--color-gold-dim);
+  color: var(--color-gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-button:active {
-  transform: translateY(1px);
+button.primary {
+  background: linear-gradient(180deg, #3d3d3d, #2b2b2b);
+  border-color: var(--color-gold-dim);
 }
 
-/* Utilities */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
+/* --- Inventory --- */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.5rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
-.panel {
-  background-color: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 1rem;
+.inventory-item {
+  aspect-ratio: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 4px;
+  cursor: help;
+  transition: all 0.2s;
+}
+
+.inventory-item:hover {
+  border-color: var(--color-gold);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.inventory-item .qty {
+  font-weight: bold;
+  color: var(--color-gold);
+  margin-top: 4px;
+}
+
+/* --- Event Log --- */
+.event-log {
+  height: 100%;
+  overflow-y: auto;
+  font-family: 'Inter', monospace;
+  /* Monospace numbers look better */
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  padding-right: 5px;
+}
+
+.event-entry {
+  padding: 0.5rem;
+  border-left: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.event-entry.win {
+  border-color: var(--color-success);
+}
+
+.event-entry.loss {
+  border-color: var(--color-crimson);
+}
+
+.event-entry.summary {
+  border-color: var(--color-gold-dim);
+}
+
+.time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-right: 0.8rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

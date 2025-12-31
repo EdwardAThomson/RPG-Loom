@@ -3,19 +3,28 @@
     "id": "item_wood",
     "name": "Wood",
     "stackable": true,
-    "value": 1
+    "value": 1,
+    "type": "resource",
+    "rarity": "common",
+    "description": "A regular log of wood. Useful for crafting."
   },
   {
     "id": "item_stone",
     "name": "Stone",
     "stackable": true,
-    "value": 1
+    "value": 1,
+    "type": "resource",
+    "rarity": "common",
+    "description": "A rough stone. Basic building material."
   },
   {
     "id": "item_copper_ore",
     "name": "Copper Ore",
     "stackable": true,
-    "value": 3
+    "value": 3,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Raw copper ore. Can be smelted into ingots."
   },
   {
     "id": "item_copper_ingot",
@@ -87,7 +96,13 @@
     "id": "item_herb_green",
     "name": "Green Herb",
     "stackable": true,
-    "value": 5
+    "value": 5,
+    "type": "consumable",
+    "rarity": "common",
+    "description": "A fresh medicinal herb.",
+    "modifiers": {
+      "hp": 5
+    }
   },
   {
     "id": "item_herb_red",
@@ -123,13 +138,25 @@
     "id": "item_simple_potion",
     "name": "Simple Potion",
     "stackable": true,
-    "value": 10
+    "value": 10,
+    "type": "consumable",
+    "rarity": "common",
+    "description": "Restores a small amount of health.",
+    "modifiers": {
+      "hp": 10
+    }
   },
   {
     "id": "item_rusty_sword",
     "name": "Rusty Sword",
     "stackable": false,
-    "value": 15
+    "value": 15,
+    "type": "weapon",
+    "rarity": "common",
+    "description": "Old and brittle, but better than bare hands.",
+    "modifiers": {
+      "atk": 2
+    }
   },
   {
     "id": "item_bronze_sword",
