@@ -9,7 +9,7 @@ import { InventoryView } from './components/InventoryView';
 import { CharacterView } from './components/CharacterView';
 import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
-
+import { SettingsModal } from './components/SettingsModal';
 import React from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -45,8 +45,9 @@ function App() {
 }
 
 function AppContent() {
-  const { state, events, dispatch, content } = useGameEngine();
+  const { state, events, dispatch, content, exportSave, importSave, hardReset, tickRate, setTickRate } = useGameEngine();
   const [activeTab, setActiveTab] = useState<TabId>('activity');
+  const [showSettings, setShowSettings] = useState(false);
 
   // XP Rate (Last 60s)
   const [xpRate, setXpRate] = useState(0);
@@ -84,9 +85,12 @@ function AppContent() {
 
   return (
     <div className="container">
-      <header className="header">
-        <h1 className="title">RPG Loom</h1>
-        <div className="stats">
+      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h1 className="title">RPG Loom</h1>
+        </div>
+
+        <div className="stats" style={{ flex: 1, justifyContent: 'center' }}>
           <div className="stat">
             <span style={{ fontSize: '1.2rem', color: '#fff' }}>{player.level}</span>
             <span>LEVEL</span>
@@ -100,7 +104,37 @@ function AppContent() {
             <span>GOLD</span>
           </div>
         </div>
+
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{
+            background: 'transparent',
+            border: '1px solid #444',
+            color: '#888',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            borderRadius: '4px',
+            fontSize: '1.2rem'
+          }}
+          title="System Settings"
+        >
+          ⚙️
+        </button>
       </header>
+
+      {showSettings && <SettingsModal
+        exportSave={exportSave}
+        importSave={importSave}
+        hardReset={hardReset}
+        onClose={() => setShowSettings(false)}
+
+        // Debug
+        tickRate={tickRate}
+        setTickRate={setTickRate}
+        seed={0} // Seed not currently exposed in EngineState
+        tickIndex={state?.tickIndex || 0}
+      />
+      }
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 

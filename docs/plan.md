@@ -73,16 +73,16 @@
 
 ---
 
-## Milestone C — UI MVP (Clarity + Speed)
+## Milestone C — UI MVP (Clarity + Speed) [COMPLETED]
  
  **Goal:** A clean, icon-friendly UI that makes the deterministic loop satisfying.
  
- * **C1. Activity Screen (Home)**: Centerpiece UI, start/stop/switch activities.
- * **C2. Character Screen**: Stats, tactics, loadout.
- * **C3. Inventory Screen**: Filters, stacks, inspection.
- * **C4. Quest Screen**: Active cards, rewards, claim UI.
- * **C5. Persistence UX**: Save slots, import/export.
- * **C6. Debug Panel**: Seed display, tick rate, fast-forward buttons.
+ * [x] **C1. Activity Screen (Home)**: Centerpiece UI, start/stop/switch activities.
+ * [x] **C2. Character Screen**: Stats, tactics, loadout.
+ * [x] **C3. Inventory Screen**: Filters, stacks, inspection.
+ * [x] **C4. Quest Screen**: Active cards, rewards, claim UI.
+ * [x] **C5. Persistence UX**: Save slots, import/export.
+ * [x] **C6. Debug Panel**: Seed display, tick rate, fast-forward buttons.
 
 ---
 
