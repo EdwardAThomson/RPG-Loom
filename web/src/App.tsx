@@ -1,193 +1,192 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useGameEngine } from './hooks/useGameEngine';
+import { useState, useRef, useEffect } from 'react';
+import { GameEvent } from '@rpg-loom/shared';
+import './index.css';
 
-import { createNewState, step, applyCommand } from '@rpg-loom/engine';
-import type { EngineState, GameEvent, NarrativeBlock } from '@rpg-loom/shared';
-import { createContentIndex } from '@rpg-loom/content';
-import { GuildboundClient } from '@rpg-loom/sdk';
+type DisplayEvent = GameEvent | {
+  id: string;
+  atMs: number;
+  type: 'SUMMARY';
+  payload: { parts: string[] };
+};
 
-const GW = new GuildboundClient('http://localhost:8787');
-
-function nowMs() {
-  return Date.now();
+function App() {
+  try {
+    return AppContent();
+  } catch (e: any) {
+    return <div style={{ color: 'red', padding: 20 }}>CRITICAL ERROR: {e.message}<br /><pre>{e.stack}</pre></div>
+  }
 }
 
-export default function App() {
-  const content = useMemo(() => createContentIndex(), []);
-  const [state, setState] = useState<EngineState>(() =>
-    createNewState({
-      saveId: 'save_demo_01',
-      playerId: 'p1',
-      playerName: 'Adventurer',
-      nowMs: nowMs(),
-      startLocationId: 'loc_bramblewick_outpost'
-    })
-  );
-  const [events, setEvents] = useState<GameEvent[]>([]);
-  const [narrative, setNarrative] = useState<NarrativeBlock[]>([]);
-  const [streamText, setStreamText] = useState('');
-  const timerRef = useRef<number | null>(null);
+// Helper to format event summary parts
+function formatEvent(ev: any) {
+  if (ev.type === 'XP_GAINED') return `+${ev.payload.amount} XP`;
+  if (ev.type === 'GOLD_CHANGED') return `+${ev.payload.amount} Gold`;
+  if (ev.type === 'LOOT_GAINED') return `Loot: ${ev.payload.items.map((i: any) => i.itemId).join(', ')}`;
+  if (ev.type === 'ENCOUNTER_RESOLVED') return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${ev.payload.enemyId}`;
+  return ev.type;
+}
 
-  // ticking loop (1s)
+function AppContent() {
+  const { state, events, dispatch } = useGameEngine();
+  // ... rest of logic
+
+
+  // XP Rate (Last 60s)
+  // In a real app we'd move this to the hook or engine, but for MVP UI:
+  const [xpRate, setXpRate] = useState(0);
+  const xpHistory = useRef<{ t: number, xp: number }[]>([]);
+
+  const currentXp = state?.player?.xp;
+
   useEffect(() => {
-    timerRef.current = window.setInterval(() => {
-      setState((prev) => {
-        const res = step(prev, nowMs(), content, { tickMs: 1000 });
-        if (res.events.length) {
-          setEvents((old) => [...old, ...res.events].slice(-200));
-          // auto-trigger narrative on quest completion
-          const completed = res.events.find((e) => e.type === 'QUEST_COMPLETED');
-          if (completed) {
-            void runNarrative('journal_entry', {
-              recentEvents: res.events.slice(-30),
-              player: { level: res.state.player.level, name: res.state.player.name },
-              locationId: res.state.currentLocationId
-            });
-          }
-        }
-        return res.state;
-      });
-    }, 1000);
-    return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
-    };
-  }, [content]);
+    if (typeof currentXp === 'undefined') return;
 
-  async function runNarrative(type: any, facts: Record<string, unknown>) {
-    setStreamText('');
-    try {
-      const { taskId } = await GW.createNarrativeTask({
-        type,
-        facts,
-        references: {},
-        // pick backend on the gateway using DEFAULT_NARRATIVE_BACKEND
-        backendId: null
-      });
+    const now = Date.now();
+    // Add current snapshot
+    xpHistory.current.push({ t: now, xp: currentXp });
 
-      GW.streamTask(taskId, (evt) => {
-        if (evt.type === 'token') setStreamText((t) => t + evt.data);
-        if (evt.type === 'line') setStreamText((t) => (t ? t + '\n' : '') + evt.data);
-        if (evt.type === 'done') {
-          const block = (evt.data as any)?.block;
-          if (block) setNarrative((n) => [...n, block].slice(-50));
-        }
-        if (evt.type === 'error') setStreamText((t) => t + `\n[ai unavailable] ${evt.data.message}`);
-      });
-    } catch (e: any) {
-      // AI is optional; game should keep running.
-      setStreamText(`[ai unavailable] ${e?.message ?? String(e)}`);
+    // Remove old entries (> 60s)
+    const windowStart = now - 60000;
+    while (xpHistory.current.length > 0 && xpHistory.current[0].t < windowStart) {
+      xpHistory.current.shift();
     }
-  }
 
-  function dispatch(cmd: any) {
-    const res = applyCommand(state, cmd, content);
-    setState(res.state);
-    if (res.events.length) setEvents((old) => [...old, ...res.events].slice(-200));
-  }
+    if (xpHistory.current.length > 1) {
+      const start = xpHistory.current[0];
+      const end = xpHistory.current[xpHistory.current.length - 1];
+      const diffXp = end.xp - start.xp;
+      const diffTime = (end.t - start.t) / 3600000; // hours
+      if (diffTime > 0) {
+        setXpRate(Math.round(diffXp / diffTime));
+      }
+    }
+  }, [currentXp]);
 
-  const activeQuests = state.quests.filter((q) => q.status === 'active');
+  if (!state) return <div className="container">Loading Realm...</div>;
+
+  const { player, activity } = state;
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', padding: 16, maxWidth: 1100, margin: '0 auto' }}>
-      <h1>Guildbound Chronicles (MVP)</h1>
+    <div className="container">
+      <header className="header">
+        <h1 className="title">RPG Loom</h1>
+        <div className="stats">
+          <div className="stat">Level: {player.level}</div>
+          <div className="stat">XP: {player.xp} <span style={{ fontSize: '0.8em', color: '#aaa' }}>({xpRate}/hr)</span></div>
+          <div className="stat">Gold: {player.gold}</div>
+        </div>
+      </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <section style={{ border: '1px solid #444', borderRadius: 12, padding: 12 }}>
-          <h2>Player</h2>
-          <div><b>Name:</b> {state.player.name}</div>
-          <div><b>Level:</b> {state.player.level} (<b>XP</b> {state.player.xp})</div>
-          <div><b>Gold:</b> {state.player.gold}</div>
-          <div><b>Location:</b> {state.currentLocationId}</div>
-          <div><b>Activity:</b> {state.activity.params.type}</div>
-
-          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', atMs: nowMs(), params: { type: 'idle' } })}>Idle</button>
-            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', atMs: nowMs(), params: { type: 'gather', locationId: 'loc_glimmerwood_edge' } })}>Gather (Glimmerwood)</button>
-            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', atMs: nowMs(), params: { type: 'hunt', locationId: 'loc_glimmerwood_edge' } })}>Hunt (Glimmerwood)</button>
-            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', atMs: nowMs(), params: { type: 'train', skillId: 'swordsmanship' } })}>Train Sword</button>
-            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', atMs: nowMs(), params: { type: 'craft', recipeId: 'rcp_minor_heal_potion' } })}>Craft Potion</button>
+      <main className="main-grid">
+        <section className="card">
+          <h2>Activity</h2>
+          <div className="activity-status">
+            Current: <strong>{activity.params.type.toUpperCase()}</strong>
+            {'locationId' in activity.params && <div>Location: {(activity.params as any).locationId}</div>}
+            {state.activeEncounter && (
+              <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#420', border: '1px solid #f44' }}>
+                <h3>⚔️ Combat ⚔️</h3>
+                <div>Enemy: {state.activeEncounter.enemyId} (Lvl {state.activeEncounter.enemyLevel})</div>
+                <div>HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}</div>
+              </div>
+            )}
           </div>
 
-          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button onClick={() => dispatch({ type: 'ACCEPT_QUEST', atMs: nowMs(), templateId: 'qt_kill_wolves' })}>Accept: Kill Wolves</button>
-            <button onClick={() => dispatch({ type: 'ACCEPT_QUEST', atMs: nowMs(), templateId: 'qt_gather_herbs' })}>Accept: Gather Herbs</button>
-            <button
-              onClick={() =>
-                runNarrative('rumor_feed', {
-                  player: { level: state.player.level, locationId: state.currentLocationId },
-                  flags: state.player.flags
-                })
-              }
-            >
-              Generate Rumors
+          <div className="actions">
+            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'gather', locationId: 'loc_forest' }, atMs: Date.now() })}>
+              Gather (Forest)
+            </button>
+            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: 'loc_forest' }, atMs: Date.now() })}>
+              Hunt (Forest)
+            </button>
+            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}>
+              Train Sword
+            </button>
+            <button onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'idle' }, atMs: Date.now() })}>
+              Stop
             </button>
           </div>
-
-          <h3 style={{ marginTop: 12 }}>Active Quests</h3>
-          {activeQuests.length === 0 ? (
-            <div style={{ opacity: 0.7 }}>None</div>
-          ) : (
-            <ul>
-              {activeQuests.map((q) => (
-                <li key={q.id}>
-                  {q.templateId} — {q.progress.current}/{q.progress.required} (loc {q.locationId})
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <h3>Inventory</h3>
-          <ul>
-            {state.inventory.length ? (
-              state.inventory.map((s) => (
-                <li key={s.itemId}>
-                  {s.itemId} × {s.qty}
-                </li>
-              ))
-            ) : (
-              <li style={{ opacity: 0.7 }}>Empty</li>
-            )}
-          </ul>
         </section>
 
-        <section style={{ border: '1px solid #444', borderRadius: 12, padding: 12 }}>
+        <section className="card">
+          <h2>Inventory</h2>
+          <div className="inventory-grid">
+            {state.inventory.map((item: any) => (
+              <div key={item.itemId} className="inventory-item">
+                {item.itemId} (x{item.qty})
+              </div>
+            ))}
+            {state.inventory.length === 0 && <div className="empty">Empty</div>}
+          </div>
+        </section>
+
+        <section className="card full-width">
           <h2>Event Log</h2>
-          <div style={{ height: 360, overflow: 'auto', background: '#111', padding: 8, borderRadius: 8 }}>
-            {events
-              .slice()
-              .reverse()
-              .map((e) => (
-                <div key={e.id} style={{ whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 12 }}>
-                  [{new Date(e.atMs).toLocaleTimeString()}] {e.type} {JSON.stringify((e as any).payload)}
-                </div>
-              ))}
-          </div>
+          <div style={{ height: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse', gap: '0.5rem', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+            {(() => {
+              const aggregatedEvents: DisplayEvent[] = [];
+              const sourceEvents = events.slice()
+                .filter((ev: any) => ev.type !== 'TICK_PROCESSED')
+                .reverse()
+                .slice(0, 50);
 
-          <h2 style={{ marginTop: 12 }}>Narrative</h2>
-          <div style={{ border: '1px solid #222', borderRadius: 8, padding: 8, background: '#0b0b0b' }}>
-            <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', whiteSpace: 'pre-wrap', fontSize: 12, opacity: 0.9 }}>
-              {streamText || '(stream output)'}
-            </div>
-          </div>
+              for (let i = 0; i < sourceEvents.length; i++) {
+                const ev = sourceEvents[i];
+                // Try to merge with previous if same tick and compatible types
+                if (aggregatedEvents.length > 0) {
+                  const last = aggregatedEvents[aggregatedEvents.length - 1];
+                  if (last.atMs === ev.atMs &&
+                    (ev.type === 'XP_GAINED' || ev.type === 'GOLD_CHANGED' || ev.type === 'LOOT_GAINED') &&
+                    (last.type === 'XP_GAINED' || last.type === 'GOLD_CHANGED' || last.type === 'LOOT_GAINED' || last.type === 'ENCOUNTER_RESOLVED' || last.type === 'SUMMARY')) {
 
-          <div style={{ marginTop: 8 }}>
-            {narrative
-              .slice()
-              .reverse()
-              .map((b) => (
-                <div key={b.id} style={{ marginTop: 10, padding: 10, border: '1px solid #222', borderRadius: 8 }}>
-                  <div style={{ fontWeight: 700 }}>{b.title ?? b.type}</div>
-                  {b.lines?.map((ln, i) => (
-                    <div key={i} style={{ opacity: 0.9 }}>{ln}</div>
-                  ))}
-                </div>
-              ))}
+                    // Create or update summary
+                    if (last.type !== 'SUMMARY') {
+                      // Convert last to summary
+                      const newSummary: DisplayEvent = {
+                        id: last.id + '_sum',
+                        atMs: last.atMs,
+                        type: 'SUMMARY',
+                        payload: { parts: [formatEvent(last)] }
+                      };
+                      aggregatedEvents[aggregatedEvents.length - 1] = newSummary;
+                      newSummary.payload.parts.push(formatEvent(ev));
+                    } else {
+                      last.payload.parts.push(formatEvent(ev));
+                    }
+                    continue;
+                  }
+                }
+                aggregatedEvents.push(ev);
+              }
+
+              return aggregatedEvents.map(ev => {
+                if (ev.type === 'SUMMARY') {
+                  return (
+                    <div key={ev.id} className="event-entry summary">
+                      <span className="time">{new Date(ev.atMs).toLocaleTimeString()}</span>
+                      <span className="content">
+                        {ev.payload.parts.join(', ')}
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={ev.id} className="event-entry">
+                    <span className="time">{new Date(ev.atMs).toLocaleTimeString()}</span>
+                    <span className="content">
+                      {formatEvent(ev)}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </section>
-      </div>
 
-      <p style={{ marginTop: 16, opacity: 0.7 }}>
-        Tip: run the gateway with <code>npm run dev:gateway</code> (port 8787), then <code>npm run dev:web</code>.
-      </p>
+      </main>
     </div>
   );
 }
+
+export default App;

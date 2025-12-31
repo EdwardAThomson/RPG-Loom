@@ -1,0 +1,75 @@
+:root {
+  /* Obsidian & Gold Theme */
+  
+  /* Backgrounds */
+  --bg-main: #121214;       /* Deep obsidian, main background */
+  --bg-panel: #1c1e22;      /* Dark slate, cards/panels */
+  --bg-input: #2a2d33;      /* Lighter slate, inputs/hovers */
+  
+  /* Text */
+  --text-main: #e3e3e3;     /* Silver white */
+  --text-muted: #a0a0b0;    /* Steel grey */
+  
+  /* Accents */
+  --accent-primary: #d4af37; /* Burnished Gold */
+  --accent-secondary: #632020; /* Crimson/Dried Blood */
+  --accent-tertiary: #2d4f6c; /* Mana/Night Blue */
+  
+  /* Borders & Misc */
+  --border-color: #3e3830;  /* Bronze-ish dark border */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  
+  /* Typography */
+  --font-header: 'Cinzel', serif; /* Need to import this */
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-header);
+  color: var(--text-main);
+  margin-top: 0;
+}
+
+button {
+  cursor: pointer;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-header); 
+  transition: all 0.2s;
+}
+
+button:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.panel {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}

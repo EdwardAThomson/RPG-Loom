@@ -230,6 +230,14 @@ export interface EngineState {
   // current activity
   activity: ActivityPlan;
 
+  // active combat state (if any)
+  activeEncounter?: {
+    enemyId: EnemyId;
+    enemyLevel: number;
+    enemyHp: number;
+    enemyMaxHp: number;
+  };
+
   // metrics tracking
   metrics: EngineMetrics;
 }

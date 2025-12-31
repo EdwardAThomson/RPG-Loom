@@ -4,13 +4,22 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./data/index.js"
+    ".": "./dist/index.js"
   },
-  "types": "./data/index.d.ts",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "node data/build-index.mjs",
-    "typecheck": "echo \"(content) typecheck: n/a\"",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "lint": "echo \"(content) lint: n/a\"",
     "test": "echo \"(content) test: n/a\""
+  },
+  "dependencies": {
+    "@rpg-loom/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

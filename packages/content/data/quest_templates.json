@@ -10,6 +10,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 10,
+    "difficulty": 1,
     "rewardPack": {
       "xp": 50,
       "gold": 10,
@@ -32,6 +33,7 @@
     ],
     "qtyMin": 1,
     "qtyMax": 1,
+    "difficulty": 1,
     "rewardPack": {
       "xp": 100,
       "gold": 20,
@@ -54,6 +56,7 @@
     ],
     "qtyMin": 3,
     "qtyMax": 5,
+    "difficulty": 1,
     "rewardPack": {
       "xp": 75,
       "gold": 15,
@@ -73,6 +76,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 8,
+    "difficulty": 1,
     "rewardPack": {
       "xp": 80,
       "gold": 25,
@@ -95,6 +99,7 @@
     ],
     "qtyMin": 2,
     "qtyMax": 4,
+    "difficulty": 2,
     "rewardPack": {
       "xp": 100,
       "gold": 40,
@@ -117,6 +122,7 @@
     ],
     "qtyMin": 10,
     "qtyMax": 20,
+    "difficulty": 1,
     "rewardPack": {
       "xp": 120,
       "gold": 30
@@ -133,6 +139,7 @@
     ],
     "qtyMin": 2,
     "qtyMax": 3,
+    "difficulty": 3,
     "rewardPack": {
       "xp": 200,
       "gold": 60,
@@ -155,6 +162,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 10,
+    "difficulty": 2,
     "rewardPack": {
       "xp": 150,
       "gold": 50,
@@ -177,6 +185,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 10,
+    "difficulty": 2,
     "rewardPack": {
       "xp": 180,
       "gold": 40,
@@ -199,6 +208,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 8,
+    "difficulty": 2,
     "rewardPack": {
       "xp": 160,
       "gold": 35
@@ -215,6 +225,7 @@
     ],
     "qtyMin": 1,
     "qtyMax": 1,
+    "difficulty": 3,
     "rewardPack": {
       "xp": 300,
       "gold": 100,
@@ -237,6 +248,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 8,
+    "difficulty": 3,
     "rewardPack": {
       "xp": 250,
       "gold": 80,
@@ -259,6 +271,7 @@
     ],
     "qtyMin": 3,
     "qtyMax": 6,
+    "difficulty": 3,
     "rewardPack": {
       "xp": 280,
       "gold": 90
@@ -275,6 +288,7 @@
     ],
     "qtyMin": 3,
     "qtyMax": 5,
+    "difficulty": 4,
     "rewardPack": {
       "xp": 350,
       "gold": 120,
@@ -297,6 +311,7 @@
     ],
     "qtyMin": 5,
     "qtyMax": 10,
+    "difficulty": 4,
     "rewardPack": {
       "xp": 400,
       "gold": 150
@@ -313,6 +328,7 @@
     ],
     "qtyMin": 2,
     "qtyMax": 4,
+    "difficulty": 4,
     "rewardPack": {
       "xp": 500,
       "gold": 200,
@@ -335,6 +351,7 @@
     ],
     "qtyMin": 3,
     "qtyMax": 5,
+    "difficulty": 4,
     "rewardPack": {
       "xp": 450,
       "gold": 180
@@ -351,6 +368,7 @@
     ],
     "qtyMin": 1,
     "qtyMax": 1,
+    "difficulty": 5,
     "rewardPack": {
       "xp": 1000,
       "gold": 500,
@@ -373,6 +391,7 @@
     ],
     "qtyMin": 1,
     "qtyMax": 1,
+    "difficulty": 5,
     "rewardPack": {
       "xp": 2000,
       "gold": 1000,
@@ -392,6 +411,7 @@
     ],
     "qtyMin": 10,
     "qtyMax": 10,
+    "difficulty": 5,
     "rewardPack": {
       "xp": 1500,
       "gold": 800
