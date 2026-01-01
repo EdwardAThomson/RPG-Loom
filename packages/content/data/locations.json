@@ -188,5 +188,121 @@
         }
       ]
     }
+  },
+  {
+    "id": "loc_volcanic",
+    "name": "Volcanic Crags",
+    "description": "A scorched wasteland of ash and magma.",
+    "requirements": {
+      "minLevel": 25
+    },
+    "activities": [
+      "hunt",
+      "gather",
+      "explore"
+    ],
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_magma_slime",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_ash_zombie",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_fire_drake",
+          "weight": 2
+        },
+        {
+          "enemyId": "enemy_obsidian_golem",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_volcanic_ash",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 8
+        },
+        {
+          "itemId": "item_obsidian",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 5
+        },
+        {
+          "itemId": "item_sulfur",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 4
+        },
+        {
+          "itemId": "item_gold_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_crystal",
+    "name": "Crystal Caverns",
+    "description": "Glimmering caves deep beneath the earth.",
+    "requirements": {
+      "minLevel": 35
+    },
+    "activities": [
+      "hunt",
+      "gather",
+      "explore"
+    ],
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_mana_wisp",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_crystal_spider",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_arcane_construct",
+          "weight": 3
+        },
+        {
+          "enemyId": "enemy_prismatic_guardian",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_crystal_shard",
+          "minQty": 2,
+          "maxQty": 6,
+          "weight": 8
+        },
+        {
+          "itemId": "item_luminite_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 5
+        },
+        {
+          "itemId": "item_gold_ore",
+          "minQty": 2,
+          "maxQty": 4,
+          "weight": 3
+        }
+      ]
+    }
   }
 ]

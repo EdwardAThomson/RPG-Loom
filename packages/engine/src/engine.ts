@@ -9,6 +9,10 @@ import type {
   QuestInstanceState,
   QuestTemplateDef,
   RewardPack,
+  EnemyDef,
+  ItemDef,
+  LocationDef,
+  RecipeDef,
   SkillId
 } from '@rpg-loom/shared';
 
@@ -30,11 +34,11 @@ import { hashFloat, hashInt } from './rng.js';
 
 // ---- Content Index (data pack) ----
 export interface ContentIndex {
-  itemsById: Record<string, { id: string; name: string; stackable: boolean; modifiers?: any; onUse?: any }>;
-  enemiesById: Record<string, { id: string; name: string; baseStats: any; lootTable: LootTable }>;
-  locationsById: Record<string, { id: string; name: string; encounterTable: { entries: Array<{ enemyId: string; weight: number }> }; resourceTable: LootTable }>;
+  itemsById: Record<string, ItemDef>;
+  enemiesById: Record<string, EnemyDef>;
+  locationsById: Record<string, LocationDef>;
   questTemplatesById: Record<string, QuestTemplateDef>;
-  recipesById: Record<string, { id: string; inputs: Array<{ itemId: string; qty: number }>; outputs: Array<{ itemId: string; qty: number }>; requiredSkill?: { skillId: SkillId; minLevel: number } }>;
+  recipesById: Record<string, RecipeDef>;
 }
 
 export interface EngineConfig {
@@ -406,14 +410,29 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       return { state: next, events };
     }
 
+    // Boss Phase / Enrage Check
+    let currentAtkMult = 1.0;
+    let currentSpdMult = 1.0;
+
+    if (enemy.rank === 'boss' && enemy.phases) {
+      const hpPct = next.activeEncounter.enemyHp / next.activeEncounter.enemyMaxHp;
+      // Simple check: is there an active phase?
+      // MVP: Just check the first phase that matches.
+      const activePhase = enemy.phases.find(p => hpPct <= p.triggerHpPct);
+      if (activePhase && activePhase.buffs) {
+        currentAtkMult = activePhase.buffs.atkMult ?? 1.0;
+        currentSpdMult = activePhase.buffs.spdMult ?? 1.0;
+      }
+    }
+
     // 1 Round of Combat
     // Player attacks
     const pStats = next.player.baseStats;
-    let atkMult = 1.0;
-    if (next.player.tactics === 'aggressive') atkMult = 1.2;
-    if (next.player.tactics === 'defensive') atkMult = 0.8;
+    let playerAtkMult = 1.0;
+    if (next.player.tactics === 'aggressive') playerAtkMult = 1.2;
+    if (next.player.tactics === 'defensive') playerAtkMult = 0.8;
 
-    const dmgToEnemy = Math.max(1, Math.floor((pStats.atk * atkMult) - enemy.baseStats.def));
+    const dmgToEnemy = Math.max(1, Math.floor((pStats.atk * playerAtkMult) - enemy.baseStats.def));
     next.activeEncounter.enemyHp -= dmgToEnemy;
 
     if (next.activeEncounter.enemyHp <= 0) {
@@ -430,26 +449,21 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       }
       bumpQuestProgressFromKill(next, enemy.id, events, tickAtMs, content);
 
-      const goldDrop = Math.max(1, enemyLevel);
+      const goldDrop = Math.max(1, enemyLevel * (enemy.rank === 'boss' ? 10 : 1));
       next.player.gold += goldDrop;
       events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: goldDrop, newTotal: next.player.gold }));
-      gainXp(next, 2, events, tickAtMs);
+      gainXp(next, 2 + (enemy.rank === 'boss' ? 18 : 0), events, tickAtMs);
 
       delete next.activeEncounter;
       return { state: next, events };
     }
 
-    // Enemy attacks (simplified: assumes player survives or infinite HP for MVP)
-    // To support player death across ticks, we need HP in PlayerState.
-    // For now, check if "virtual" damage would kill based on max HP math?
-    // No, let's keep it simple: Player handles the damage, maybe we add HP later.
-    // But we need strict "loss" condition.
-    // Re-use logic: if rounds > limit? No.
-    // Let's implement randomness for Loss to simulate effective HP?
-    // "Balance Sim" previously used resolveSimpleCombat to calculate rounds.
-    // Let's say Player has effectively Infinite HP for this MVP step unless we tackle Player HP refactor.
-    // Actually, user compliant was "combat too fast", implying they WANT to see the fight.
-    // So infinite HP / Auto-win eventually is acceptable for "Training".
+    // Enemy Attack Simulation (visual/flavor for now, but affects "difficulty" perception)
+    // If Boss is enraged, we could log it?
+    if (currentAtkMult > 1.0) {
+      // Debatable: spam event log vs just let it be silent math?
+      // Let's rely on UI to show "BOSS IS ENRAGED" based on HP %.
+    }
 
     return { state: next, events };
   }
@@ -465,7 +479,11 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
   const enemyLevel = clamp(next.player.level + randIntDet(`elvl:${next.saveId}:${enemyId}:${next.tickIndex}`, -1, 1), 1, 99);
 
   // Initialize Combat State
-  const enemyMaxHp = Math.floor(enemy.baseStats.hpMax * (1 + (enemyLevel * 0.1))); // Level Scaling
+  let hpScale = 1 + (enemyLevel * 0.1);
+  if (enemy.rank === 'elite') hpScale *= 2;
+  if (enemy.rank === 'boss') hpScale *= 5; // Bosses have much more HP
+
+  const enemyMaxHp = Math.floor(enemy.baseStats.hpMax * hpScale);
 
   next.activeEncounter = {
     enemyId,

@@ -86,20 +86,7 @@
 
 ---
 
-## Milestone D — AI Narrative (Optional Plugin)
- 
- **Goal:** Add narrative without risking core gameplay.
- 
- * **D1. FactsBundle Builder**: Engine events → Facts packet for LLM.
- * **D2. Prompt Templates**: Strict JSON-only instructions (Quest flavor, NPC, Rumors).
- * **D3. Gateway Backend**: Gemini CLI support + Mock fallback + SSE streaming.
- * **D4. Output Validator**: Schema + ID check + Length budget.
- * **D5. Narrative Store**: Persist blocks per save slot.
- * **D6. UI Integration**: Narratives display in Journal/Quest/NPC panels.
-
----
-
-## Milestone E — Content Expansion + Balance Pass
+## Milestone D — Content Expansion + Balance Pass
 
 **Goal:** Make the game “idle-sticky” (build depth, long-term goals).
 
@@ -117,6 +104,19 @@ Deliverables:
 Acceptance criteria:
 
 * There’s always an obvious next goal, and multiple viable paths to pursue it.
+
+---
+
+## Milestone E — AI Narrative (Optional Plugin)
+
+**Goal:** Add narrative without risking core gameplay.
+
+* **E1. FactsBundle Builder**: Engine events → Facts packet for LLM.
+* **E2. Prompt Templates**: Strict JSON-only instructions (Quest flavor, NPC, Rumors).
+* **E3. Gateway Backend**: Gemini CLI support + Mock fallback + SSE streaming.
+* **E4. Output Validator**: Schema + ID check + Length budget.
+* **E5. Narrative Store**: Persist blocks per save slot.
+* **E6. UI Integration**: Narratives display in Journal/Quest/NPC panels.
 
 ---
 
@@ -218,6 +218,7 @@ If you want the most momentum with least regret:
 1. Finish **Milestone A** (engine determinism + offline + save/load + tests)
 2. Push to **Milestone B** (playable loop with enough content to feel real)
 3. Then do **Milestone C** (UI clarity)
-4. Only then wire **Milestone D** (Gemini narrative)
+4. Then **Milestone D** (Content Expansion & Balance)
+5. Finally, wire **Milestone E** (Gemini narrative)
 
 That order guarantees the game is fun even if AI is flaky.

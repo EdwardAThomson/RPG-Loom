@@ -140,7 +140,7 @@ function AppContent() {
 
       <main className="tab-layout">
         <div className="tab-content" style={{ minHeight: 0, overflowY: 'auto' }}>
-          {activeTab === 'activity' && <ActivityView state={state} dispatch={dispatch} />}
+          {activeTab === 'activity' && <ActivityView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} />}
           {activeTab === 'quests' && <QuestView state={state} />}

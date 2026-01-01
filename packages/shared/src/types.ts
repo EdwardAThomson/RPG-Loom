@@ -74,6 +74,15 @@ export interface EnemyDef {
   id: EnemyId;
   name: string;
   tags: string[];
+  rank?: 'normal' | 'elite' | 'boss'; // Default to normal
+  phases?: Array<{
+    name: string;
+    triggerHpPct: number; // 0.5 = 50%
+    buffs?: {
+      atkMult?: number;
+      spdMult?: number;
+    };
+  }>;
   levelMin: number;
   levelMax: number;
   baseStats: CombatStats;

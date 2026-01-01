@@ -271,5 +271,85 @@
         "qty": 1
       }
     ]
+  },
+  {
+    "id": "recipe_obsidian_armor",
+    "inputs": [
+      {
+        "itemId": "item_obsidian",
+        "qty": 10
+      },
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_obsidian_armor",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_obsidian_shield",
+    "inputs": [
+      {
+        "itemId": "item_obsidian",
+        "qty": 8
+      },
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_obsidian_shield",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_crystal_robes",
+    "inputs": [
+      {
+        "itemId": "item_phase_silk",
+        "qty": 5
+      },
+      {
+        "itemId": "item_crystal_shard",
+        "qty": 5
+      },
+      {
+        "itemId": "item_luminite_ore",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_crystal_robes",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_crystal_wand",
+    "inputs": [
+      {
+        "itemId": "item_luminite_ore",
+        "qty": 4
+      },
+      {
+        "itemId": "item_crystal_shard",
+        "qty": 10
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_crystal_wand",
+        "qty": 1
+      }
+    ]
   }
 ]

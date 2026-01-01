@@ -211,5 +211,147 @@
     "name": "Iron Pickaxe",
     "stackable": false,
     "value": 150
+  },
+  {
+    "id": "item_obsidian",
+    "name": "Obsidian",
+    "stackable": true,
+    "value": 20,
+    "type": "resource",
+    "rarity": "uncommon",
+    "description": "Volcanic glass, extremely sharp/hard."
+  },
+  {
+    "id": "item_volcanic_ash",
+    "name": "Volcanic Ash",
+    "stackable": true,
+    "value": 5,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Gray ash warmth to the touch."
+  },
+  {
+    "id": "item_sulfur",
+    "name": "Sulfur",
+    "stackable": true,
+    "value": 15,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Yellowish powder with a pungent smell."
+  },
+  {
+    "id": "item_magma_core",
+    "name": "Magma Core",
+    "stackable": true,
+    "value": 100,
+    "type": "material",
+    "rarity": "rare",
+    "description": "The burning heart of a magma entity."
+  },
+  {
+    "id": "item_drake_scale",
+    "name": "Drake Scale",
+    "stackable": true,
+    "value": 80,
+    "type": "material",
+    "rarity": "uncommon",
+    "description": "Scale from a Fire Drake, warm and tough."
+  },
+  {
+    "id": "item_luminite_ore",
+    "name": "Luminite Ore",
+    "stackable": true,
+    "value": 40,
+    "type": "resource",
+    "rarity": "rare",
+    "description": "Ore that hums with arcane energy."
+  },
+  {
+    "id": "item_crystal_shard",
+    "name": "Crystal Shard",
+    "stackable": true,
+    "value": 25,
+    "type": "resource",
+    "rarity": "uncommon",
+    "description": "A sharp shard of resonant crystal."
+  },
+  {
+    "id": "item_mana_wisp_dust",
+    "name": "Mana Wisp Dust",
+    "stackable": true,
+    "value": 15,
+    "type": "material",
+    "rarity": "common",
+    "description": "Glowing residue from a mana wisp."
+  },
+  {
+    "id": "item_phase_silk",
+    "name": "Phase Silk",
+    "stackable": true,
+    "value": 30,
+    "type": "material",
+    "rarity": "uncommon",
+    "description": "Silk that shimmers in and out of reality."
+  },
+  {
+    "id": "item_prismatic_core",
+    "name": "Prismatic Core",
+    "stackable": true,
+    "value": 200,
+    "type": "material",
+    "rarity": "epic",
+    "description": "The pure essence of arcane light."
+  },
+  {
+    "id": "item_obsidian_armor",
+    "name": "Obsidian Armor",
+    "stackable": false,
+    "value": 2000,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "Heavy armor forged from volcanic glass. Unmatched protection.",
+    "modifiers": {
+      "def": 15,
+      "spd": -2
+    }
+  },
+  {
+    "id": "item_obsidian_shield",
+    "name": "Obsidian Shield",
+    "stackable": false,
+    "value": 1500,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "A massive slab of obsidian.",
+    "modifiers": {
+      "def": 10,
+      "res": 0.1
+    }
+  },
+  {
+    "id": "item_crystal_robes",
+    "name": "Crystal Robes",
+    "stackable": false,
+    "value": 2000,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "Robes woven with phase silk and crystals.",
+    "modifiers": {
+      "def": 5,
+      "res": 0.3
+    }
+  },
+  {
+    "id": "item_crystal_wand",
+    "name": "Crystal Wand",
+    "stackable": false,
+    "value": 1800,
+    "type": "weapon",
+    "rarity": "rare",
+    "description": "Focuses arcane energy for devastating attacks.",
+    "modifiers": {
+      "atk": 25,
+      "critChance": 0.1
+    }
   }
 ]

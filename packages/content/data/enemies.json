@@ -292,5 +292,310 @@
         }
       ]
     }
+  },
+  {
+    "id": "enemy_magma_slime",
+    "name": "Magma Slime",
+    "tags": [
+      "elemental",
+      "fire"
+    ],
+    "levelMin": 25,
+    "levelMax": 30,
+    "baseStats": {
+      "hpMax": 100,
+      "atk": 15,
+      "def": 5,
+      "spd": 3,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_obsidian",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 2
+        },
+        {
+          "itemId": "item_volcanic_ash",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_ash_zombie",
+    "name": "Ash Zombie",
+    "tags": [
+      "undead",
+      "fire"
+    ],
+    "levelMin": 28,
+    "levelMax": 32,
+    "baseStats": {
+      "hpMax": 120,
+      "atk": 18,
+      "def": 3,
+      "spd": 4,
+      "critChance": 0.05,
+      "critMult": 1.5,
+      "res": 0.2
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_volcanic_ash",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 2
+        },
+        {
+          "itemId": "item_bone_fragment",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_fire_drake",
+    "name": "Fire Drake",
+    "tags": [
+      "dragon",
+      "fire"
+    ],
+    "levelMin": 32,
+    "levelMax": 36,
+    "baseStats": {
+      "hpMax": 200,
+      "atk": 25,
+      "def": 10,
+      "spd": 6,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.3
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_drake_scale",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_gold_ore",
+          "minQty": 2,
+          "maxQty": 4,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_obsidian_golem",
+    "name": "Obsidian Golem",
+    "rank": "boss",
+    "tags": [
+      "construct",
+      "earth",
+      "fire",
+      "boss"
+    ],
+    "levelMin": 35,
+    "levelMax": 35,
+    "phases": [
+      {
+        "name": "Enrage",
+        "triggerHpPct": 0.5,
+        "buffs": {
+          "atkMult": 1.5,
+          "spdMult": 1.2
+        }
+      }
+    ],
+    "baseStats": {
+      "hpMax": 500,
+      "atk": 30,
+      "def": 20,
+      "spd": 2,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_magma_core",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_obsidian",
+          "minQty": 5,
+          "maxQty": 10,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_crystal_spider",
+    "name": "Crystal Spider",
+    "tags": [
+      "beast",
+      "arcane"
+    ],
+    "levelMin": 38,
+    "levelMax": 42,
+    "baseStats": {
+      "hpMax": 150,
+      "atk": 25,
+      "def": 8,
+      "spd": 12,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.3
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_phase_silk",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 2
+        },
+        {
+          "itemId": "item_crystal_shard",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_mana_wisp",
+    "name": "Mana Wisp",
+    "tags": [
+      "elemental",
+      "arcane"
+    ],
+    "levelMin": 40,
+    "levelMax": 44,
+    "baseStats": {
+      "hpMax": 100,
+      "atk": 30,
+      "def": 2,
+      "spd": 15,
+      "critChance": 0.2,
+      "critMult": 2.0,
+      "res": 0.8
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_mana_wisp_dust",
+          "minQty": 2,
+          "maxQty": 4,
+          "weight": 2
+        },
+        {
+          "itemId": "item_crystal_shard",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_arcane_construct",
+    "name": "Arcane Construct",
+    "tags": [
+      "construct",
+      "arcane"
+    ],
+    "levelMin": 42,
+    "levelMax": 46,
+    "baseStats": {
+      "hpMax": 250,
+      "atk": 35,
+      "def": 25,
+      "spd": 4,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_luminite_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 2
+        },
+        {
+          "itemId": "item_crystal_shard",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_prismatic_guardian",
+    "name": "Prismatic Guardian",
+    "rank": "boss",
+    "tags": [
+      "construct",
+      "arcane",
+      "boss"
+    ],
+    "levelMin": 45,
+    "levelMax": 45,
+    "phases": [
+      {
+        "name": "Overload",
+        "triggerHpPct": 0.5,
+        "buffs": {
+          "atkMult": 2.0,
+          "spdMult": 1.5
+        }
+      }
+    ],
+    "baseStats": {
+      "hpMax": 800,
+      "atk": 40,
+      "def": 15,
+      "spd": 10,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.6
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_prismatic_core",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_luminite_ore",
+          "minQty": 5,
+          "maxQty": 10,
+          "weight": 1
+        }
+      ]
+    }
   }
 ]
