@@ -30,67 +30,78 @@
     "id": "item_copper_ingot",
     "name": "Copper Ingot",
     "stackable": true,
-    "value": 10
+    "value": 10,
+    "description": "Refined copper, ready for smithing."
   },
   {
     "id": "item_plank",
     "name": "Wooden Plank",
     "stackable": true,
-    "value": 2
+    "value": 2,
+    "description": "A smooth plank of wood."
   },
   {
     "id": "item_hardwood",
     "name": "Hardwood",
     "stackable": true,
-    "value": 5
+    "value": 5,
+    "description": "Dense and durable wood from the deep forest."
   },
   {
     "id": "item_iron_ore",
     "name": "Iron Ore",
     "stackable": true,
-    "value": 8
+    "value": 8,
+    "description": "Heavy ore containing iron."
   },
   {
     "id": "item_iron_ingot",
     "name": "Iron Ingot",
     "stackable": true,
-    "value": 25
+    "value": 25,
+    "description": "A bar of strong iron."
   },
   {
     "id": "item_strengthened_plank",
     "name": "Strengthened Plank",
     "stackable": true,
-    "value": 15
+    "value": 15,
+    "description": "Treated wood, harder than stone."
   },
   {
     "id": "item_silver_ore",
     "name": "Silver Ore",
     "stackable": true,
-    "value": 15
+    "value": 15,
+    "description": "Shiny ore with magical conductivity."
   },
   {
     "id": "item_silver_ingot",
     "name": "Silver Ingot",
     "stackable": true,
-    "value": 45
+    "value": 45,
+    "description": "A gleaming bar of pure silver."
   },
   {
     "id": "item_gold_ore",
     "name": "Gold Ore",
     "stackable": true,
-    "value": 30
+    "value": 30,
+    "description": "Precious ore that sparkles in the light."
   },
   {
     "id": "item_gold_ingot",
     "name": "Gold Ingot",
     "stackable": true,
-    "value": 90
+    "value": 90,
+    "description": "A heavy bar of solid gold. Valuable."
   },
   {
     "id": "item_frost_stone",
     "name": "Frost Stone",
     "stackable": true,
-    "value": 50
+    "value": 50,
+    "description": "A stone that is always cold to the touch."
   },
   {
     "id": "item_herb_green",
@@ -108,31 +119,36 @@
     "id": "item_herb_red",
     "name": "Red Herb",
     "stackable": true,
-    "value": 15
+    "value": 15,
+    "description": "A spicy herb used for strength potions."
   },
   {
     "id": "item_slime_gel",
     "name": "Slime Gel",
     "stackable": true,
-    "value": 2
+    "value": 2,
+    "description": "Sticky goo from a slime."
   },
   {
     "id": "item_bone_fragment",
     "name": "Bone Fragment",
     "stackable": true,
-    "value": 3
+    "value": 3,
+    "description": "A piece of old bone."
   },
   {
     "id": "item_ghostly_essence",
     "name": "Ghostly Essence",
     "stackable": true,
-    "value": 20
+    "value": 20,
+    "description": "Ectoplasm that fades in and out of sight."
   },
   {
     "id": "item_yeti_fur",
     "name": "Yeti Fur",
     "stackable": true,
-    "value": 40
+    "value": 40,
+    "description": "Thick, warm white fur."
   },
   {
     "id": "item_simple_potion",
@@ -162,55 +178,105 @@
     "id": "item_bronze_sword",
     "name": "Bronze Sword",
     "stackable": false,
-    "value": 50
+    "value": 50,
+    "type": "weapon",
+    "rarity": "common",
+    "description": "A solid beginner's weapon.",
+    "modifiers": {
+      "atk": 5
+    }
   },
   {
     "id": "item_iron_sword",
     "name": "Iron Sword",
     "stackable": false,
-    "value": 150
+    "value": 150,
+    "type": "weapon",
+    "rarity": "uncommon",
+    "description": "A reliable blade of forged iron.",
+    "modifiers": {
+      "atk": 10
+    }
   },
   {
     "id": "item_silver_sword",
     "name": "Silver Sword",
     "stackable": false,
-    "value": 400
+    "value": 400,
+    "type": "weapon",
+    "rarity": "rare",
+    "description": "Effective against monsters.",
+    "modifiers": {
+      "atk": 18
+    }
   },
   {
     "id": "item_gold_sword",
     "name": "Gold Sword",
     "stackable": false,
-    "value": 1000
+    "value": 1000,
+    "type": "weapon",
+    "rarity": "epic",
+    "description": "An ornate sword, sharp and heavy.",
+    "modifiers": {
+      "atk": 25
+    }
   },
   {
     "id": "item_leather_tunic",
     "name": "Leather Tunic",
     "stackable": false,
-    "value": 40
+    "value": 40,
+    "type": "armor",
+    "rarity": "common",
+    "description": "Basic protection for travel.",
+    "modifiers": {
+      "def": 2
+    }
   },
   {
     "id": "item_chainmail",
     "name": "Chainmail Armor",
     "stackable": false,
-    "value": 120
+    "value": 120,
+    "type": "armor",
+    "rarity": "uncommon",
+    "description": "Interlocking rings provide good defense.",
+    "modifiers": {
+      "def": 5,
+      "spd": -1
+    }
   },
   {
     "id": "item_plate_armor",
     "name": "Plate Armor",
     "stackable": false,
-    "value": 350
+    "value": 350,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "Full rigid metal armor.",
+    "modifiers": {
+      "def": 12,
+      "spd": -3
+    }
   },
   {
     "id": "item_bronze_pickaxe",
     "name": "Bronze Pickaxe",
     "stackable": false,
-    "value": 50
+    "value": 50,
+    "type": "tool",
+    "rarity": "common",
+    "description": "Better than using your hands."
   },
   {
     "id": "item_iron_pickaxe",
     "name": "Iron Pickaxe",
     "stackable": false,
-    "value": 150
+    "value": 150,
+    "type": "tool",
+    "rarity": "uncommon",
+    "description": "Strikes true against hard rock."
   },
   {
     "id": "item_obsidian",
@@ -352,6 +418,193 @@
     "modifiers": {
       "atk": 25,
       "critChance": 0.1
+    }
+  },
+  {
+    "id": "item_pearl",
+    "name": "Pearl",
+    "stackable": true,
+    "value": 30,
+    "type": "resource",
+    "rarity": "common",
+    "description": "A lustrous gem from the deep."
+  },
+  {
+    "id": "item_ancient_moss",
+    "name": "Ancient Moss",
+    "stackable": true,
+    "value": 10,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Bioluminescent moss from sunken ruins."
+  },
+  {
+    "id": "item_siren_scale",
+    "name": "Siren Scale",
+    "stackable": true,
+    "value": 25,
+    "type": "material",
+    "rarity": "uncommon",
+    "description": "Iridescent scale with magical properties."
+  },
+  {
+    "id": "item_coral_fragment",
+    "name": "Coral Fragment",
+    "stackable": true,
+    "value": 15,
+    "type": "material",
+    "rarity": "common",
+    "description": "Piece of hardened ancient coral."
+  },
+  {
+    "id": "item_brass_gear",
+    "name": "Brass Gear",
+    "stackable": true,
+    "value": 40,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Precision-machined part from a lost age."
+  },
+  {
+    "id": "item_steam_canister",
+    "name": "Steam Canister",
+    "stackable": true,
+    "value": 50,
+    "type": "resource",
+    "rarity": "uncommon",
+    "description": "Pressurized container of motive force."
+  },
+  {
+    "id": "item_automaton_core",
+    "name": "Automaton Core",
+    "stackable": true,
+    "value": 150,
+    "type": "material",
+    "rarity": "rare",
+    "description": "The sparking brain of a clockwork machine."
+  },
+  {
+    "id": "item_titanium_plate",
+    "name": "Titanium Plate",
+    "stackable": true,
+    "value": 200,
+    "type": "material",
+    "rarity": "rare",
+    "description": "Extremely durable and lightweight metal."
+  },
+  {
+    "id": "item_void_dust",
+    "name": "Void Dust",
+    "stackable": true,
+    "value": 60,
+    "type": "resource",
+    "rarity": "common",
+    "description": "Residue from the edge of reality."
+  },
+  {
+    "id": "item_ethereal_essence",
+    "name": "Ethereal Essence",
+    "stackable": true,
+    "value": 100,
+    "type": "resource",
+    "rarity": "uncommon",
+    "description": "Liquid starlight, cold to the touch."
+  },
+  {
+    "id": "item_dark_matter_orb",
+    "name": "Dark Matter Orb",
+    "stackable": true,
+    "value": 300,
+    "type": "material",
+    "rarity": "rare",
+    "description": "A sphere of concentrated gravity."
+  },
+  {
+    "id": "item_entropy_crystal",
+    "name": "Entropy Crystal",
+    "stackable": true,
+    "value": 500,
+    "type": "material",
+    "rarity": "epic",
+    "description": "Chaos frozen in crystalline form."
+  },
+  {
+    "id": "item_tidal_trident",
+    "name": "Tidal Trident",
+    "stackable": false,
+    "value": 2500,
+    "type": "weapon",
+    "rarity": "rare",
+    "description": "Weaves the power of the ocean.",
+    "modifiers": {
+      "atk": 30,
+      "spd": 2
+    }
+  },
+  {
+    "id": "item_tidal_armor",
+    "name": "Tidal Armor",
+    "stackable": false,
+    "value": 2800,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "Armor adorned with coral and pearls.",
+    "modifiers": {
+      "def": 18,
+      "res": 0.1
+    }
+  },
+  {
+    "id": "item_titanium_claymore",
+    "name": "Titanium Claymore",
+    "stackable": false,
+    "value": 4000,
+    "type": "weapon",
+    "rarity": "epic",
+    "description": "Massive yet surprisingly light blade.",
+    "modifiers": {
+      "atk": 45,
+      "critChance": 0.15
+    }
+  },
+  {
+    "id": "item_titanium_plate_body",
+    "name": "Titanium Platebody",
+    "stackable": false,
+    "value": 4500,
+    "type": "armor",
+    "rarity": "epic",
+    "description": "Technologically advanced protection.",
+    "modifiers": {
+      "def": 30,
+      "res": 0.05
+    }
+  },
+  {
+    "id": "item_void_blade",
+    "name": "Void Blade",
+    "stackable": false,
+    "value": 8000,
+    "type": "weapon",
+    "rarity": "legendary",
+    "description": "Cuts through the fabric of space.",
+    "modifiers": {
+      "atk": 60,
+      "critChance": 0.2,
+      "critMult": 2.0
+    }
+  },
+  {
+    "id": "item_void_shroud",
+    "name": "Void Shroud",
+    "stackable": false,
+    "value": 9000,
+    "type": "armor",
+    "rarity": "legendary",
+    "description": "Flowing robes made of nothingness.",
+    "modifiers": {
+      "def": 25,
+      "res": 0.5
     }
   }
 ]

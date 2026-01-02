@@ -44,6 +44,9 @@
   {
     "id": "loc_quarry",
     "name": "Old Quarry",
+    "requirements": {
+      "minLevel": 5
+    },
     "encounterTable": {
       "entries": [
         {
@@ -86,6 +89,9 @@
   {
     "id": "loc_swamp",
     "name": "Misty Swamp",
+    "requirements": {
+      "minLevel": 10
+    },
     "encounterTable": {
       "entries": [
         {
@@ -124,6 +130,9 @@
   {
     "id": "loc_catacombs",
     "name": "Forgotten Catacombs",
+    "requirements": {
+      "minLevel": 15
+    },
     "encounterTable": {
       "entries": [
         {
@@ -156,6 +165,9 @@
   {
     "id": "loc_peak",
     "name": "Jagged Peak",
+    "requirements": {
+      "minLevel": 20
+    },
     "encounterTable": {
       "entries": [
         {
@@ -301,6 +313,141 @@
           "minQty": 2,
           "maxQty": 4,
           "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_sunken",
+    "name": "Sunken Ruins",
+    "description": "Ancient flooded temples.",
+    "requirements": {
+      "minLevel": 40
+    },
+    "activities": [
+      "hunt",
+      "gather",
+      "explore"
+    ],
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_siren",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_coral_golem",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_kraken",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_pearl",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 6
+        },
+        {
+          "itemId": "item_ancient_moss",
+          "minQty": 3,
+          "maxQty": 8,
+          "weight": 8
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_clockwork",
+    "name": "Clockwork Enclave",
+    "description": "A city of gears and steam.",
+    "requirements": {
+      "minLevel": 50
+    },
+    "activities": [
+      "hunt",
+      "gather",
+      "explore"
+    ],
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_automaton",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_steam_drone",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_mechanus_prime",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_brass_gear",
+          "minQty": 2,
+          "maxQty": 6,
+          "weight": 8
+        },
+        {
+          "itemId": "item_steam_canister",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "loc_void",
+    "name": "Void Nexus",
+    "description": "The edge of reality.",
+    "requirements": {
+      "minLevel": 60
+    },
+    "activities": [
+      "hunt",
+      "gather",
+      "explore"
+    ],
+    "encounterTable": {
+      "entries": [
+        {
+          "enemyId": "enemy_voidling",
+          "weight": 5
+        },
+        {
+          "enemyId": "enemy_reality_shaper",
+          "weight": 4
+        },
+        {
+          "enemyId": "enemy_entropy_lord",
+          "weight": 1
+        }
+      ]
+    },
+    "resourceTable": {
+      "entries": [
+        {
+          "itemId": "item_void_dust",
+          "minQty": 3,
+          "maxQty": 6,
+          "weight": 8
+        },
+        {
+          "itemId": "item_ethereal_essence",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 5
         }
       ]
     }

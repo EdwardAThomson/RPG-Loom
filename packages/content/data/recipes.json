@@ -351,5 +351,143 @@
         "qty": 1
       }
     ]
+  },
+  {
+    "id": "recipe_tidal_armor",
+    "inputs": [
+      {
+        "itemId": "item_pearl",
+        "qty": 10
+      },
+      {
+        "itemId": "item_siren_scale",
+        "qty": 5
+      },
+      {
+        "itemId": "item_coral_fragment",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_tidal_armor",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_tidal_trident",
+    "inputs": [
+      {
+        "itemId": "item_pearl",
+        "qty": 5
+      },
+      {
+        "itemId": "item_siren_scale",
+        "qty": 8
+      },
+      {
+        "itemId": "item_gold_ingot",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_tidal_trident",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_titanium_platebody",
+    "inputs": [
+      {
+        "itemId": "item_titanium_plate",
+        "qty": 8
+      },
+      {
+        "itemId": "item_brass_gear",
+        "qty": 10
+      },
+      {
+        "itemId": "item_steam_canister",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_titanium_plate_body",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_titanium_claymore",
+    "inputs": [
+      {
+        "itemId": "item_titanium_plate",
+        "qty": 6
+      },
+      {
+        "itemId": "item_automaton_core",
+        "qty": 1
+      },
+      {
+        "itemId": "item_brass_gear",
+        "qty": 5
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_titanium_claymore",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_void_shroud",
+    "inputs": [
+      {
+        "itemId": "item_void_dust",
+        "qty": 20
+      },
+      {
+        "itemId": "item_ethereal_essence",
+        "qty": 10
+      },
+      {
+        "itemId": "item_entropy_crystal",
+        "qty": 1
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_void_shroud",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_void_blade",
+    "inputs": [
+      {
+        "itemId": "item_void_dust",
+        "qty": 15
+      },
+      {
+        "itemId": "item_dark_matter_orb",
+        "qty": 3
+      },
+      {
+        "itemId": "item_entropy_crystal",
+        "qty": 1
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_void_blade",
+        "qty": 1
+      }
+    ]
   }
 ]

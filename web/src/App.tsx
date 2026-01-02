@@ -7,6 +7,7 @@ import { Navigation, TabId } from './components/Navigation';
 import { ActivityView } from './components/ActivityView';
 import { InventoryView } from './components/InventoryView';
 import { CharacterView } from './components/CharacterView';
+import { CraftingView } from './components/CraftingView';
 import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
 import { SettingsModal } from './components/SettingsModal';
@@ -142,6 +143,7 @@ function AppContent() {
         <div className="tab-content" style={{ minHeight: 0, overflowY: 'auto' }}>
           {activeTab === 'activity' && <ActivityView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
+          {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} />}
           {activeTab === 'quests' && <QuestView state={state} />}
           {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}
