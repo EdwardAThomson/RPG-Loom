@@ -5,6 +5,7 @@ import './index.css';
 // Components
 import { Navigation, TabId } from './components/Navigation';
 import { ActivityView } from './components/ActivityView';
+import { TravelView } from './components/TravelView';
 import { InventoryView } from './components/InventoryView';
 import { CharacterView } from './components/CharacterView';
 import { CraftingView } from './components/CraftingView';
@@ -53,32 +54,48 @@ function AppContent() {
   // XP Rate (Last 60s)
   const [xpRate, setXpRate] = useState(0);
   const xpHistory = useRef<{ t: number, xp: number }[]>([]);
-
   const currentXp = state?.player?.xp;
+  const lastXpRef = useRef(currentXp);
+
+  // Keep ref updated for interval closure
+  useEffect(() => {
+    lastXpRef.current = currentXp;
+  }, [currentXp]);
 
   useEffect(() => {
-    if (typeof currentXp === 'undefined') return;
+    const timer = setInterval(() => {
+      const xp = lastXpRef.current;
+      if (typeof xp === 'undefined') return;
 
-    const now = Date.now();
-    // Add current snapshot
-    xpHistory.current.push({ t: now, xp: currentXp });
+      const now = Date.now();
+      // Always push current state to maintain time window
+      xpHistory.current.push({ t: now, xp });
 
-    // Remove old entries (> 60s)
-    const windowStart = now - 60000;
-    while (xpHistory.current.length > 0 && xpHistory.current[0].t < windowStart) {
-      xpHistory.current.shift();
-    }
-
-    if (xpHistory.current.length > 1) {
-      const start = xpHistory.current[0];
-      const end = xpHistory.current[xpHistory.current.length - 1];
-      const diffXp = end.xp - start.xp;
-      const diffTime = (end.t - start.t) / 3600000; // hours
-      if (diffTime > 0) {
-        setXpRate(Math.round(diffXp / diffTime));
+      // Remove old entries (> 60s)
+      const windowStart = now - 60000;
+      while (xpHistory.current.length > 0 && xpHistory.current[0].t < windowStart) {
+        xpHistory.current.shift();
       }
-    }
-  }, [currentXp]);
+
+      if (xpHistory.current.length > 1) {
+        const start = xpHistory.current[0];
+        const end = xpHistory.current[xpHistory.current.length - 1];
+        const diffXp = end.xp - start.xp;
+
+        // Prevent div by zero or tiny windows causing massive spikes
+        const diffTimeMs = end.t - start.t;
+
+        if (diffTimeMs > 2000) { // Require at least 2s of history for stability
+          const diffTimeHours = diffTimeMs / 3600000;
+          setXpRate(Math.round(diffXp / diffTimeHours));
+        } else if (diffXp === 0) {
+          setXpRate(0);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   if (!state) return <div className="container">Loading Realm...</div>;
 
@@ -142,6 +159,7 @@ function AppContent() {
       <main className="tab-layout">
         <div className="tab-content" style={{ minHeight: 0, overflowY: 'auto' }}>
           {activeTab === 'activity' && <ActivityView state={state} dispatch={dispatch} content={content} />}
+          {activeTab === 'travel' && <TravelView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} />}

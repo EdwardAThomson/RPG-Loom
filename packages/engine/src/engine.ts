@@ -77,6 +77,7 @@ export function createNewState(params: {
       gold: 0,
       tactics: 'balanced',
       baseStats: {
+        hp: 25,
         hpMax: 25,
         atk: 5,
         def: 3,
@@ -210,6 +211,76 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       };
       break;
     }
+    case 'TRAVEL': {
+      if (!content || !content.locationsById[cmd.locationId]) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'LOCATION_MISSING', message: `Unknown location ${cmd.locationId}` }));
+        break;
+      }
+
+      const loc = content.locationsById[cmd.locationId];
+      // Check requirements
+      if (loc.requirements?.minLevel && next.player.level < loc.requirements.minLevel) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Level ${loc.requirements.minLevel} required.` }));
+        break;
+      }
+
+      next.currentLocationId = cmd.locationId;
+      // Stop current activity and idle at new location
+      next.activity = {
+        id: `act_idle_${next.tickIndex}`,
+        params: { type: 'idle' },
+        startedAtMs: cmd.atMs
+      };
+      delete next.activeEncounter;
+
+      events.push(ev(next, cmd.atMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
+      break;
+    }
+    case 'BUY_ITEM': {
+      if (!content) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
+        break;
+      }
+      const item = content.itemsById[cmd.itemId];
+      if (!item) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_MISSING', message: `Unknown item ${cmd.itemId}` }));
+        break;
+      }
+      const cost = item.value * cmd.qty;
+      if (next.player.gold < cost) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INSUFFICIENT_GOLD', message: `Need ${cost} gold` }));
+        break;
+      }
+
+      next.player.gold -= cost;
+      addItem(next.inventory, cmd.itemId, cmd.qty);
+      events.push(ev(next, cmd.atMs, 'GOLD_CHANGED', { amount: -cost, newTotal: next.player.gold }));
+      events.push(ev(next, cmd.atMs, 'LOOT_GAINED', { items: [{ itemId: cmd.itemId, qty: cmd.qty }] }));
+      break;
+    }
+    case 'SELL_ITEM': {
+      if (!content) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
+        break;
+      }
+      const item = content.itemsById[cmd.itemId];
+      if (!item) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_MISSING', message: `Unknown item ${cmd.itemId}` }));
+        break;
+      }
+      if (!hasItem(next.inventory, cmd.itemId, cmd.qty)) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_NOT_OWNED', message: `Not enough ${item.name}` }));
+        break;
+      }
+
+      // Sell for 50% value
+      const val = Math.floor(item.value * 0.5) * cmd.qty;
+      removeItem(next.inventory, cmd.itemId, cmd.qty);
+      next.player.gold += val;
+      events.push(ev(next, cmd.atMs, 'ITEM_CONSUMED', { itemId: cmd.itemId }));
+      events.push(ev(next, cmd.atMs, 'GOLD_CHANGED', { amount: val, newTotal: next.player.gold }));
+      break;
+    }
   }
 
   next.updatedAtMs = cmd.atMs;
@@ -259,6 +330,61 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   next.updatedAtMs = tickAtMs;
 
   const a = next.activity.params;
+
+  // Regen Logic
+  const maxHp = next.player.baseStats.hpMax;
+  if (next.player.baseStats.hp < maxHp) {
+    const isRecovery = a.type === 'recovery';
+    // 10% per tick if recovering, 1% if idle/other (slow base regen)
+    const regenPct = isRecovery ? 0.10 : 0.01;
+    const amount = Math.max(1, Math.floor(maxHp * regenPct));
+
+    const oldHp = next.player.baseStats.hp;
+    next.player.baseStats.hp = Math.min(maxHp, next.player.baseStats.hp + amount);
+
+    // Optional: Event for healing? Might be spammy.
+    // if (isRecovery) events.push(ev(next, tickAtMs, 'HEAL', { amount }));
+  }
+
+  // Regen Logic
+  // Base regen: 1% max HP per 5 ticks (too slow?) -> Let's do 1% per tick for now to test, or 0.5%.
+  // Recovery activity: 10% max HP per tick.
+  const isRecovery = a.type === 'recovery';
+  const regenPct = isRecovery ? 0.10 : 0.005; // 10% vs 0.5%
+
+  // Only regen if injured
+  // Calculate max HP (simplified, ideally we sum equipment stats here or cache it)
+  // For MVP, using baseStats.hpMax. (Equipment modifiers not fully integrated in maxHp calc yet?)
+  // Let's assume player.baseStats.hpMax IS the total for now, or we need a helper.
+  // We haven't implemented robust stat recalculation on equip yet.
+  // const maxHp = next.player.baseStats.hpMax;
+  if (next.player.baseStats.hp < maxHp) { // Wait, player health is where? 
+    // Checking createNewState... baseStats has hpMax. But where is current HP?
+    // Ah, createNewState only has baseStats defined as:
+    /*
+      hpMax: 25,
+      atk: 5...
+    */
+    // It seems I missed where current `hp` is stored. 
+    // Looking at ACTIVE ENCOUNTER, enemyHp is there.
+    // But player HP?
+    // type CombatStats has hpMax.
+    // Let's check shared/types.ts again.
+    // PlayerState has baseStats: CombatStats.
+    // CombatStats has hpMax.
+    // It does NOT have 'hp'.
+    // This is a bug in my previous understanding or the schema.
+    // Let's look at how damage is handled in resolveEncounterTick.
+    // "Player attacks... next.activeEncounter.enemyHp -= dmg".
+    // "Enemy Attack Simulation... " it says "visual/flavor for now".
+    // OH. Player HP isn't tracked yet?!
+    // "Encounters" in this MVP seem to be one-sided or "safe"?
+    // "Enemy Attack Simulation (visual/flavor for now...)"
+
+    // I need to ADD player HP to the state if I want Recovery to mean anything.
+    // Okay, I'll add `hp` to PlayerState or use `baseStats` if I modify the type.
+    // Let's modify CombatStats to include `hp` (current hp).
+  }
 
   // minimal deterministic per-tick outputs
   if (a.type === 'idle') return { state: next, events };

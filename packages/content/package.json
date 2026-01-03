@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "watch": "tsc --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
     "lint": "echo \"(content) lint: n/a\"",
     "test": "echo \"(content) test: n/a\""

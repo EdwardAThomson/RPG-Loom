@@ -1,6 +1,7 @@
 import { EngineState, PlayerCommand } from '@rpg-loom/shared';
 import { TacticsSelector } from './TacticsSelector';
-import { useState, useEffect } from 'react';
+import { useRef } from 'react';
+import { MarketView } from './MarketView';
 
 // We need a way to know location names, assuming content is passed or we map it.
 // Since we are creating a generic engine, ideally we use the content index.
@@ -17,21 +18,8 @@ interface Props {
 export function ActivityView({ state, dispatch, content }: Props) {
     const { activity, player } = state;
 
-    // Default to current location or forest
-    const [selectedLocationId, setSelectedLocationId] = useState<string>(state.currentLocationId || 'loc_forest');
-
-    // Sync selection if player moves (e.g. from save load) - optional but nice
-    // But we might want to let them browse while staying put.
-    // Let's just default on mount.
-
-    const locations = content?.locationsById ? Object.values(content.locationsById) : [];
-
-    // Filter locations by level requirement? Helper to check reqs.
-    const availableLocations = (locations as any[]).filter(loc => {
-        // Show if level >= req
-        if (!loc.requirements) return true;
-        return player.level >= (loc.requirements.minLevel || 0);
-    });
+    const currentLocName = content?.locationsById?.[state.currentLocationId]?.name || state.currentLocationId;
+    const isTown = content?.locationsById?.[state.currentLocationId]?.type === 'town';
 
     return (
         <section className="card">
@@ -79,65 +67,88 @@ export function ActivityView({ state, dispatch, content }: Props) {
             </section>
 
             <div className="actions">
-                <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Travel & Action</div>
-
-                {/* Location Selector */}
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ marginRight: '0.5rem', color: '#ccc' }}>Region:</label>
-                    <select
-                        value={selectedLocationId}
-                        onChange={(e) => setSelectedLocationId(e.target.value)}
-                        style={{ padding: '0.5rem', width: '100%', maxWidth: '300px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
-                    >
-                        {availableLocations.map(loc => (
-                            <option key={loc.id} value={loc.id}>
-                                {loc.name} {loc.requirements?.minLevel > 1 ? `(Lvl ${loc.requirements.minLevel})` : ''}
-                            </option>
-                        ))}
-                    </select>
+                <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                    Actions in {currentLocName}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    {/* Gather */}
-                    <button
-                        style={activity.params.type === 'gather' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)', flex: 1 } : { flex: 1 }}
-                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'gather', locationId: selectedLocationId }, atMs: Date.now() })}
-                    >
-                        Gather Here
-                    </button>
+                    {isTown ? (
+                        <>
+                            {/* Inn / Recovery */}
+                            <button
+                                style={activity.params.type === 'recovery' ? { borderColor: '#4caf50', background: 'rgba(76, 175, 80, 0.1)', flex: 1 } : { flex: 1 }}
+                                onClick={() => dispatch({
+                                    type: 'SET_ACTIVITY',
+                                    params: { type: 'recovery', durationMs: 10000 }, // 10s rest block
+                                    atMs: Date.now()
+                                })}
+                            >
+                                Rest at Inn (Heal)
+                            </button>
 
-                    {/* Hunt */}
-                    <button
-                        style={activity.params.type === 'hunt' ? { borderColor: 'var(--color-crimson)', background: 'rgba(166, 28, 28, 0.1)', flex: 1 } : { flex: 1 }}
-                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: selectedLocationId }, atMs: Date.now() })}
-                    >
-                        Hunt Here
-                    </button>
+                            {/* Market - Toggle View? Actually simplest is to set activity to 'trade' and render MarketView INSTEAD of this buttons list?
+                               Or ActivityView just switches mode?
+                               Let's make "Trade" an activity state that RENDERS the market.
+                            */}
+                            <button
+                                style={activity.params.type === 'trade' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)', flex: 1 } : { flex: 1 }}
+                                onClick={() => dispatch({
+                                    type: 'SET_ACTIVITY',
+                                    params: { type: 'trade', locationId: state.currentLocationId },
+                                    atMs: Date.now()
+                                })}
+                            >
+                                Visit Market
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {/* Wild Actions */}
+                            {/* Gather */}
+                            <button
+                                style={activity.params.type === 'gather' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)', flex: 1 } : { flex: 1 }}
+                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'gather', locationId: state.currentLocationId }, atMs: Date.now() })}
+                            >
+                                Gather Here
+                            </button>
+
+                            {/* Hunt */}
+                            <button
+                                style={activity.params.type === 'hunt' ? { borderColor: 'var(--color-crimson)', background: 'rgba(166, 28, 28, 0.1)', flex: 1 } : { flex: 1 }}
+                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: state.currentLocationId }, atMs: Date.now() })}
+                            >
+                                Hunt Here
+                            </button>
+                        </>
+                    )}
                 </div>
-
-                <div className="divider" style={{ width: '100%', height: '1px', background: '#333', margin: '1rem 0' }}></div>
-
-                {/* Train */}
-                <button
-                    disabled={player.gold < 1}
-                    style={{
-                        ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                        ...(activity.params.type === 'train' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                    }}
-                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}
-                >
-                    Train Sword (1 Gold)
-                </button>
-
-                {/* Stop */}
-                <button
-                    className="primary"
-                    style={activity.params.type === 'idle' ? { opacity: 0.5 } : {}}
-                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'idle' }, atMs: Date.now() })}
-                >
-                    Return to Town (Idle)
-                </button>
             </div>
+
+            {activity.params.type === 'trade' && <MarketView state={state} dispatch={dispatch} content={content} />}
+
+
+            <div className="divider" style={{ width: '100%', height: '1px', background: '#333', margin: '1rem 0' }}></div>
+
+            {/* Train */}
+            <button
+                disabled={player.gold < 1}
+                style={{
+                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                    ...(activity.params.type === 'train' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
+                }}
+                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}
+            >
+                Train Sword (1 Gold)
+            </button>
+
+            {/* Stop */}
+            <button
+                className="primary"
+                style={activity.params.type === 'idle' ? { opacity: 0.5 } : {}}
+                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'idle' }, atMs: Date.now() })}
+            >
+                Return to Town (Idle)
+            </button>
         </section>
     );
 }

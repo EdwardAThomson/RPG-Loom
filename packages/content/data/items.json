@@ -236,12 +236,12 @@
   },
   {
     "id": "item_chainmail",
-    "name": "Chainmail Armor",
+    "name": "Iron Chainmail",
     "stackable": false,
     "value": 120,
     "type": "armor",
     "rarity": "uncommon",
-    "description": "Interlocking rings provide good defense.",
+    "description": "Interlocking iron rings provide good defense.",
     "modifiers": {
       "def": 5,
       "spd": -1
@@ -249,15 +249,60 @@
   },
   {
     "id": "item_plate_armor",
-    "name": "Plate Armor",
+    "name": "Iron Plate Armor",
     "stackable": false,
     "value": 350,
     "type": "armor",
     "rarity": "rare",
-    "description": "Full rigid metal armor.",
+    "description": "Full rigid iron armor.",
     "modifiers": {
       "def": 12,
       "spd": -3
+    }
+  },
+  {
+    "id": "item_bronze_armor",
+    "name": "Bronze Armor",
+    "stackable": false,
+    "value": 80,
+    "type": "armor",
+    "rarity": "common",
+    "description": "Heavy bronze plates.",
+    "modifiers": {
+      "def": 4,
+      "spd": -1
+    }
+  },
+  {
+    "id": "item_steel_ingot",
+    "name": "Steel Ingot",
+    "stackable": true,
+    "value": 40,
+    "description": "Refined alloy, stronger than iron."
+  },
+  {
+    "id": "item_steel_sword",
+    "name": "Steel Sword",
+    "stackable": false,
+    "value": 250,
+    "type": "weapon",
+    "rarity": "uncommon",
+    "description": "A finely crafted steel blade.",
+    "modifiers": {
+      "atk": 14
+    }
+  },
+  {
+    "id": "item_steel_armor",
+    "name": "Steel Plate",
+    "stackable": false,
+    "value": 500,
+    "type": "armor",
+    "rarity": "rare",
+    "description": "Polished steel armor, superior protection.",
+    "modifiers": {
+      "def": 16,
+      "spd": -2
     }
   },
   {
@@ -493,13 +538,13 @@
     "description": "Extremely durable and lightweight metal."
   },
   {
-    "id": "item_void_dust",
-    "name": "Void Dust",
+    "id": "item_darksteel_ore",
+    "name": "Darksteel Ore",
     "stackable": true,
     "value": 60,
     "type": "resource",
-    "rarity": "common",
-    "description": "Residue from the edge of reality."
+    "rarity": "rare",
+    "description": "A dark, heavy metal found deep underground."
   },
   {
     "id": "item_ethereal_essence",
@@ -581,30 +626,30 @@
     }
   },
   {
-    "id": "item_void_blade",
-    "name": "Void Blade",
+    "id": "item_darksteel_greatsword",
+    "name": "Darksteel Greatsword",
     "stackable": false,
     "value": 8000,
     "type": "weapon",
-    "rarity": "legendary",
-    "description": "Cuts through the fabric of space.",
+    "rarity": "epic",
+    "description": "A massive blade forged from darksteel.",
     "modifiers": {
-      "atk": 60,
+      "atk": 50,
       "critChance": 0.2,
       "critMult": 2.0
     }
   },
   {
-    "id": "item_void_shroud",
-    "name": "Void Shroud",
+    "id": "item_darksteel_plate",
+    "name": "Darksteel Plate",
     "stackable": false,
     "value": 9000,
     "type": "armor",
-    "rarity": "legendary",
-    "description": "Flowing robes made of nothingness.",
+    "rarity": "epic",
+    "description": "Impenetrable dark metal armor.",
     "modifiers": {
-      "def": 25,
-      "res": 0.5
+      "def": 35,
+      "res": 0.2
     }
   }
 ]

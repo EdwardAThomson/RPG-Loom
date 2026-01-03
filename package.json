@@ -16,7 +16,7 @@
     "typecheck": "npm -ws run typecheck",
     "lint": "npm -ws run lint",
     "test": "npm -ws run test",
-    "dev": "npm --workspace web run dev",
+    "dev": "npx -y concurrently \"npm --workspace @rpg-loom/content run watch\" \"npm --workspace web run dev\"",
     "dev:web": "npm --workspace web run dev",
     "dev:gateway": "npm --workspace gateway run dev"
   }

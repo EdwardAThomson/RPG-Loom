@@ -64,6 +64,21 @@
     ]
   },
   {
+    "id": "recipe_steel_ingot",
+    "inputs": [
+      {
+        "itemId": "item_iron_ingot",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_steel_ingot",
+        "qty": 1
+      }
+    ]
+  },
+  {
     "id": "recipe_silver_ingot",
     "inputs": [
       {
@@ -230,6 +245,63 @@
     "outputs": [
       {
         "itemId": "item_plate_armor",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_bronze_armor",
+    "inputs": [
+      {
+        "itemId": "item_copper_ingot",
+        "qty": 8
+      },
+      {
+        "itemId": "item_plank",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_bronze_armor",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_steel_sword",
+    "inputs": [
+      {
+        "itemId": "item_steel_ingot",
+        "qty": 4
+      },
+      {
+        "itemId": "item_hardwood",
+        "qty": 2
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_steel_sword",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "recipe_steel_armor",
+    "inputs": [
+      {
+        "itemId": "item_steel_ingot",
+        "qty": 12
+      },
+      {
+        "itemId": "item_hardwood",
+        "qty": 4
+      }
+    ],
+    "outputs": [
+      {
+        "itemId": "item_steel_armor",
         "qty": 1
       }
     ]
@@ -445,10 +517,10 @@
     ]
   },
   {
-    "id": "recipe_void_shroud",
+    "id": "recipe_darksteel_plate",
     "inputs": [
       {
-        "itemId": "item_void_dust",
+        "itemId": "item_darksteel_ore",
         "qty": 20
       },
       {
@@ -462,16 +534,16 @@
     ],
     "outputs": [
       {
-        "itemId": "item_void_shroud",
+        "itemId": "item_darksteel_plate",
         "qty": 1
       }
     ]
   },
   {
-    "id": "recipe_void_blade",
+    "id": "recipe_darksteel_greatsword",
     "inputs": [
       {
-        "itemId": "item_void_dust",
+        "itemId": "item_darksteel_ore",
         "qty": 15
       },
       {
@@ -485,7 +557,7 @@
     ],
     "outputs": [
       {
-        "itemId": "item_void_blade",
+        "itemId": "item_darksteel_greatsword",
         "qty": 1
       }
     ]

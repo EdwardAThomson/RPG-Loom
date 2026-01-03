@@ -597,5 +597,116 @@
         }
       ]
     }
+  },
+  {
+    "id": "enemy_dark_miner",
+    "name": "Darkiron Miner",
+    "tags": [
+      "humanoid",
+      "earth"
+    ],
+    "levelMin": 58,
+    "levelMax": 62,
+    "baseStats": {
+      "hpMax": 300,
+      "atk": 45,
+      "def": 25,
+      "spd": 6,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.4
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_darksteel_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_dark_sorcerer",
+    "name": "Dark Sorcerer",
+    "tags": [
+      "humanoid",
+      "arcane"
+    ],
+    "levelMin": 60,
+    "levelMax": 64,
+    "baseStats": {
+      "hpMax": 250,
+      "atk": 60,
+      "def": 10,
+      "spd": 8,
+      "critChance": 0.2,
+      "critMult": 2.0,
+      "res": 0.7
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_ethereal_essence",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        },
+        {
+          "itemId": "item_dark_matter_orb",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_darksteel_golem",
+    "name": "Darksteel Golem",
+    "rank": "boss",
+    "tags": [
+      "construct",
+      "earth",
+      "boss"
+    ],
+    "levelMin": 65,
+    "levelMax": 65,
+    "phases": [
+      {
+        "name": "Hardening",
+        "triggerHpPct": 0.5,
+        "buffs": {
+          "atkMult": 1.2,
+          "spdMult": 0.8
+        }
+      }
+    ],
+    "baseStats": {
+      "hpMax": 1500,
+      "atk": 80,
+      "def": 50,
+      "spd": 3,
+      "critChance": 0.05,
+      "critMult": 1.5,
+      "res": 0.8
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_darksteel_ore",
+          "minQty": 5,
+          "maxQty": 10,
+          "weight": 1
+        },
+        {
+          "itemId": "item_entropy_crystal",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        }
+      ]
+    }
   }
 ]

@@ -58,6 +58,7 @@ export interface ItemDef {
   type: ItemType;
   rarity: Rarity;
   tags: string[];
+  description: string;
   stackable: boolean;
   value: number; // gold
   // Gameplay effects are deterministic and interpreted by engine
@@ -92,6 +93,7 @@ export interface EnemyDef {
 export interface LocationDef {
   id: LocationId;
   name: string;
+  type?: 'town' | 'wild';
   description: string;
   requirements?: {
     minLevel?: number;
@@ -137,6 +139,7 @@ export interface RecipeDef {
 
 // ---- Engine state models ----
 export interface CombatStats {
+  hp: number; // Current HP
   hpMax: number;
   atk: number;
   def: number;
@@ -294,6 +297,23 @@ export type PlayerCommand =
   | {
     type: 'SET_TACTICS';
     tactics: TacticsPreset;
+    atMs: number;
+  }
+  | {
+    type: 'TRAVEL';
+    locationId: LocationId;
+    atMs: number;
+  }
+  | {
+    type: 'BUY_ITEM';
+    itemId: ItemId;
+    qty: number;
+    atMs: number;
+  }
+  | {
+    type: 'SELL_ITEM';
+    itemId: ItemId;
+    qty: number;
     atMs: number;
   };
 

@@ -83,7 +83,7 @@ export function useGameEngine() {
 
     const dispatch = (cmd: PlayerCommand) => {
         if (!stateRef.current) return;
-        const res = applyCommand(stateRef.current, cmd);
+        const res = applyCommand(stateRef.current, cmd, content as any);
         stateRef.current = res.state;
         saveState(res.state); // Save on interaction too
         setUiState(stateRef.current);

@@ -1,5 +1,21 @@
 [
   {
+    "id": "loc_haven",
+    "name": "Haven's Cross",
+    "type": "town",
+    "description": "A bustling trading post at the crossroads.",
+    "activities": [
+      "recovery",
+      "trade"
+    ],
+    "encounterTable": {
+      "entries": []
+    },
+    "resourceTable": {
+      "entries": []
+    }
+  },
+  {
     "id": "loc_forest",
     "name": "Whispering Forest",
     "encounterTable": {
@@ -408,9 +424,9 @@
     }
   },
   {
-    "id": "loc_void",
-    "name": "Void Nexus",
-    "description": "The edge of reality.",
+    "id": "loc_deep_mines",
+    "name": "Darkiron Depths",
+    "description": "Deep subterranean tunnels rich in dark minerals.",
     "requirements": {
       "minLevel": 60
     },
@@ -422,15 +438,15 @@
     "encounterTable": {
       "entries": [
         {
-          "enemyId": "enemy_voidling",
+          "enemyId": "enemy_dark_miner",
           "weight": 5
         },
         {
-          "enemyId": "enemy_reality_shaper",
+          "enemyId": "enemy_dark_sorcerer",
           "weight": 4
         },
         {
-          "enemyId": "enemy_entropy_lord",
+          "enemyId": "enemy_darksteel_golem",
           "weight": 1
         }
       ]
@@ -438,7 +454,7 @@
     "resourceTable": {
       "entries": [
         {
-          "itemId": "item_void_dust",
+          "itemId": "item_darksteel_ore",
           "minQty": 3,
           "maxQty": 6,
           "weight": 8

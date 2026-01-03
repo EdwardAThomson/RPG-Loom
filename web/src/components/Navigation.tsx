@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabId = 'activity' | 'inventory' | 'crafting' | 'character' | 'quests' | 'settings';
+export type TabId = 'activity' | 'travel' | 'inventory' | 'crafting' | 'character' | 'quests' | 'settings';
 
 interface Props {
     activeTab: TabId;
@@ -10,6 +10,7 @@ interface Props {
 export function Navigation({ activeTab, onTabChange }: Props) {
     const tabs: { id: TabId; label: string }[] = [
         { id: 'activity', label: 'Activity' },
+        { id: 'travel', label: 'Travel' },
         { id: 'inventory', label: 'Inventory' },
         { id: 'crafting', label: 'Crafting' },
         { id: 'character', label: 'Character' },
