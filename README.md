@@ -4,12 +4,13 @@ A deterministic, text-first **idle RPG** with an optional **AI narrative layer**
 
 The core game runs fully **without AI**. When enabled, AI adds quest flavor, NPC dialogue, rumors, and journal entries — but **never changes outcomes**.
 
-## 🚧 Current Status: Milestone C (Completed) 🚧
+## 🚧 Current Status: Milestone D (Completed) 🚧
 
-**The Core Loop and UI are fully functional.**
+**The Core Loop, UI, and Content Baseline are complete.**
 *   **Web Client**: Robust React-based UI with Tabbed Navigation (Activity, Inventory, Character, Quests).
-*   **Combat**: Multi-tick deterministic combat (1 round/sec) with real-time **Tactics Switching**.
-*   **Progression**: xp/gold tracking, item equipment, and consumable usage.
+*   **Combat**: Multi-tick deterministic combat with real-time **Tactics Switching** and specialized enemy phases.
+*   **Expanded Content**: Full material progression (Bronze → Iron → Steel → Darksteel), tiered locations, and craftable sets.
+*   **Progression**: Balanced xp/gold curves, reputation tracking, and meaningful equipment upgrades.
 *   **Persistence**: Auto-save to LocalStorage with manual Import/Export (Base64) for backup.
 *   **Debug Tools**: Built-in speed control (Fast Forward) for testing.
 

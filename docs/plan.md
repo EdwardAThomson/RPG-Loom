@@ -86,20 +86,19 @@
 
 ---
 
-## Milestone D — Content Expansion + Balance Pass
+## Milestone D — Content Expansion + Balance Pass [COMPLETED]
 
 **Goal:** Make the game “idle-sticky” (build depth, long-term goals).
 
 Deliverables:
 
-* More locations, rare drops, recipe tiers, reputation gates
-* Bosses with deterministic phases
-* Deeper equipment variety (tags, synergies)
-* Balance metrics:
-
-  * time-to-upgrade curves
-  * expected gains per location tier
-  * death rates by tier (shouldn’t be random-feels-bad)
+* [x] More locations, rare drops, recipe tiers, reputation gates
+* [x] Bosses with deterministic phases
+* [x] Deeper equipment variety (tags, synergies)
+* [x] Balance metrics:
+  * [x] time-to-upgrade curves
+  * [x] expected gains per location tier
+  * [x] death rates by tier (shouldn’t be random-feels-bad)
 
 Acceptance criteria:
 
