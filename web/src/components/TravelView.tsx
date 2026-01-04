@@ -53,7 +53,7 @@ export function TravelView({ state, dispatch, content }: Props) {
                                         Rec. Level: {minLevel}
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>
-                                        Resources: {getDropNames(loc.resourceTable, content)} | Hazards: {getEnemyNames(loc.encounterTable, content)}
+                                        Resources: {getDropNames(loc.miningTable || loc.woodcuttingTable || loc.foragingTable, content)} | Hazards: {getEnemyNames(loc.encounterTable, content)}
                                     </div>
                                 </div>
 

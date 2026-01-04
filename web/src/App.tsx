@@ -11,6 +11,7 @@ import { CharacterView } from './components/CharacterView';
 import { CraftingView } from './components/CraftingView';
 import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
+import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
 import React from 'react';
 
@@ -164,6 +165,7 @@ function AppContent() {
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} />}
           {activeTab === 'quests' && <QuestView state={state} />}
+          {activeTab === 'debug' && <DebugView state={state} content={content} dispatch={dispatch} />}
           {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}
         </div>
 

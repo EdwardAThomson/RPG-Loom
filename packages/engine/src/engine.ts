@@ -13,6 +13,7 @@ import type {
   ItemDef,
   LocationDef,
   RecipeDef,
+  ContentIndex,
   SkillId
 } from '@rpg-loom/shared';
 
@@ -33,13 +34,9 @@ export type {
 import { hashFloat, hashInt } from './rng.js';
 
 // ---- Content Index (data pack) ----
-export interface ContentIndex {
-  itemsById: Record<string, ItemDef>;
-  enemiesById: Record<string, EnemyDef>;
-  locationsById: Record<string, LocationDef>;
-  questTemplatesById: Record<string, QuestTemplateDef>;
-  recipesById: Record<string, RecipeDef>;
-}
+// ---- Content Index (data pack) ----
+// Imported from @rpg-loom/shared
+
 
 export interface EngineConfig {
   tickMs: number; // simulation tick duration
@@ -88,13 +85,16 @@ export function createNewState(params: {
       },
       skills: {
         swordsmanship: { id: 'swordsmanship', level: 1, xp: 0 },
-        archery: { id: 'archery', level: 1, xp: 0 },
+        marksmanship: { id: 'marksmanship', level: 1, xp: 0 },
         arcana: { id: 'arcana', level: 1, xp: 0 },
         defense: { id: 'defense', level: 1, xp: 0 },
-        survival: { id: 'survival', level: 1, xp: 0 },
-        gathering: { id: 'gathering', level: 1, xp: 0 },
-        crafting: { id: 'crafting', level: 1, xp: 0 },
-        diplomacy: { id: 'diplomacy', level: 1, xp: 0 }
+        mining: { id: 'mining', level: 1, xp: 0 },
+        woodcutting: { id: 'woodcutting', level: 1, xp: 0 },
+        foraging: { id: 'foraging', level: 1, xp: 0 },
+        blacksmithing: { id: 'blacksmithing', level: 1, xp: 0 },
+        woodworking: { id: 'woodworking', level: 1, xp: 0 },
+        leatherworking: { id: 'leatherworking', level: 1, xp: 0 },
+        tailoring: { id: 'tailoring', level: 1, xp: 0 },
       },
       reputation: {},
       flags: {}
@@ -369,9 +369,6 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // Looking at ACTIVE ENCOUNTER, enemyHp is there.
     // But player HP?
     // type CombatStats has hpMax.
-    // Let's check shared/types.ts again.
-    // PlayerState has baseStats: CombatStats.
-    // CombatStats has hpMax.
     // It does NOT have 'hp'.
     // This is a bug in my previous understanding or the schema.
     // Let's look at how damage is handled in resolveEncounterTick.
@@ -424,9 +421,106 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     gainXp(next, 1, events, tickAtMs);
     return { state: next, events };
   }
+  if (a.type === 'woodcut') {
+    // Debug logs removed
 
-  if (a.type === 'gather' || a.type === 'explore' || a.type === 'trade') {
-    // MVP: gather gives 1 random resource from location resourceTable
+    if (!content) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+      return { state: next, events };
+    }
+    const loc = content.locationsById[a.locationId];
+    if (!loc) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
+      return { state: next, events };
+    }
+    if (!loc.woodcuttingTable) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no trees here.` }));
+    } else {
+      const loot = rollLoot(loc.woodcuttingTable, `wc:${next.saveId}:${next.tickIndex}`);
+      if (loot.length) {
+        // Emit Flavor FIRST so Loot and XP can merge on the next line
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop some wood.` }));
+
+        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+
+        // XP
+        gainSkillXp(next, 'woodcutting', 1);
+        gainXp(next, 1, events, tickAtMs);
+      } else {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop, but get no good wood.` }));
+      }
+    }
+    return { state: next, events };
+  }
+
+  if (a.type === 'mine') {
+    // Debug logs removed
+
+    if (!content) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+      return { state: next, events };
+    }
+    const loc = content.locationsById[a.locationId];
+    if (!loc) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
+      return { state: next, events };
+    }
+    if (!loc.miningTable) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no ore veins here.` }));
+    } else {
+      const loot = rollLoot(loc.miningTable, `mine:${next.saveId}:${next.tickIndex}`);
+      if (loot.length) {
+        // Flavor First
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe.` }));
+
+        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+
+        // XP
+        gainSkillXp(next, 'mining', 1);
+        gainXp(next, 1, events, tickAtMs);
+      } else {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe but find nothing.` }));
+      }
+    }
+    return { state: next, events };
+  }
+
+  if (a.type === 'forage') {
+    // Debug logs removed
+
+    if (!content) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+      return { state: next, events };
+    }
+    const loc = content.locationsById[a.locationId];
+    if (!loc) {
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
+      return { state: next, events };
+    }
+    if (!loc.foragingTable) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There is nothing to forage here.` }));
+    } else {
+      const loot = rollLoot(loc.foragingTable, `forage:${next.saveId}:${next.tickIndex}`);
+      if (loot.length) {
+        // Flavor First
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You scour the area.` }));
+
+        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+
+        // XP
+        gainSkillXp(next, 'foraging', 1);
+        gainXp(next, 1, events, tickAtMs);
+      } else {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You find nothing of interest.` }));
+      }
+    }
+    return { state: next, events };
+  }
+
+  if (a.type === 'explore' || a.type === 'trade') {
     if (!content) {
       events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
       return { state: next, events };
@@ -436,12 +530,52 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
       events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOCATION_MISSING', message: `Unknown location ${a.locationId}` }));
       return { state: next, events };
     }
-    const loot = rollLoot(loc.resourceTable, `gather:${next.saveId}:${a.locationId}:${next.tickIndex}`);
-    if (loot.length) {
-      for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
-      events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
-      gainXp(next, 1, events, tickAtMs);
-      bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+
+    let lootTable: LootTable | undefined;
+    let skillId: SkillId | undefined;
+
+    // No loot tables for explore/trade in MVP, but keeping structure for future.
+    // if (a.type === 'explore') {
+    //   lootTable = loc.exploreTable;
+    //   skillId = 'exploration';
+    // } else if (a.type === 'trade') {
+    //   lootTable = loc.tradeTable;
+    //   skillId = 'commerce';
+    // }
+
+    if (lootTable) {
+      let verb = 'look for resources';
+      if (a.type === 'explore') verb = 'explore the area';
+      else if (a.type === 'trade') verb = 'look for trade opportunities';
+
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You ${verb}.` }));
+
+      const loot = rollLoot(lootTable, `gather:${next.saveId}:${a.locationId}:${next.tickIndex}`);
+
+      if (loot.length) {
+        if (skillId) {
+          const skillLevel = next.player.skills[skillId].level;
+          const doubleChance = Math.min(0.5, skillLevel * 0.01);
+          if (hashFloat(`dbl:${next.saveId}:${next.tickIndex}`) < doubleChance) {
+            for (const it of loot) it.qty *= 2;
+            events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: "Critical gathering success! (x2)" }));
+          }
+          gainSkillXp(next, skillId, 1);
+        }
+
+        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+        gainXp(next, 1, events, tickAtMs);
+        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+      }
+    } else {
+      // For now, just flavor text for explore/trade if no loot table
+      if (a.type === 'explore') {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You explore the area.` }));
+      } else if (a.type === 'trade') {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You look for trade opportunities.` }));
+      }
+      gainXp(next, 1, events, tickAtMs); // Still gain XP for the activity
     }
     return { state: next, events };
   }
@@ -451,20 +585,54 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
       events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
       return { state: next, events };
     }
-    const recipe = content.recipesById[a.recipeId];
+    const recipeId = a.recipeId;
+    const recipe = content.recipesById[recipeId];
     if (!recipe) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECIPE_MISSING', message: `Unknown recipe ${a.recipeId}` }));
+      // Stop invalid craft
+      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECIPE_MISSING', message: `Unknown recipe ${recipeId}` }));
       return { state: next, events };
     }
-    // Crafting is not per-tick in the final design; MVP: attempt craft once per tick.
+
     if (!recipe.inputs.every((i) => hasItem(next.inventory, i.itemId, i.qty))) {
-      // can't craft; idle
+      // can't craft; stop
+      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
       return { state: next, events };
     }
-    for (const i of recipe.inputs) removeItem(next.inventory, i.itemId, i.qty);
+
+    // Material Saving Check
+    // Determine skill to use
+    const skillId = recipe.skill || 'crafting'; // Fallback if old data
+    const skill = next.player.skills[skillId];
+    // If skill doesn't exist (e.g. 'crafting' removed), handle gracefully? 
+    // Types should prevent this now, but let's be safe.
+    const skillLevel = skill ? skill.level : 1;
+
+    // Check level requirement
+    if (recipe.requiredSkillLevel && skillLevel < recipe.requiredSkillLevel) {
+      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
+      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Need ${recipe.skill} Lv.${recipe.requiredSkillLevel}` }));
+      return { state: next, events };
+    }
+
+    const saveChance = Math.min(0.25, skillLevel * 0.005); // 0.5% per level, cap 25%
+    const materialsSaved = hashFloat(`save:${next.saveId}:${next.tickIndex}`) < saveChance;
+
+    if (!materialsSaved) {
+      for (const i of recipe.inputs) removeItem(next.inventory, i.itemId, i.qty);
+    } else {
+      events.push(ev(next, tickAtMs, 'SKILL_PROCS', { skillId, effect: 'material_save' } as any));
+    }
+
     for (const o of recipe.outputs) addItem(next.inventory, o.itemId, o.qty);
     events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: recipe.outputs.map((o) => ({ itemId: o.itemId, qty: o.qty })) }));
-    gainXp(next, 2, events, tickAtMs);
+
+    // XP
+    // 10 XP base + scaled?
+    const xpGain = Math.max(10, (recipe.requiredSkillLevel || 1) * 10);
+    gainXp(next, 5, events, tickAtMs); // Player XP
+    if (skillId && skill) gainSkillXp(next, skillId, xpGain);
+
     bumpQuestProgressFromCraft(next, a.recipeId, events, tickAtMs, content);
     return { state: next, events };
   }
@@ -495,14 +663,27 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     }
 
     if (tmpl.objectiveType === 'gather') {
-      const loot = rollLoot(content.locationsById[q.locationId]?.resourceTable, `questgather:${next.saveId}:${q.locationId}:${next.tickIndex}`);
-      if (loot.length) {
-        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
-        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
-        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+      const loc = content.locationsById[q.locationId];
+      // Helper: Find which table contains the target item
+      const targetId = tmpl.targetItemId;
+      let tableToRoll: LootTable | undefined;
+
+      if (loc) {
+        if (loc.miningTable?.entries.some(e => e.itemId === targetId)) tableToRoll = loc.miningTable;
+        else if (loc.woodcuttingTable?.entries.some(e => e.itemId === targetId)) tableToRoll = loc.woodcuttingTable;
+        else if (loc.foragingTable?.entries.some(e => e.itemId === targetId)) tableToRoll = loc.foragingTable;
       }
-      gainXp(next, 1, events, tickAtMs);
-      checkQuestCompletion(next, q.id, content, events, tickAtMs);
+
+      if (tableToRoll) {
+        const loot = rollLoot(tableToRoll, `questgather:${next.saveId}:${q.locationId}:${next.tickIndex}`);
+        if (loot.length) {
+          for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+          events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+          bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+        }
+        gainXp(next, 1, events, tickAtMs);
+        checkQuestCompletion(next, q.id, content, events, tickAtMs);
+      }
       return { state: next, events };
     }
 
@@ -558,8 +739,25 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     if (next.player.tactics === 'aggressive') playerAtkMult = 1.2;
     if (next.player.tactics === 'defensive') playerAtkMult = 0.8;
 
+    // Skill Bonus (Offense)
+    // Identify Weapon Skill
+    let offensiveSkill: SkillId = 'swordsmanship'; // default
+    const weaponId = next.equipment.weapon;
+    if (weaponId && content.itemsById[weaponId]) {
+      const wTags = content.itemsById[weaponId].tags || [];
+      if (wTags.includes('bow')) offensiveSkill = 'marksmanship';
+      else if (wTags.includes('wand') || wTags.includes('staff')) offensiveSkill = 'arcana';
+    }
+
+    const offSkillLevel = next.player.skills[offensiveSkill].level;
+    const skillDmgBonus = offSkillLevel * 0.005; // +0.5% per level
+    playerAtkMult += skillDmgBonus;
+
     const dmgToEnemy = Math.max(1, Math.floor((pStats.atk * playerAtkMult) - enemy.baseStats.def));
     next.activeEncounter.enemyHp -= dmgToEnemy;
+
+    // Gain Offense XP
+    gainSkillXp(next, offensiveSkill, 1);
 
     if (next.activeEncounter.enemyHp <= 0) {
       // WIN
@@ -584,11 +782,37 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       return { state: next, events };
     }
 
-    // Enemy Attack Simulation (visual/flavor for now, but affects "difficulty" perception)
-    // If Boss is enraged, we could log it?
-    if (currentAtkMult > 1.0) {
-      // Debatable: spam event log vs just let it be silent math?
-      // Let's rely on UI to show "BOSS IS ENRAGED" based on HP %.
+    // Enemy Attack
+    const enemyAtk = enemy.baseStats.atk * (currentAtkMult);
+    // Defense Skill
+    const defSkillLevel = next.player.skills.defense.level;
+    const mitigationPct = Math.min(0.2, defSkillLevel * 0.002); // 0.2% per level, cap 20%
+
+    const dmgToPlayer = Math.max(0, Math.floor(enemyAtk - pStats.def));
+    const mitigatedDmg = Math.floor(dmgToPlayer * (1 - mitigationPct));
+
+    // Apply Damage
+    next.player.baseStats.hp = Math.max(0, next.player.baseStats.hp - mitigatedDmg);
+
+    // Gain Defense XP
+    if (dmgToPlayer > 0) gainSkillXp(next, 'defense', 1);
+
+    // Death Check
+    if (next.player.baseStats.hp <= 0) {
+      // Lose gold/xp? logic for MVP: Just Respawn/Idle
+      // Let's set HP to 1 and state to Recovery or Idle?
+      // For strict MVP: just stop encounter and notify.
+      const enemyLevel = next.activeEncounter.enemyLevel;
+      delete next.activeEncounter;
+      next.player.baseStats.hp = 1;
+      next.activity = {
+        id: `act_rec_${next.tickIndex}`,
+        params: { type: 'recovery', durationMs: 10000 },
+        startedAtMs: tickAtMs
+      };
+      events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
+      events.push(ev(next, tickAtMs, 'ENCOUNTER_RESOLVED', { locationId: loc.id, enemyId: enemy.id, enemyLevel, outcome: 'loss' }));
+      // Maybe loss of gold?
     }
 
     return { state: next, events };
@@ -704,7 +928,12 @@ function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: n
 }
 
 function gainSkillXp(state: EngineState, skillId: SkillId, amount: number) {
-  const s = state.player.skills[skillId];
+  let s = state.player.skills[skillId];
+  if (!s) {
+    // Lazy migration: Initialize missing skill on first use
+    s = { id: skillId, level: 1, xp: 0 };
+    state.player.skills[skillId] = s;
+  }
   s.xp += amount;
   // MVP: level up every 50 xp
   while (s.xp >= s.level * 50) {

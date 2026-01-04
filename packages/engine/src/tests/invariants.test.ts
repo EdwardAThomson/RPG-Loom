@@ -1,23 +1,23 @@
-
 import { describe, it, expect } from 'vitest';
 import { createNewState, applyCommand, simulateOffline } from '../engine.js';
 import type { PlayerCommand } from '@rpg-loom/shared';
 
 const MOCK_CONTENT: any = {
     itemsById: {
-        'item_wood': { id: 'item_wood', name: 'Wood', stackable: true, value: 1 }
+        'item_wood': { id: 'item_wood', name: 'Wood', stackable: true, value: 1, tags: [], description: '', type: 'resource', rarity: 'common' }
     },
+    enemiesById: {},
+    questTemplatesById: {},
+    recipesById: {},
     locationsById: {
         'loc_forest': {
             id: 'loc_forest',
             name: 'Forest',
-            encounterTable: { entries: [] },
-            resourceTable: { entries: [{ itemId: 'item_wood', minQty: 1, maxQty: 1, weight: 1 }] }
+            description: '',
+            woodcuttingTable: { entries: [{ itemId: 'item_wood', weight: 1, minQty: 1, maxQty: 1 }] },
+            activities: ['woodcut']
         }
-    },
-    enemiesById: {},
-    questTemplatesById: {},
-    recipesById: {}
+    }
 };
 
 describe('Engine Invariants', () => {
@@ -33,7 +33,7 @@ describe('Engine Invariants', () => {
         let state = createNewState(INIT);
 
         // Do some activities that grant XP
-        const cmd: PlayerCommand = { type: 'SET_ACTIVITY', params: { type: 'gather', locationId: 'loc_forest' }, atMs: 1000 };
+        const cmd: PlayerCommand = { type: 'SET_ACTIVITY', params: { type: 'woodcut', locationId: 'loc_forest' }, atMs: 1000 };
         state = applyCommand(state, cmd, MOCK_CONTENT).state;
 
         let prevXp = state.player.xp;
@@ -51,7 +51,7 @@ describe('Engine Invariants', () => {
         let state = createNewState(INIT);
         // Force add item safely to test removal logic if we had it, but here we just check gather.
         // Let's rely on standard loop.
-        const cmd: PlayerCommand = { type: 'SET_ACTIVITY', params: { type: 'gather', locationId: 'loc_forest' }, atMs: 1000 };
+        const cmd: PlayerCommand = { type: 'SET_ACTIVITY', params: { type: 'woodcut', locationId: 'loc_forest' }, atMs: 1000 };
         state = applyCommand(state, cmd, MOCK_CONTENT).state;
 
         state = simulateOffline(state, 1000, 50000, MOCK_CONTENT).state;

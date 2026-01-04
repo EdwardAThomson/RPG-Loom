@@ -1,5 +1,22 @@
 # Developer Log
 
+## 2026-01-04
+
+### Gathering Skills Debugging & Refactoring (Completed)
+
+*   **Engine Refactoring**:
+    *   Explicitly isolated `woodcut`, `mine`, and `forage` logic in `engine.ts` to ensuring robust error handling independent of other activities.
+    *   Improved user feedback for gathering failures:
+        *   "There are no trees/ore/forage here" (Missing Table).
+        *   "You found nothing of interest" (Empty Loot Roll).
+    *   Refined event ordering so `FLAVOR_TEXT` precedes `LOOT_GAINED`, allowing the UI to cleanly merge "Loot" and "XP" messages into a single line.
+*   **Bug Fixes**:
+    *   **Crash Fix**: Resolved a `TypeError: Cannot read properties of undefined (reading 'xp')` by implementing lazy initialization in `gainSkillXp`. Old saves now auto-migrate to support new skills without crashing.
+    *   **Debug Tool Fix**: Fixed a race condition in `DebugView` where "Force One Tick" would fail if invoked immediately after a game loop tick.
+*   **Tooling**:
+    *   Created `DebugView.tsx` (accessible via new "Debug" tab) to inspect raw location data and force-step the engine client-side.
+
+
 ## 2025-12-31
 
 *   **Log Initialization**: Started this dev log to track progress.

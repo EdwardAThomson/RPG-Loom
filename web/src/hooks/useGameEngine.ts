@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { EngineState, PlayerCommand } from '@rpg-loom/shared';
+import type { EngineState, PlayerCommand, ContentIndex } from '@rpg-loom/shared';
 import { createNewState, step, applyCommand } from '@rpg-loom/engine';
 import content from '@rpg-loom/content';
 
@@ -119,5 +119,5 @@ export function useGameEngine() {
         return btoa(JSON.stringify(stateRef.current));
     };
 
-    return { state: uiState, events, dispatch, content, hardReset, importSave, exportSave, tickRate, setTickRate };
+    return { state: uiState, events, dispatch, content: content as unknown as ContentIndex, hardReset, importSave, exportSave, tickRate, setTickRate };
 }

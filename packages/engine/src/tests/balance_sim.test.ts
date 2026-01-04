@@ -37,7 +37,7 @@ describe('Balance Simulation', () => {
 
 function runSim(ticks: number, activityType: string, targetId: string) {
     const startMs = 0;
-    const state = createNewState({
+    let state = createNewState({
         saveId: 'sim_balance',
         playerId: 'p1',
         playerName: 'Tester',
@@ -57,8 +57,30 @@ function runSim(ticks: number, activityType: string, targetId: string) {
 
     console.log(`\n--- Simulating ${ticks} ticks of ${activityType} @ ${targetId} ---`);
 
-    // Run fast
-    const res = step(state, startMs + (ticks * 1000), content);
+    // Run simulation loop
+    let currentMs = startMs;
+    const endMs = startMs + (ticks * 1000);
+    // Process in 10-second chunks to allow checking state
+    const CHUNK_MS = 10000;
+
+    let res: any = { state, events: [] };
+
+    while (currentMs < endMs) {
+        // Auto-resume hunt if idle
+        if (state.activity.params.type === 'idle' && activityType === 'hunt') {
+            state.activity = {
+                id: `act_sim_${state.tickIndex}`,
+                params: { type: 'hunt', locationId: targetId },
+                startedAtMs: currentMs
+            };
+            state.activeEncounter = undefined; // Ensure clean state
+        }
+
+        const nextMs = Math.min(endMs, currentMs + CHUNK_MS);
+        res = step(state, nextMs, content);
+        state = res.state;
+        currentMs = nextMs;
+    }
 
     // Debug: Print first 5 events if result is empty
     if (res.state.player.xp === 0 && activityType === 'hunt') {

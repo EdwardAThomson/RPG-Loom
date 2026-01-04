@@ -18,6 +18,7 @@ function formatEvent(ev: any) {
     if (ev.type === 'GOLD_CHANGED') return `+${ev.payload.amount} Gold`;
     if (ev.type === 'LOOT_GAINED') return `Loot: ${ev.payload.items.map((i: any) => i.itemId.replace('item_', '')).join(', ')}`;
     if (ev.type === 'ENCOUNTER_RESOLVED') return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${ev.payload.enemyId}`;
+    if (ev.type === 'FLAVOR_TEXT') return ev.payload.message;
     if (ev.type === 'ERROR') {
         if (ev.payload.code === 'INSUFFICIENT_GOLD') return `Stopped: ${ev.payload.message}`;
         return `Error: ${ev.payload.message}`;

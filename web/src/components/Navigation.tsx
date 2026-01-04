@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabId = 'activity' | 'travel' | 'inventory' | 'crafting' | 'character' | 'quests' | 'settings';
+export type TabId = 'activity' | 'travel' | 'inventory' | 'crafting' | 'character' | 'quests' | 'settings' | 'debug';
 
 interface Props {
     activeTab: TabId;
@@ -15,6 +15,7 @@ export function Navigation({ activeTab, onTabChange }: Props) {
         { id: 'crafting', label: 'Crafting' },
         { id: 'character', label: 'Character' },
         { id: 'quests', label: 'Quests' },
+        { id: 'debug', label: 'Debug' } // Hidden in prod ideally, but useful now
     ];
 
     return (

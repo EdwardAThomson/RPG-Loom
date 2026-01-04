@@ -6,8 +6,8 @@ import type { PlayerCommand, ActivityParams, EngineState } from '@rpg-loom/share
 // Mock content index for testing
 const MOCK_CONTENT: any = {
     itemsById: {
-        'item_wood': { id: 'item_wood', name: 'Wood', stackable: true, value: 1 },
-        'item_sword': { id: 'item_sword', name: 'Sword', stackable: false, value: 10 }
+        'item_wood': { id: 'item_wood', name: 'Wood', stackable: true, value: 1, tags: [], description: '', type: 'resource', rarity: 'common' },
+        'item_sword': { id: 'item_sword', name: 'Sword', stackable: false, value: 10, tags: [], description: '', type: 'weapon', rarity: 'common' }
     },
     enemiesById: {
         'enemy_rat': {
@@ -22,7 +22,10 @@ const MOCK_CONTENT: any = {
             id: 'loc_forest',
             name: 'Forest',
             encounterTable: { entries: [{ enemyId: 'enemy_rat', weight: 1 }] },
-            resourceTable: { entries: [{ itemId: 'item_wood', minQty: 1, maxQty: 2, weight: 1 }] }
+            woodcuttingTable: { entries: [{ itemId: 'item_wood', minQty: 1, maxQty: 2, weight: 1 }] },
+            miningTable: { entries: [] },
+            foragingTable: { entries: [] },
+            activities: ['woodcut']
         }
     },
     questTemplatesById: {},
@@ -44,7 +47,7 @@ describe('Engine Determinism', () => {
         // Apply a command
         const cmd1: PlayerCommand = {
             type: 'SET_ACTIVITY',
-            params: { type: 'gather', locationId: 'loc_forest' },
+            params: { type: 'woodcut', locationId: 'loc_forest' },
             atMs: 1000100
         };
         const { state: s1_postCmd } = applyCommand(s1, cmd1, MOCK_CONTENT);
@@ -56,7 +59,7 @@ describe('Engine Determinism', () => {
         const s2 = createNewState(INIT_PARAMS);
         const cmd2: PlayerCommand = {
             type: 'SET_ACTIVITY',
-            params: { type: 'gather', locationId: 'loc_forest' },
+            params: { type: 'woodcut', locationId: 'loc_forest' },
             atMs: 1000100
         };
         const { state: s2_postCmd } = applyCommand(s2, cmd2, MOCK_CONTENT);

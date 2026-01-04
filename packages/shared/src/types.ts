@@ -29,21 +29,26 @@ export type ItemType =
   | 'quest';
 
 export type SkillId =
+  | 'blacksmithing'
+  | 'woodworking'
+  | 'leatherworking'
+  | 'tailoring'
   | 'swordsmanship'
-  | 'archery'
+  | 'marksmanship'
   | 'arcana'
   | 'defense'
-  | 'survival'
-  | 'gathering'
-  | 'crafting'
-  | 'diplomacy';
+  | 'mining'
+  | 'woodcutting'
+  | 'foraging';
 
 export type ActivityType =
   | 'idle'
   | 'recovery'
   | 'quest'
   | 'hunt'
-  | 'gather'
+  | 'mine'
+  | 'woodcut'
+  | 'forage'
   | 'craft'
   | 'train'
   | 'trade'
@@ -52,12 +57,20 @@ export type ActivityType =
 export type TacticsPreset = 'aggressive' | 'balanced' | 'defensive';
 
 // ---- Content models (loaded from packages/content) ----
+export interface ContentIndex {
+  itemsById: Record<string, ItemDef>;
+  enemiesById: Record<string, EnemyDef>;
+  locationsById: Record<string, LocationDef>;
+  questTemplatesById: Record<string, QuestTemplateDef>;
+  recipesById: Record<string, RecipeDef>;
+}
+
 export interface ItemDef {
   id: ItemId;
   name: string;
   type: ItemType;
   rarity: Rarity;
-  tags: string[];
+  tags?: string[];
   description: string;
   stackable: boolean;
   value: number; // gold
@@ -102,7 +115,9 @@ export interface LocationDef {
   };
   activities: ActivityType[];
   encounterTable: EncounterTable;
-  resourceTable: LootTable; // used for gather/mine/etc.
+  miningTable?: LootTable;
+  woodcuttingTable?: LootTable;
+  foragingTable?: LootTable;
 }
 
 export interface QuestTemplateDef {
@@ -131,10 +146,11 @@ export interface NpcDef {
 export interface RecipeDef {
   id: RecipeId;
   name: string;
+  skill: SkillId;
   inputs: Array<{ itemId: ItemId; qty: number }>;
   outputs: Array<{ itemId: ItemId; qty: number }>;
   // skill gates
-  requiredCraftingLevel?: number;
+  requiredSkillLevel?: number;
 }
 
 // ---- Engine state models ----
@@ -199,7 +215,9 @@ export type ActivityParams =
   | { type: 'idle' }
   | { type: 'recovery'; durationMs: number }
   | { type: 'hunt'; locationId: LocationId }
-  | { type: 'gather'; locationId: LocationId }
+  | { type: 'mine'; locationId: LocationId }
+  | { type: 'woodcut'; locationId: LocationId }
+  | { type: 'forage'; locationId: LocationId }
   | { type: 'quest'; questId: QuestInstanceId }
   | { type: 'craft'; recipeId: RecipeId }
   | { type: 'train'; skillId: SkillId }
@@ -358,9 +376,11 @@ export type GameEvent =
   | BaseEvent<'XP_GAINED', { amount: number; newTotal: number }>
   | BaseEvent<'GOLD_CHANGED', { amount: number; newTotal: number }>
   | BaseEvent<'LEVEL_UP', { newLevel: number }>
+  | BaseEvent<'SKILL_PROCS', { skillId: SkillId; effect: string; value?: number }>
   | BaseEvent<'TACTICS_CHANGED', { tactics: TacticsPreset }>
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
   | BaseEvent<'ERROR', { code: string; message: string }>
+  | BaseEvent<'FLAVOR_TEXT', { message: string }>
   ;
 
 export interface BaseEvent<TType extends string, TPayload> {

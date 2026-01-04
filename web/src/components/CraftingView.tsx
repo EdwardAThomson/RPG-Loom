@@ -88,6 +88,9 @@ export function CraftingView({ state, dispatch, content }: Props) {
                                     <h3 style={{ margin: '0 0 0.5rem 0', color: '#fff' }}>
                                         {name} {outputItem.qty > 1 && `x${outputItem.qty}`}
                                     </h3>
+                                    <div className="requirements" style={{ fontSize: '0.8rem', color: '#888', marginBottom: '8px' }}>
+                                        Needs: <span style={{ textTransform: 'capitalize' }}>{recipe.skill}</span> Lv.{recipe.requiredSkillLevel || 1}
+                                    </div>
                                     <div style={{ fontSize: '0.9rem', color: '#aaa' }}>
                                         {recipe.inputs.map((input, idx) => {
                                             const haveIt = hasItem(input.itemId, input.qty);

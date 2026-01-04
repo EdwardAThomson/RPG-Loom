@@ -103,22 +103,42 @@ export function ActivityView({ state, dispatch, content }: Props) {
                         </>
                     ) : (
                         <>
-                            {/* Wild Actions */}
-                            {/* Gather */}
-                            <button
-                                style={activity.params.type === 'gather' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)', flex: 1 } : { flex: 1 }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'gather', locationId: state.currentLocationId }, atMs: Date.now() })}
-                            >
-                                Gather Here
-                            </button>
+                            {/* Wild Actions: Checked via Location Activities */}
+                            {content?.locationsById?.[state.currentLocationId]?.activities?.includes('woodcut') && (
+                                <button
+                                    style={activity.params.type === 'woodcut' ? { borderColor: '#8b4513', background: 'rgba(139, 69, 19, 0.1)', flex: 1 } : { flex: 1 }}
+                                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'woodcut', locationId: state.currentLocationId }, atMs: Date.now() })}
+                                >
+                                    🪓 Woodcut
+                                </button>
+                            )}
 
-                            {/* Hunt */}
-                            <button
-                                style={activity.params.type === 'hunt' ? { borderColor: 'var(--color-crimson)', background: 'rgba(166, 28, 28, 0.1)', flex: 1 } : { flex: 1 }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: state.currentLocationId }, atMs: Date.now() })}
-                            >
-                                Hunt Here
-                            </button>
+                            {content?.locationsById?.[state.currentLocationId]?.activities?.includes('mine') && (
+                                <button
+                                    style={activity.params.type === 'mine' ? { borderColor: '#777', background: 'rgba(119, 119, 119, 0.1)', flex: 1 } : { flex: 1 }}
+                                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'mine', locationId: state.currentLocationId }, atMs: Date.now() })}
+                                >
+                                    ⛏️ Mine
+                                </button>
+                            )}
+
+                            {content?.locationsById?.[state.currentLocationId]?.activities?.includes('forage') && (
+                                <button
+                                    style={activity.params.type === 'forage' ? { borderColor: '#4caf50', background: 'rgba(76, 175, 80, 0.1)', flex: 1 } : { flex: 1 }}
+                                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'forage', locationId: state.currentLocationId }, atMs: Date.now() })}
+                                >
+                                    🌿 Forage
+                                </button>
+                            )}
+
+                            {content?.locationsById?.[state.currentLocationId]?.activities?.includes('hunt') && (
+                                <button
+                                    style={activity.params.type === 'hunt' ? { borderColor: 'var(--color-crimson)', background: 'rgba(166, 28, 28, 0.1)', flex: 1 } : { flex: 1 }}
+                                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: state.currentLocationId }, atMs: Date.now() })}
+                                >
+                                    ⚔️ Hunt
+                                </button>
+                            )}
                         </>
                     )}
                 </div>

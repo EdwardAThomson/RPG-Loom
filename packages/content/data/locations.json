@@ -10,14 +10,18 @@
     ],
     "encounterTable": {
       "entries": []
-    },
-    "resourceTable": {
-      "entries": []
     }
   },
   {
     "id": "loc_forest",
     "name": "Whispering Forest",
+    "activities": [
+      "hunt",
+      "woodcut",
+      "forage",
+      "mine",
+      "explore"
+    ],
     "encounterTable": {
       "entries": [
         {
@@ -34,25 +38,33 @@
         }
       ]
     },
-    "resourceTable": {
+    "woodcuttingTable": {
       "entries": [
         {
           "itemId": "item_wood",
           "minQty": 2,
           "maxQty": 5,
           "weight": 10
-        },
-        {
-          "itemId": "item_copper_ore",
-          "minQty": 1,
-          "maxQty": 3,
-          "weight": 5
-        },
+        }
+      ]
+    },
+    "foragingTable": {
+      "entries": [
         {
           "itemId": "item_herb_green",
           "minQty": 1,
           "maxQty": 2,
-          "weight": 2
+          "weight": 10
+        }
+      ]
+    },
+    "miningTable": {
+      "entries": [
+        {
+          "itemId": "item_copper_ore",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 10
         }
       ]
     }
@@ -63,6 +75,11 @@
     "requirements": {
       "minLevel": 5
     },
+    "activities": [
+      "hunt",
+      "mine",
+      "explore"
+    ],
     "encounterTable": {
       "entries": [
         {
@@ -79,7 +96,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "miningTable": {
       "entries": [
         {
           "itemId": "item_stone",
@@ -108,6 +125,12 @@
     "requirements": {
       "minLevel": 10
     },
+    "activities": [
+      "hunt",
+      "woodcut",
+      "forage",
+      "explore"
+    ],
     "encounterTable": {
       "entries": [
         {
@@ -120,14 +143,18 @@
         }
       ]
     },
-    "resourceTable": {
+    "woodcuttingTable": {
       "entries": [
         {
           "itemId": "item_hardwood",
           "minQty": 2,
           "maxQty": 5,
-          "weight": 8
-        },
+          "weight": 10
+        }
+      ]
+    },
+    "foragingTable": {
+      "entries": [
         {
           "itemId": "item_herb_green",
           "minQty": 2,
@@ -149,6 +176,12 @@
     "requirements": {
       "minLevel": 15
     },
+    "activities": [
+      "hunt",
+      "forage",
+      "mine",
+      "explore"
+    ],
     "encounterTable": {
       "entries": [
         {
@@ -161,19 +194,23 @@
         }
       ]
     },
-    "resourceTable": {
+    "foragingTable": {
       "entries": [
         {
           "itemId": "item_bone_fragment",
           "minQty": 3,
           "maxQty": 6,
-          "weight": 8
-        },
+          "weight": 10
+        }
+      ]
+    },
+    "miningTable": {
+      "entries": [
         {
           "itemId": "item_silver_ore",
           "minQty": 1,
           "maxQty": 3,
-          "weight": 4
+          "weight": 10
         }
       ]
     }
@@ -184,6 +221,11 @@
     "requirements": {
       "minLevel": 20
     },
+    "activities": [
+      "hunt",
+      "mine",
+      "explore"
+    ],
     "encounterTable": {
       "entries": [
         {
@@ -200,7 +242,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "miningTable": {
       "entries": [
         {
           "itemId": "item_frost_stone",
@@ -226,7 +268,7 @@
     },
     "activities": [
       "hunt",
-      "gather",
+      "mine",
       "explore"
     ],
     "encounterTable": {
@@ -249,7 +291,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "miningTable": {
       "entries": [
         {
           "itemId": "item_volcanic_ash",
@@ -287,7 +329,7 @@
     },
     "activities": [
       "hunt",
-      "gather",
+      "mine",
       "explore"
     ],
     "encounterTable": {
@@ -310,7 +352,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "miningTable": {
       "entries": [
         {
           "itemId": "item_crystal_shard",
@@ -342,7 +384,7 @@
     },
     "activities": [
       "hunt",
-      "gather",
+      "forage",
       "explore"
     ],
     "encounterTable": {
@@ -361,7 +403,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "foragingTable": {
       "entries": [
         {
           "itemId": "item_pearl",
@@ -387,7 +429,7 @@
     },
     "activities": [
       "hunt",
-      "gather",
+      "forage",
       "explore"
     ],
     "encounterTable": {
@@ -406,7 +448,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "foragingTable": {
       "entries": [
         {
           "itemId": "item_brass_gear",
@@ -432,7 +474,7 @@
     },
     "activities": [
       "hunt",
-      "gather",
+      "mine",
       "explore"
     ],
     "encounterTable": {
@@ -451,7 +493,7 @@
         }
       ]
     },
-    "resourceTable": {
+    "miningTable": {
       "entries": [
         {
           "itemId": "item_darksteel_ore",

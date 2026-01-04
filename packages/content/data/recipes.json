@@ -1,6 +1,9 @@
 [
   {
     "id": "recipe_plank",
+    "name": "Plank",
+    "skill": "woodworking",
+    "requiredSkillLevel": 1,
     "inputs": [
       {
         "itemId": "item_wood",
@@ -16,6 +19,9 @@
   },
   {
     "id": "recipe_strengthened_plank",
+    "name": "Strengthened Plank",
+    "skill": "woodworking",
+    "requiredSkillLevel": 5,
     "inputs": [
       {
         "itemId": "item_hardwood",
@@ -35,6 +41,9 @@
   },
   {
     "id": "recipe_copper_ingot",
+    "name": "Copper Ingot",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 1,
     "inputs": [
       {
         "itemId": "item_copper_ore",
@@ -50,6 +59,9 @@
   },
   {
     "id": "recipe_iron_ingot",
+    "name": "Iron Ingot",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 10,
     "inputs": [
       {
         "itemId": "item_iron_ore",
@@ -65,6 +77,9 @@
   },
   {
     "id": "recipe_steel_ingot",
+    "name": "Steel Ingot",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 20,
     "inputs": [
       {
         "itemId": "item_iron_ingot",
@@ -80,6 +95,9 @@
   },
   {
     "id": "recipe_silver_ingot",
+    "name": "Silver Ingot",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 15,
     "inputs": [
       {
         "itemId": "item_silver_ore",
@@ -95,6 +113,9 @@
   },
   {
     "id": "recipe_gold_ingot",
+    "name": "Gold Ingot",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 25,
     "inputs": [
       {
         "itemId": "item_gold_ore",
@@ -110,6 +131,9 @@
   },
   {
     "id": "recipe_simple_potion",
+    "name": "Simple Potion",
+    "skill": "foraging",
+    "requiredSkillLevel": 1,
     "inputs": [
       {
         "itemId": "item_herb_green",
@@ -129,6 +153,9 @@
   },
   {
     "id": "recipe_bronze_sword",
+    "name": "Bronze Sword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 1,
     "inputs": [
       {
         "itemId": "item_copper_ingot",
@@ -148,6 +175,9 @@
   },
   {
     "id": "recipe_iron_sword",
+    "name": "Iron Sword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 10,
     "inputs": [
       {
         "itemId": "item_iron_ingot",
@@ -167,6 +197,9 @@
   },
   {
     "id": "recipe_silver_sword",
+    "name": "Silver Sword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 15,
     "inputs": [
       {
         "itemId": "item_silver_ingot",
@@ -190,6 +223,9 @@
   },
   {
     "id": "recipe_gold_sword",
+    "name": "Gold Sword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 25,
     "inputs": [
       {
         "itemId": "item_gold_ingot",
@@ -213,6 +249,9 @@
   },
   {
     "id": "recipe_chainmail",
+    "name": "Chainmail",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 10,
     "inputs": [
       {
         "itemId": "item_iron_ingot",
@@ -232,6 +271,9 @@
   },
   {
     "id": "recipe_plate_armor",
+    "name": "Plate Armor",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 15,
     "inputs": [
       {
         "itemId": "item_iron_ingot",
@@ -251,6 +293,9 @@
   },
   {
     "id": "recipe_bronze_armor",
+    "name": "Bronze Armor",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 5,
     "inputs": [
       {
         "itemId": "item_copper_ingot",
@@ -270,6 +315,9 @@
   },
   {
     "id": "recipe_steel_sword",
+    "name": "Steel Sword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 20,
     "inputs": [
       {
         "itemId": "item_steel_ingot",
@@ -289,6 +337,9 @@
   },
   {
     "id": "recipe_steel_armor",
+    "name": "Steel Armor",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 20,
     "inputs": [
       {
         "itemId": "item_steel_ingot",
@@ -308,6 +359,9 @@
   },
   {
     "id": "recipe_bronze_pickaxe",
+    "name": "Bronze Pickaxe",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 1,
     "inputs": [
       {
         "itemId": "item_copper_ingot",
@@ -327,6 +381,9 @@
   },
   {
     "id": "recipe_iron_pickaxe",
+    "name": "Iron Pickaxe",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 10,
     "inputs": [
       {
         "itemId": "item_iron_ingot",
@@ -346,6 +403,9 @@
   },
   {
     "id": "recipe_obsidian_armor",
+    "name": "Obsidian Armor",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 30,
     "inputs": [
       {
         "itemId": "item_obsidian",
@@ -365,6 +425,9 @@
   },
   {
     "id": "recipe_obsidian_shield",
+    "name": "Obsidian Shield",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 30,
     "inputs": [
       {
         "itemId": "item_obsidian",
@@ -384,6 +447,9 @@
   },
   {
     "id": "recipe_crystal_robes",
+    "name": "Crystal Robes",
+    "skill": "woodworking",
+    "requiredSkillLevel": 20,
     "inputs": [
       {
         "itemId": "item_phase_silk",
@@ -407,6 +473,9 @@
   },
   {
     "id": "recipe_crystal_wand",
+    "name": "Crystal Wand",
+    "skill": "woodworking",
+    "requiredSkillLevel": 25,
     "inputs": [
       {
         "itemId": "item_luminite_ore",
@@ -426,6 +495,9 @@
   },
   {
     "id": "recipe_tidal_armor",
+    "name": "Tidal Armor",
+    "skill": "foraging",
+    "requiredSkillLevel": 35,
     "inputs": [
       {
         "itemId": "item_pearl",
@@ -449,6 +521,9 @@
   },
   {
     "id": "recipe_tidal_trident",
+    "name": "Tidal Trident",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 35,
     "inputs": [
       {
         "itemId": "item_pearl",
@@ -472,6 +547,9 @@
   },
   {
     "id": "recipe_titanium_platebody",
+    "name": "Titanium Platebody",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 40,
     "inputs": [
       {
         "itemId": "item_titanium_plate",
@@ -495,6 +573,9 @@
   },
   {
     "id": "recipe_titanium_claymore",
+    "name": "Titanium Claymore",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 40,
     "inputs": [
       {
         "itemId": "item_titanium_plate",
@@ -518,6 +599,9 @@
   },
   {
     "id": "recipe_darksteel_plate",
+    "name": "Darksteel Plate",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 55,
     "inputs": [
       {
         "itemId": "item_darksteel_ore",

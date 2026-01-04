@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createNewState, step, applyCommand } from '../engine.js';
 import content from '@rpg-loom/content';
+const C = content as any;
 
 describe('Gameplay Loop (Integration)', () => {
     const INIT_PARAMS = {
@@ -22,15 +23,15 @@ describe('Gameplay Loop (Integration)', () => {
         // We'll simulate enough ticks to guarantee we get some.
         state = applyCommand(state, {
             type: 'SET_ACTIVITY',
-            params: { type: 'gather', locationId: 'loc_forest' },
+            params: { type: 'woodcut', locationId: 'loc_forest' },
             atMs: 1000000
-        }, content).state;
+        }, C).state;
 
         // Simulate 20 seconds (20 ticks).
         // Each tick has a chance to drop loot.
         // In our engine, gather currently drops loot EVERY tick (MVP).
         // So 20 ticks should be plenty (20-60 wood).
-        let res = step(state, 1000000 + 20000, content);
+        let res = step(state, 1000000 + 20000, C);
         state = res.state;
 
         const wood = state.inventory.find(x => x.itemId === 'item_wood');
@@ -42,11 +43,11 @@ describe('Gameplay Loop (Integration)', () => {
             type: 'SET_ACTIVITY',
             params: { type: 'craft', recipeId: 'recipe_plank' },
             atMs: state.lastTickAtMs
-        }, content).state;
+        }, C).state;
 
         // Simulate 2 seconds (2 ticks).
         // Crafting is 1 per tick.
-        res = step(state, state.lastTickAtMs + 2000, content);
+        res = step(state, state.lastTickAtMs + 2000, C);
         state = res.state;
 
         const plank = state.inventory.find(x => x.itemId === 'item_plank');
@@ -63,10 +64,10 @@ describe('Gameplay Loop (Integration)', () => {
             type: 'SET_ACTIVITY',
             params: { type: 'hunt', locationId: 'loc_forest' },
             atMs: 1000000
-        }, content).state;
+        }, C).state;
 
         // Fight some rats
-        const res = step(state, 1000000 + 10000, content);
+        const res = step(state, 1000000 + 10000, C);
         state = res.state;
 
         // Should have some events
@@ -80,11 +81,11 @@ describe('Gameplay Loop (Integration)', () => {
         // 1. Accept Quest
         state = applyCommand(state, {
             type: 'ACCEPT_QUEST',
-            templateId: 'qt_gather_wood',
+            templateId: 'qt_intro_gather',
             atMs: 1000000
-        }, content).state;
+        }, C).state;
 
-        const q = state.quests.find(x => x.templateId === 'qt_gather_wood');
+        const q = state.quests.find(x => x.templateId === 'qt_intro_gather');
         expect(q).toBeDefined();
         expect(q?.status).toBe('active');
 
@@ -92,16 +93,16 @@ describe('Gameplay Loop (Integration)', () => {
         // Quest needs 5-10 wood.
         state = applyCommand(state, {
             type: 'SET_ACTIVITY',
-            params: { type: 'gather', locationId: 'loc_forest' },
+            params: { type: 'woodcut', locationId: 'loc_forest' },
             atMs: 1000000
-        }, content).state;
+        }, C).state;
 
         // Run enough ticks to gather sufficient wood
-        const res = step(state, 1000000 + 50000, content);
+        const res = step(state, 1000000 + 50000, C);
         state = res.state;
 
         // 3. Verify Progress
-        const qAfter = state.quests.find(x => x.templateId === 'qt_gather_wood');
+        const qAfter = state.quests.find(x => x.templateId === 'qt_intro_gather');
         // Should be completed if we gathered enough
         // The quest is checked every time we get loot.
 
