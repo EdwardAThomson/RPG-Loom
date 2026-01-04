@@ -100,7 +100,6 @@ export function createNewState(params: {
         blacksmithing: { id: 'blacksmithing', level: 1, xp: 0 },
         woodworking: { id: 'woodworking', level: 1, xp: 0 },
         leatherworking: { id: 'leatherworking', level: 1, xp: 0 },
-        tailoring: { id: 'tailoring', level: 1, xp: 0 },
       },
       reputation: {},
       flags: {}

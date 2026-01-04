@@ -29,6 +29,17 @@
 *   **Developer Tools**:
     *   **Item Spawner**: Added `Item Spawner` to Debug View, allowing rapid acquisition of test gear.
 
+### Skills & Refactoring (Completed)
+
+*   **Skill System Overhaul**:
+    *   **Cleanup**: Permanently removed unused legacy skills (`tailoring`, `survival`, `archery`) from the codebase (`types.ts`, `schemas.ts`).
+    *   **Display Logic**: Refactored `CharacterView` to use a strict allowlist. This robustly hides deleted skills from old save files (legacy support) while ensuring critical skills (mining, smithing) are always visible even at Level 0.
+    *   **UI Clarity**: Renamed technical skill IDs to user-friendly labels (e.g., `swordsmanship` -> "Melee", `blacksmithing` -> "Smithing").
+    *   **Tactics**: Removed the "Combat Stance" selector to streamline the character interface.
+*   **Build System Health**:
+    *   **SDK/Gateway Fixes**: Resolved critical TypeScript configuration errors (`rootDir` conflicts) that were silently failing background builds.
+    *   **Dependencies**: Aligned package versions (`@rpg-loom/content`) and fixed missing types (`@types/uuid`) to ensure a clean `exit code 0` build across the entire monorepo.
+
 ## 2025-12-31
 
 *   **Log Initialization**: Started this dev log to track progress.

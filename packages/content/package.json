@@ -1,6 +1,6 @@
 {
   "name": "@rpg-loom/content",
-  "version": "0.1.2",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -18,7 +18,7 @@
     "test": "echo \"(content) test: n/a\""
   },
   "dependencies": {
-    "@rpg-loom/shared": "workspace:*"
+    "@rpg-loom/shared": "0.1.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

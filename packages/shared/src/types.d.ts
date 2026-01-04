@@ -16,7 +16,7 @@ export type TaskId = string;
 export type EventId = string;
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic';
 export type ItemType = 'weapon' | 'armor' | 'accessory' | 'consumable' | 'material' | 'quest';
-export type SkillId = 'blacksmithing' | 'woodworking' | 'leatherworking' | 'tailoring' | 'swordsmanship' | 'marksmanship' | 'arcana' | 'defense' | 'mining' | 'woodcutting' | 'foraging';
+export type SkillId = 'blacksmithing' | 'woodworking' | 'leatherworking' | 'swordsmanship' | 'marksmanship' | 'arcana' | 'defense' | 'mining' | 'woodcutting' | 'foraging';
 export type ActivityType = 'idle' | 'recovery' | 'quest' | 'hunt' | 'mine' | 'woodcut' | 'forage' | 'craft' | 'train' | 'trade' | 'explore';
 export type TacticsPreset = 'aggressive' | 'balanced' | 'defensive';
 export interface ContentIndex {

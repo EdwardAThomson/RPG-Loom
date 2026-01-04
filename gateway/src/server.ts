@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import readline from 'node:readline';
 
 import { NarrativeBlockSchema, NarrativeTaskSchema } from '@rpg-loom/shared';
@@ -20,7 +20,7 @@ interface TaskRecord {
   streams: Set<express.Response>;
 
   // active subprocess (for cancel)
-  proc?: ChildProcessWithoutNullStreams;
+  proc?: ChildProcess;
 }
 
 const tasks = new Map<string, TaskRecord>();
@@ -121,7 +121,7 @@ app.post('/api/tasks/:id/cancel', (req, res) => {
     record.status = 'canceled';
     try {
       record.proc?.kill('SIGTERM');
-    } catch {}
+    } catch { }
     broadcast(record, { type: 'error', data: { message: 'canceled' } });
     endStreams(record);
   }
@@ -403,7 +403,7 @@ function endStreams(record: TaskRecord) {
   for (const res of record.streams) {
     try {
       res.end();
-    } catch {}
+    } catch { }
   }
   record.streams.clear();
 }

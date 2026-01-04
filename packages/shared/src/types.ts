@@ -32,7 +32,6 @@ export type SkillId =
   | 'blacksmithing'
   | 'woodworking'
   | 'leatherworking'
-  | 'tailoring'
   | 'swordsmanship'
   | 'marksmanship'
   | 'arcana'

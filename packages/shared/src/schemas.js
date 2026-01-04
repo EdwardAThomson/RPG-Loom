@@ -4,13 +4,15 @@ export const RaritySchema = z.enum(['common', 'uncommon', 'rare', 'epic']);
 export const ItemTypeSchema = z.enum(['weapon', 'armor', 'accessory', 'consumable', 'material', 'quest']);
 export const SkillIdSchema = z.enum([
     'swordsmanship',
-    'archery',
+    'marksmanship',
     'arcana',
     'defense',
-    'survival',
-    'gathering',
-    'crafting',
-    'diplomacy'
+    'blacksmithing',
+    'woodworking',
+    'leatherworking',
+    'mining',
+    'woodcutting',
+    'foraging'
 ]);
 export const ActivityTypeSchema = z.enum(['idle', 'quest', 'hunt', 'gather', 'craft', 'train', 'trade', 'explore']);
 export const TacticsPresetSchema = z.enum(['aggressive', 'balanced', 'defensive']);
@@ -124,4 +126,3 @@ export const NarrativeBlockSchema = z.object({
     lines: z.array(z.string().min(1)).default([]),
     tags: z.array(z.string()).default([])
 });
-//# sourceMappingURL=schemas.js.map

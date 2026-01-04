@@ -1,7 +1,7 @@
 import { z } from 'zod';
 export declare const RaritySchema: z.ZodEnum<["common", "uncommon", "rare", "epic"]>;
 export declare const ItemTypeSchema: z.ZodEnum<["weapon", "armor", "accessory", "consumable", "material", "quest"]>;
-export declare const SkillIdSchema: z.ZodEnum<["swordsmanship", "archery", "arcana", "defense", "survival", "gathering", "crafting", "diplomacy"]>;
+export declare const SkillIdSchema: z.ZodEnum<["swordsmanship", "marksmanship", "arcana", "defense", "blacksmithing", "woodworking", "leatherworking", "mining", "woodcutting", "foraging"]>;
 export declare const ActivityTypeSchema: z.ZodEnum<["idle", "quest", "hunt", "gather", "craft", "train", "trade", "explore"]>;
 export declare const TacticsPresetSchema: z.ZodEnum<["aggressive", "balanced", "defensive"]>;
 export declare const CombatStatsSchema: z.ZodObject<{
@@ -96,7 +96,7 @@ export declare const PlayerStateSchema: z.ZodObject<{
         critMult: number;
         res: number;
     }>;
-    skills: z.ZodRecord<z.ZodEnum<["swordsmanship", "archery", "arcana", "defense", "survival", "gathering", "crafting", "diplomacy"]>, z.ZodObject<{
+    skills: z.ZodRecord<z.ZodEnum<["swordsmanship", "marksmanship", "arcana", "defense", "blacksmithing", "woodworking", "leatherworking", "mining", "woodcutting", "foraging"]>, z.ZodObject<{
         level: z.ZodNumber;
         xp: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
@@ -122,7 +122,7 @@ export declare const PlayerStateSchema: z.ZodObject<{
         critMult: number;
         res: number;
     };
-    skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+    skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
         level: number;
         xp: number;
     }>>;
@@ -142,7 +142,7 @@ export declare const PlayerStateSchema: z.ZodObject<{
         critMult: number;
         res: number;
     };
-    skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+    skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
         level: number;
         xp: number;
     }>>;
@@ -266,7 +266,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         }>;
-        skills: z.ZodRecord<z.ZodEnum<["swordsmanship", "archery", "arcana", "defense", "survival", "gathering", "crafting", "diplomacy"]>, z.ZodObject<{
+        skills: z.ZodRecord<z.ZodEnum<["swordsmanship", "marksmanship", "arcana", "defense", "blacksmithing", "woodworking", "leatherworking", "mining", "woodcutting", "foraging"]>, z.ZodObject<{
             level: z.ZodNumber;
             xp: z.ZodNumber;
         }, "strip", z.ZodTypeAny, {
@@ -292,7 +292,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
             level: number;
             xp: number;
         }>>;
@@ -312,7 +312,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
             level: number;
             xp: number;
         }>>;
@@ -411,7 +411,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
             level: number;
             xp: number;
         }>>;
@@ -468,7 +468,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"blacksmithing" | "woodworking" | "leatherworking" | "swordsmanship" | "marksmanship" | "arcana" | "defense" | "mining" | "woodcutting" | "foraging", {
             level: number;
             xp: number;
         }>>;
