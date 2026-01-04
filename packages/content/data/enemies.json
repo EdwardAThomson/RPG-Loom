@@ -2,6 +2,8 @@
   {
     "id": "enemy_rat",
     "name": "Giant Rat",
+    "levelMin": 1,
+    "levelMax": 2,
     "baseStats": {
       "hpMax": 10,
       "atk": 2,
@@ -25,6 +27,8 @@
   {
     "id": "enemy_bandit",
     "name": "Bandit",
+    "levelMin": 2,
+    "levelMax": 4,
     "baseStats": {
       "hpMax": 30,
       "atk": 5,
@@ -54,6 +58,8 @@
   {
     "id": "enemy_bandit_leader",
     "name": "Bandit Leader",
+    "levelMin": 4,
+    "levelMax": 6,
     "baseStats": {
       "hpMax": 60,
       "atk": 8,
@@ -83,6 +89,8 @@
   {
     "id": "enemy_wolf",
     "name": "Dire Wolf",
+    "levelMin": 3,
+    "levelMax": 5,
     "baseStats": {
       "hpMax": 45,
       "atk": 7,
@@ -106,6 +114,8 @@
   {
     "id": "enemy_slime",
     "name": "Green Slime",
+    "levelMin": 1,
+    "levelMax": 3,
     "baseStats": {
       "hpMax": 40,
       "atk": 4,
@@ -129,6 +139,8 @@
   {
     "id": "enemy_frog",
     "name": "Giant Frog",
+    "levelMin": 2,
+    "levelMax": 4,
     "baseStats": {
       "hpMax": 50,
       "atk": 6,
@@ -152,6 +164,8 @@
   {
     "id": "enemy_golem",
     "name": "Rock Golem",
+    "levelMin": 5,
+    "levelMax": 8,
     "baseStats": {
       "hpMax": 100,
       "atk": 10,
@@ -175,6 +189,8 @@
   {
     "id": "enemy_skeleton",
     "name": "Skeleton Warrior",
+    "levelMin": 6,
+    "levelMax": 9,
     "baseStats": {
       "hpMax": 70,
       "atk": 12,
@@ -204,6 +220,8 @@
   {
     "id": "enemy_ghost",
     "name": "Wailing Ghost",
+    "levelMin": 8,
+    "levelMax": 12,
     "baseStats": {
       "hpMax": 60,
       "atk": 15,
@@ -227,6 +245,8 @@
   {
     "id": "enemy_yeti",
     "name": "Yeti",
+    "levelMin": 10,
+    "levelMax": 15,
     "baseStats": {
       "hpMax": 150,
       "atk": 20,
@@ -250,6 +270,8 @@
   {
     "id": "enemy_harpy",
     "name": "Storm Harpy",
+    "levelMin": 12,
+    "levelMax": 16,
     "baseStats": {
       "hpMax": 90,
       "atk": 18,
@@ -273,6 +295,8 @@
   {
     "id": "enemy_roc",
     "name": "Storm Roc",
+    "levelMin": 15,
+    "levelMax": 20,
     "baseStats": {
       "hpMax": 300,
       "atk": 35,

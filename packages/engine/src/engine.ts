@@ -9,10 +9,6 @@ import type {
   QuestInstanceState,
   QuestTemplateDef,
   RewardPack,
-  EnemyDef,
-  ItemDef,
-  LocationDef,
-  RecipeDef,
   ContentIndex,
   SkillId
 } from '@rpg-loom/shared';
@@ -83,6 +79,16 @@ export function createNewState(params: {
         critMult: 1.5,
         res: 0.05
       },
+      intrinsicStats: {
+        hp: 25,
+        hpMax: 25,
+        atk: 5,
+        def: 3,
+        spd: 5,
+        critChance: 0.05,
+        critMult: 1.5,
+        res: 0.05
+      },
       skills: {
         swordsmanship: { id: 'swordsmanship', level: 1, xp: 0 },
         marksmanship: { id: 'marksmanship', level: 1, xp: 0 },
@@ -121,6 +127,11 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
   const next = clone(state);
 
   switch (cmd.type) {
+    case 'DEBUG_ADD_ITEM': {
+      next.inventory.push({ itemId: cmd.itemId, qty: cmd.qty });
+      events.push(ev(next, cmd.atMs, 'LOOT_GAINED', { items: [{ itemId: cmd.itemId, qty: cmd.qty }] }));
+      break;
+    }
     case 'SET_ACTIVITY': {
       next.activity = {
         id: `act_${cmd.params.type}_${next.tickIndex}`,
@@ -182,10 +193,12 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         break;
       }
       (next.equipment as any)[cmd.slot] = cmd.itemId;
+      if (content) recalculateStats(next, content);
       break;
     }
     case 'UNEQUIP_ITEM': {
       (next.equipment as any)[cmd.slot] = undefined;
+      if (content) recalculateStats(next, content);
       break;
     }
     case 'USE_ITEM': {
@@ -339,48 +352,11 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     const regenPct = isRecovery ? 0.10 : 0.01;
     const amount = Math.max(1, Math.floor(maxHp * regenPct));
 
-    const oldHp = next.player.baseStats.hp;
+    // const oldHp = next.player.baseStats.hp;
     next.player.baseStats.hp = Math.min(maxHp, next.player.baseStats.hp + amount);
 
     // Optional: Event for healing? Might be spammy.
     // if (isRecovery) events.push(ev(next, tickAtMs, 'HEAL', { amount }));
-  }
-
-  // Regen Logic
-  // Base regen: 1% max HP per 5 ticks (too slow?) -> Let's do 1% per tick for now to test, or 0.5%.
-  // Recovery activity: 10% max HP per tick.
-  const isRecovery = a.type === 'recovery';
-  const regenPct = isRecovery ? 0.10 : 0.005; // 10% vs 0.5%
-
-  // Only regen if injured
-  // Calculate max HP (simplified, ideally we sum equipment stats here or cache it)
-  // For MVP, using baseStats.hpMax. (Equipment modifiers not fully integrated in maxHp calc yet?)
-  // Let's assume player.baseStats.hpMax IS the total for now, or we need a helper.
-  // We haven't implemented robust stat recalculation on equip yet.
-  // const maxHp = next.player.baseStats.hpMax;
-  if (next.player.baseStats.hp < maxHp) { // Wait, player health is where? 
-    // Checking createNewState... baseStats has hpMax. But where is current HP?
-    // Ah, createNewState only has baseStats defined as:
-    /*
-      hpMax: 25,
-      atk: 5...
-    */
-    // It seems I missed where current `hp` is stored. 
-    // Looking at ACTIVE ENCOUNTER, enemyHp is there.
-    // But player HP?
-    // type CombatStats has hpMax.
-    // It does NOT have 'hp'.
-    // This is a bug in my previous understanding or the schema.
-    // Let's look at how damage is handled in resolveEncounterTick.
-    // "Player attacks... next.activeEncounter.enemyHp -= dmg".
-    // "Enemy Attack Simulation... " it says "visual/flavor for now".
-    // OH. Player HP isn't tracked yet?!
-    // "Encounters" in this MVP seem to be one-sided or "safe"?
-    // "Enemy Attack Simulation (visual/flavor for now...)"
-
-    // I need to ADD player HP to the state if I want Recovery to mean anything.
-    // Okay, I'll add `hp` to PlayerState or use `baseStats` if I modify the type.
-    // Let's modify CombatStats to include `hp` (current hp).
   }
 
   // minimal deterministic per-tick outputs
@@ -719,7 +695,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 
     // Boss Phase / Enrage Check
     let currentAtkMult = 1.0;
-    let currentSpdMult = 1.0;
+    // let currentSpdMult = 1.0;
 
     if (enemy.rank === 'boss' && enemy.phases) {
       const hpPct = next.activeEncounter.enemyHp / next.activeEncounter.enemyMaxHp;
@@ -728,7 +704,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       const activePhase = enemy.phases.find(p => hpPct <= p.triggerHpPct);
       if (activePhase && activePhase.buffs) {
         currentAtkMult = activePhase.buffs.atkMult ?? 1.0;
-        currentSpdMult = activePhase.buffs.spdMult ?? 1.0;
+        // currentSpdMult = activePhase.buffs.spdMult ?? 1.0;
       }
     }
 
@@ -826,7 +802,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     return { state: next, events };
   }
 
-  const enemyLevel = clamp(next.player.level + randIntDet(`elvl:${next.saveId}:${enemyId}:${next.tickIndex}`, -1, 1), 1, 99);
+  const enemyLevel = clamp(next.player.level + randIntDet(`elvl:${next.saveId}:${enemyId}:${next.tickIndex}`, -1, 1), enemy.levelMin ?? 1, enemy.levelMax ?? 100);
 
   // Initialize Combat State
   let hpScale = 1 + (enemyLevel * 0.1);
@@ -923,6 +899,37 @@ function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: n
   // Lvl 3 -> 900 xp (Total)
   while (state.player.xp >= 100 * Math.pow(state.player.level, 2)) {
     state.player.level += 1;
+
+    // Stat Growth (Intrinsic)
+    ensureIntrinsicStats(state);
+    const stats = state.player.intrinsicStats!;
+    stats.hpMax += 5;
+    // For current HP, we heal the gain? 
+    // We need to reflect this in the active baseStats too.
+    // Easiest is to modify intrinsic, then recalculate.
+    // But we also want to heal the player by 5.
+    state.player.baseStats.hp += 5;
+
+    stats.atk += 1;
+    // Def +1 every 2 levels (0.5 per level)
+    stats.def += 0.5;
+
+    // Recalculate will sync intrinsic -> baseStats (effective)
+    // We need content to recalculate properly though!
+    // gainXp is called deep in logic.
+    // engine.ts structure doesn't easily pass content everywhere.
+    // gainXp signature: (state, amount, events, atMs)
+    // We should pass content if possible, or just apply the delta to BOTH?
+    // Applying delta to both is safe if we trust they are in sync.
+    // BUT recalculate wipes baseStats from intrinsic + gear.
+    // If we only update intrinsic, baseStats becomes stale until next equip.
+    // If we update both, it's correct until next equip recalculation.
+    // So let's update both manually here to avoid needing `content`.
+
+    state.player.baseStats.hpMax += 5;
+    state.player.baseStats.atk += 1;
+    state.player.baseStats.def += 0.5;
+
     events.push(ev(state, atMs, 'LEVEL_UP', { newLevel: state.player.level }));
   }
 }
@@ -1013,4 +1020,47 @@ function ev<TType extends GameEvent['type']>(state: EngineState, atMs: number, t
     type,
     payload: payload as any
   };
+}
+
+// Ensure state is migrated
+function ensureIntrinsicStats(state: EngineState) {
+  if (!state.player.intrinsicStats) {
+    // Migration: assume current baseStats ARE the intrinsic stats (minus equipment?)
+    // For MVP, just copy them. If player had equipment on, they get a permanent buff from "snapshotting" current stats as intrinsic.
+    // Ideally we'd strip equipment stats, but we can't easily reverse without content index.
+    // Acceptable risk for dev.
+    state.player.intrinsicStats = clone(state.player.baseStats);
+  }
+}
+
+export function recalculateStats(state: EngineState, content: ContentIndex) {
+  ensureIntrinsicStats(state);
+  const base = state.player.intrinsicStats!;
+
+  // Start with intrinsic
+  const effective = clone(base);
+  effective.hp = state.player.baseStats.hp; // Preserve current HP from state tracking
+
+  // Sum equipment modifiers
+  const slots: Array<keyof typeof state.equipment> = ['weapon', 'armor', 'accessory1', 'accessory2'];
+  for (const slot of slots) {
+    const itemId = state.equipment[slot];
+    if (!itemId) continue;
+    const item = content.itemsById[itemId];
+    if (item && item.modifiers) {
+      if (item.modifiers.atk) effective.atk += item.modifiers.atk;
+      if (item.modifiers.def) effective.def += item.modifiers.def;
+      if (item.modifiers.hpMax) effective.hpMax += item.modifiers.hpMax;
+      // Add other stats as needed
+    }
+  }
+
+  // Apply update
+  // We strictly overwrite baseStats properties, specifically max stats, but we must be careful with current HP.
+  // Actually effective.hp carries the old current HP.
+  // But if hpMax increased, current HP stays same? Or heals?
+  // Standard RPG: equip doesn't heal, but unequipping might clamp.
+  effective.hp = Math.min(effective.hp, effective.hpMax);
+
+  state.player.baseStats = effective;
 }

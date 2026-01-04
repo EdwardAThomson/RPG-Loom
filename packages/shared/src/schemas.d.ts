@@ -122,7 +122,7 @@ export declare const PlayerStateSchema: z.ZodObject<{
         critMult: number;
         res: number;
     };
-    skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+    skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
         level: number;
         xp: number;
     }>>;
@@ -142,7 +142,7 @@ export declare const PlayerStateSchema: z.ZodObject<{
         critMult: number;
         res: number;
     };
-    skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+    skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
         level: number;
         xp: number;
     }>>;
@@ -155,11 +155,11 @@ export declare const ActivityPlanSchema: z.ZodObject<{
     params: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodAny>>;
 }, "strip", z.ZodTypeAny, {
     params: Record<string, any>;
-    type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+    type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
     activityId: string;
     locationId: string;
 }, {
-    type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+    type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
     activityId: string;
     locationId: string;
     params?: Record<string, any> | undefined;
@@ -226,11 +226,11 @@ export declare const EngineStateSchema: z.ZodObject<{
         params: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodAny>>;
     }, "strip", z.ZodTypeAny, {
         params: Record<string, any>;
-        type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+        type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
         activityId: string;
         locationId: string;
     }, {
-        type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+        type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
         activityId: string;
         locationId: string;
         params?: Record<string, any> | undefined;
@@ -292,7 +292,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
             level: number;
             xp: number;
         }>>;
@@ -312,7 +312,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
             level: number;
             xp: number;
         }>>;
@@ -392,7 +392,7 @@ export declare const EngineStateSchema: z.ZodObject<{
     nextEventId: number;
     activity: {
         params: Record<string, any>;
-        type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+        type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
         activityId: string;
         locationId: string;
     };
@@ -411,7 +411,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
             level: number;
             xp: number;
         }>>;
@@ -448,7 +448,7 @@ export declare const EngineStateSchema: z.ZodObject<{
     tickIndex: number;
     nextEventId: number;
     activity: {
-        type: "quest" | "idle" | "hunt" | "gather" | "craft" | "train" | "trade" | "explore";
+        type: "quest" | "idle" | "hunt" | "craft" | "train" | "trade" | "explore" | "gather";
         activityId: string;
         locationId: string;
         params?: Record<string, any> | undefined;
@@ -468,7 +468,7 @@ export declare const EngineStateSchema: z.ZodObject<{
             critMult: number;
             res: number;
         };
-        skills: Partial<Record<"swordsmanship" | "archery" | "arcana" | "defense" | "survival" | "gathering" | "crafting" | "diplomacy", {
+        skills: Partial<Record<"swordsmanship" | "arcana" | "defense" | "archery" | "survival" | "gathering" | "crafting" | "diplomacy", {
             level: number;
             xp: number;
         }>>;

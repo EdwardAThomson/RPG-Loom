@@ -30,6 +30,16 @@ export function InventoryModal({ state, itemStack, content, dispatch, onClose }:
         onClose();
     };
 
+    const handleUnequip = () => {
+        const slot = (Object.keys(state.equipment) as Array<keyof EquipmentState>)
+            .find(key => state.equipment[key] === itemStack.itemId);
+
+        if (slot) {
+            dispatch({ type: 'UNEQUIP_ITEM', slot, atMs: Date.now() });
+            onClose();
+        }
+    };
+
     const name = def?.name || itemStack.itemId;
 
     return (
@@ -87,7 +97,7 @@ export function InventoryModal({ state, itemStack, content, dispatch, onClose }:
                         <button onClick={handleEquip} style={{ flex: 1, borderColor: 'var(--color-gold)' }}>Equip</button>
                     )}
                     {isEquipped && (
-                        <div style={{ flex: 1, textAlign: 'center', padding: '0.8rem', color: '#666', border: '1px solid #333', borderRadius: '4px' }}>Equipped</div>
+                        <button onClick={handleUnequip} style={{ flex: 1, borderColor: '#666', color: '#ccc' }}>Unequip</button>
                     )}
                     {isConsumable && (
                         <button onClick={handleConsume} style={{ flex: 1, borderColor: 'var(--color-success)' }}>Use</button>

@@ -28,6 +28,10 @@ export function ActivityView({ state, dispatch, content }: Props) {
                 <div className="current-action">{activity.params.type.toUpperCase()}</div>
                 {'locationId' in activity.params && <div className="location">{(activity.params as any).locationId}</div>}
 
+                <div style={{ marginTop: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
+                    Player HP: {player.baseStats.hp} / {player.baseStats.hpMax}
+                </div>
+
                 <div className="combat-widget" style={{
                     visibility: state.activeEncounter ? 'visible' : 'hidden',
                     opacity: state.activeEncounter ? 1 : 0,
@@ -167,7 +171,7 @@ export function ActivityView({ state, dispatch, content }: Props) {
                 style={activity.params.type === 'idle' ? { opacity: 0.5 } : {}}
                 onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'idle' }, atMs: Date.now() })}
             >
-                Return to Town (Idle)
+                Stop Activity
             </button>
         </section>
     );

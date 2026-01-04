@@ -16,15 +16,23 @@ export type TaskId = string;
 export type EventId = string;
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic';
 export type ItemType = 'weapon' | 'armor' | 'accessory' | 'consumable' | 'material' | 'quest';
-export type SkillId = 'swordsmanship' | 'archery' | 'arcana' | 'defense' | 'survival' | 'gathering' | 'crafting' | 'diplomacy';
-export type ActivityType = 'idle' | 'recovery' | 'quest' | 'hunt' | 'gather' | 'craft' | 'train' | 'trade' | 'explore';
+export type SkillId = 'blacksmithing' | 'woodworking' | 'leatherworking' | 'tailoring' | 'swordsmanship' | 'marksmanship' | 'arcana' | 'defense' | 'mining' | 'woodcutting' | 'foraging';
+export type ActivityType = 'idle' | 'recovery' | 'quest' | 'hunt' | 'mine' | 'woodcut' | 'forage' | 'craft' | 'train' | 'trade' | 'explore';
 export type TacticsPreset = 'aggressive' | 'balanced' | 'defensive';
+export interface ContentIndex {
+    itemsById: Record<string, ItemDef>;
+    enemiesById: Record<string, EnemyDef>;
+    locationsById: Record<string, LocationDef>;
+    questTemplatesById: Record<string, QuestTemplateDef>;
+    recipesById: Record<string, RecipeDef>;
+}
 export interface ItemDef {
     id: ItemId;
     name: string;
     type: ItemType;
     rarity: Rarity;
-    tags: string[];
+    tags?: string[];
+    description: string;
     stackable: boolean;
     value: number;
     modifiers?: Partial<CombatStats>;
@@ -56,6 +64,7 @@ export interface EnemyDef {
 export interface LocationDef {
     id: LocationId;
     name: string;
+    type?: 'town' | 'wild';
     description: string;
     requirements?: {
         minLevel?: number;
@@ -64,7 +73,9 @@ export interface LocationDef {
     };
     activities: ActivityType[];
     encounterTable: EncounterTable;
-    resourceTable: LootTable;
+    miningTable?: LootTable;
+    woodcuttingTable?: LootTable;
+    foragingTable?: LootTable;
 }
 export interface QuestTemplateDef {
     id: QuestTemplateId;
@@ -89,6 +100,7 @@ export interface NpcDef {
 export interface RecipeDef {
     id: RecipeId;
     name: string;
+    skill: SkillId;
     inputs: Array<{
         itemId: ItemId;
         qty: number;
@@ -97,9 +109,10 @@ export interface RecipeDef {
         itemId: ItemId;
         qty: number;
     }>;
-    requiredCraftingLevel?: number;
+    requiredSkillLevel?: number;
 }
 export interface CombatStats {
+    hp: number;
     hpMax: number;
     atk: number;
     def: number;
@@ -131,6 +144,7 @@ export interface PlayerState {
     gold: number;
     tactics: TacticsPreset;
     baseStats: CombatStats;
+    intrinsicStats?: CombatStats;
     skills: Record<SkillId, SkillState>;
     reputation: Record<string, number>;
     flags: Record<string, boolean>;
@@ -157,7 +171,13 @@ export type ActivityParams = {
     type: 'hunt';
     locationId: LocationId;
 } | {
-    type: 'gather';
+    type: 'mine';
+    locationId: LocationId;
+} | {
+    type: 'woodcut';
+    locationId: LocationId;
+} | {
+    type: 'forage';
     locationId: LocationId;
 } | {
     type: 'quest';
@@ -242,6 +262,25 @@ export type PlayerCommand = {
     type: 'SET_TACTICS';
     tactics: TacticsPreset;
     atMs: number;
+} | {
+    type: 'TRAVEL';
+    locationId: LocationId;
+    atMs: number;
+} | {
+    type: 'BUY_ITEM';
+    itemId: ItemId;
+    qty: number;
+    atMs: number;
+} | {
+    type: 'SELL_ITEM';
+    itemId: ItemId;
+    qty: number;
+    atMs: number;
+} | {
+    type: 'DEBUG_ADD_ITEM';
+    itemId: ItemId;
+    qty: number;
+    atMs: number;
 };
 export interface RewardPack {
     xp: number;
@@ -307,12 +346,18 @@ export type GameEvent = BaseEvent<'TICK_PROCESSED', {
     newTotal: number;
 }> | BaseEvent<'LEVEL_UP', {
     newLevel: number;
+}> | BaseEvent<'SKILL_PROCS', {
+    skillId: SkillId;
+    effect: string;
+    value?: number;
 }> | BaseEvent<'TACTICS_CHANGED', {
     tactics: TacticsPreset;
 }> | BaseEvent<'ITEM_CONSUMED', {
     itemId: ItemId;
 }> | BaseEvent<'ERROR', {
     code: string;
+    message: string;
+}> | BaseEvent<'FLAVOR_TEXT', {
     message: string;
 }>;
 export interface BaseEvent<TType extends string, TPayload> {

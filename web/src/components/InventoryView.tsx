@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { EngineState, PlayerCommand, InventoryStack } from '@rpg-loom/shared';
 import { InventoryModal } from './InventoryModal';
+import { EquipSlot } from './EquipSlot';
 
 interface Props {
     state: EngineState;
@@ -17,6 +18,14 @@ export function InventoryView({ state, dispatch, content }: Props) {
     return (
         <>
             <section className="card full-height">
+                <h2>Equipment</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.8rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #333' }}>
+                    <EquipSlot label="Weapon" itemId={state.equipment.weapon} content={content} onClick={() => state.equipment.weapon && setSelectedStack({ itemId: state.equipment.weapon, qty: 1 })} />
+                    <EquipSlot label="Armor" itemId={state.equipment.armor} content={content} onClick={() => state.equipment.armor && setSelectedStack({ itemId: state.equipment.armor, qty: 1 })} />
+                    <EquipSlot label="Acc 1" itemId={state.equipment.accessory1} content={content} onClick={() => state.equipment.accessory1 && setSelectedStack({ itemId: state.equipment.accessory1, qty: 1 })} />
+                    <EquipSlot label="Acc 2" itemId={state.equipment.accessory2} content={content} onClick={() => state.equipment.accessory2 && setSelectedStack({ itemId: state.equipment.accessory2, qty: 1 })} />
+                </div>
+
                 <h2>Inventory</h2>
                 <div className="inventory-grid">
                     {state.inventory.map((item: any) => (

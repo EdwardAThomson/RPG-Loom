@@ -163,7 +163,7 @@ function AppContent() {
           {activeTab === 'travel' && <TravelView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
-          {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} />}
+          {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'quests' && <QuestView state={state} />}
           {activeTab === 'debug' && <DebugView state={state} content={content} dispatch={dispatch} />}
           {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}

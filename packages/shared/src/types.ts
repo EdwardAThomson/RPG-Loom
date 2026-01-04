@@ -191,6 +191,7 @@ export interface PlayerState {
   gold: number;
   tactics: TacticsPreset;
   baseStats: CombatStats;
+  intrinsicStats?: CombatStats;
   skills: Record<SkillId, SkillState>;
   reputation: Record<string, number>; // keyed by factionId
   flags: Record<string, boolean>; // milestones, discoveries
@@ -329,7 +330,14 @@ export type PlayerCommand =
     atMs: number;
   }
   | {
+
     type: 'SELL_ITEM';
+    itemId: ItemId;
+    qty: number;
+    atMs: number;
+  }
+  | {
+    type: 'DEBUG_ADD_ITEM';
     itemId: ItemId;
     qty: number;
     atMs: number;

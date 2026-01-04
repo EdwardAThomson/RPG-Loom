@@ -16,6 +16,18 @@
 *   **Tooling**:
     *   Created `DebugView.tsx` (accessible via new "Debug" tab) to inspect raw location data and force-step the engine client-side.
 
+### Equipment & Balancing (Completed)
+
+*   **UI Features**:
+    *   **Equipment Manager**: Implemented dedicated equipment grid in Inventory, allowing direct inspection and simple drag-n-drop like interaction logic (click-to-equip/unequip).
+    *   **Player Vitals**: Added prominent **HP Bar** to Activity Monitor, providing critical feedback during combat.
+    *   **Visuals**: Standardized item slot appearance across Character and Inventory views.
+*   **Balancing & Scaling**:
+    *   **Scaling Caps**: Fixed issue where enemies scaled infinitely with player level. Implemented stricy `levelMin` / `levelMax` bounds for all enemies.
+    *   **Content Patch**: Updated 12 early-game enemies (Rats, Bandits, etc.) with correct level metadata to prevent high-level players from facing Level 55 Rats.
+    *   **Bug Fixes**: Resolved `NaN` stat errors by implementing robust default values for legacy content.
+*   **Developer Tools**:
+    *   **Item Spawner**: Added `Item Spawner` to Debug View, allowing rapid acquisition of test gear.
 
 ## 2025-12-31
 

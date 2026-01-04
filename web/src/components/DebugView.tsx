@@ -70,6 +70,22 @@ export function DebugView({ state, content, dispatch }: Props) {
                 </button>
             </div>
 
+            <div style={{ marginBottom: '1rem', border: '1px solid #444', padding: '0.5rem' }}>
+                <h3>Item Spawner</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {Object.values(content.itemsById).map((item: any) => (
+                        <button
+                            key={item.id}
+                            onClick={() => dispatch({ type: 'DEBUG_ADD_ITEM', itemId: item.id, qty: 1, atMs: Date.now() })}
+                            style={{ padding: '0.3rem', fontSize: '0.8rem', cursor: 'pointer', background: '#222', color: 'var(--color-gold)', border: '1px solid #444' }}
+                        >
+                            + {item.name}
+                        </button>
+                    ))}
+                    {Object.keys(content.itemsById).length === 0 && <div>No items found in content.</div>}
+                </div>
+            </div>
+
             <div style={{ border: '1px solid #444', padding: '0.5rem', background: '#111', minHeight: '100px', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                 {manualOutput}
             </div>

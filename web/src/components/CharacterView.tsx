@@ -1,12 +1,14 @@
 import React from 'react';
-import { EngineState, PlayerCommand, TacticsPreset } from '@rpg-loom/shared';
+import { EngineState, PlayerCommand, TacticsPreset, ContentIndex } from '@rpg-loom/shared';
+import { EquipSlot } from './EquipSlot';
 
 interface Props {
     state: EngineState;
     dispatch: (cmd: PlayerCommand) => void;
+    content: ContentIndex;
 }
 
-export function CharacterView({ state, dispatch }: Props) {
+export function CharacterView({ state, dispatch, content }: Props) {
     const { player } = state;
     const stats = player.baseStats;
 
@@ -48,10 +50,17 @@ export function CharacterView({ state, dispatch }: Props) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                     <div>ATK: {stats.atk}</div>
                     <div>DEF: {stats.def}</div>
-                    <div>SPD: {stats.spd}</div>
-                    <div>CRIT: {Math.round(stats.critChance * 100)}%</div>
-                    <div>MULT: {stats.critMult}x</div>
-                    <div>RES: {Math.round(stats.res * 100)}%</div>
+                    <div>HP: {stats.hp} / {stats.hpMax}</div>
+                </div>
+            </section>
+
+            <section className="card">
+                <h2>Equipment</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                    <EquipSlot label="Weapon" itemId={state.equipment.weapon} content={content} />
+                    <EquipSlot label="Armor" itemId={state.equipment.armor} content={content} />
+                    <EquipSlot label="Accessory 1" itemId={state.equipment.accessory1} content={content} />
+                    <EquipSlot label="Accessory 2" itemId={state.equipment.accessory2} content={content} />
                 </div>
             </section>
 
@@ -70,3 +79,5 @@ export function CharacterView({ state, dispatch }: Props) {
         </div>
     );
 }
+
+
