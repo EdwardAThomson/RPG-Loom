@@ -392,7 +392,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // Debatable: emit GOLD_CHANGED every tick? It might be spammy, but it's correct.
     events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: -1, newTotal: next.player.gold }));
 
-    gainSkillXp(next, a.skillId, 1);
+    if (gainSkillXp(next, a.skillId, 1) && content) recalculateStats(next, content);
     gainXp(next, 1, events, tickAtMs);
     return { state: next, events };
   }
@@ -420,7 +420,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        gainSkillXp(next, 'woodcutting', 1);
+        if (gainSkillXp(next, 'woodcutting', 1) && content) recalculateStats(next, content);
         gainXp(next, 1, events, tickAtMs);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop, but get no good wood.` }));
@@ -453,7 +453,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        gainSkillXp(next, 'mining', 1);
+        if (gainSkillXp(next, 'mining', 1) && content) recalculateStats(next, content);
         gainXp(next, 1, events, tickAtMs);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe but find nothing.` }));
@@ -486,7 +486,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        gainSkillXp(next, 'foraging', 1);
+        if (gainSkillXp(next, 'foraging', 1) && content) recalculateStats(next, content);
         gainXp(next, 1, events, tickAtMs);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You find nothing of interest.` }));
@@ -535,7 +535,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
             for (const it of loot) it.qty *= 2;
             events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: "Critical gathering success! (x2)" }));
           }
-          gainSkillXp(next, skillId, 1);
+          if (gainSkillXp(next, skillId, 1) && content) recalculateStats(next, content);
         }
 
         for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
@@ -606,7 +606,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // 10 XP base + scaled?
     const xpGain = Math.max(10, (recipe.requiredSkillLevel || 1) * 10);
     gainXp(next, 5, events, tickAtMs); // Player XP
-    if (skillId && skill) gainSkillXp(next, skillId, xpGain);
+    if (skillId && skill && gainSkillXp(next, skillId, xpGain) && content) recalculateStats(next, content);
 
     bumpQuestProgressFromCraft(next, a.recipeId, events, tickAtMs, content);
     return { state: next, events };
@@ -732,7 +732,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     next.activeEncounter.enemyHp -= dmgToEnemy;
 
     // Gain Offense XP
-    gainSkillXp(next, offensiveSkill, 1);
+    if (gainSkillXp(next, offensiveSkill, 1) && content) recalculateStats(next, content);
 
     if (next.activeEncounter.enemyHp <= 0) {
       // WIN
@@ -770,7 +770,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     next.player.baseStats.hp = Math.max(0, next.player.baseStats.hp - mitigatedDmg);
 
     // Gain Defense XP
-    if (dmgToPlayer > 0) gainSkillXp(next, 'defense', 1);
+    if (dmgToPlayer > 0 && gainSkillXp(next, 'defense', 1) && content) recalculateStats(next, content);
 
     // Death Check
     if (next.player.baseStats.hp <= 0) {
@@ -933,7 +933,7 @@ function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: n
   }
 }
 
-function gainSkillXp(state: EngineState, skillId: SkillId, amount: number) {
+export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number): boolean {
   let s = state.player.skills[skillId];
   if (!s) {
     // Lazy migration: Initialize missing skill on first use
@@ -941,10 +941,13 @@ function gainSkillXp(state: EngineState, skillId: SkillId, amount: number) {
     state.player.skills[skillId] = s;
   }
   s.xp += amount;
+  let leveledUp = false;
   // MVP: level up every 50 xp
   while (s.xp >= s.level * 50) {
     s.level += 1;
+    leveledUp = true;
   }
+  return leveledUp;
 }
 
 // ---- Loot helpers ----
@@ -1050,16 +1053,34 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
       if (item.modifiers.atk) effective.atk += item.modifiers.atk;
       if (item.modifiers.def) effective.def += item.modifiers.def;
       if (item.modifiers.hpMax) effective.hpMax += item.modifiers.hpMax;
-      // Add other stats as needed
+      if (item.modifiers.spd) effective.spd += item.modifiers.spd;
+      if (item.modifiers.critChance) effective.critChance += item.modifiers.critChance;
     }
+  }
+
+  // Sum Skill Modifiers (Persistent Training)
+  // Mapping:
+  // Melee (swordsmanship): +1 ATK per level (above 1)
+  // Ranged (marksmanship): +1 SPD per level, +0.5% Crit per level
+  // Defense (defense): +1 DEF per level, +5 HP Max per level
+
+  const s = state.player.skills;
+  if (s.swordsmanship) {
+    effective.atk += Math.max(0, s.swordsmanship.level - 1) * 1;
+  }
+  if (s.marksmanship) {
+    effective.spd += Math.max(0, s.marksmanship.level - 1) * 1;
+    effective.critChance += Math.max(0, s.marksmanship.level - 1) * 0.005;
+  }
+  if (s.defense) {
+    effective.def += Math.max(0, s.defense.level - 1) * 1;
+    effective.hpMax += Math.max(0, s.defense.level - 1) * 5;
   }
 
   // Apply update
   // We strictly overwrite baseStats properties, specifically max stats, but we must be careful with current HP.
-  // Actually effective.hp carries the old current HP.
-  // But if hpMax increased, current HP stays same? Or heals?
-  // Standard RPG: equip doesn't heal, but unequipping might clamp.
   effective.hp = Math.min(effective.hp, effective.hpMax);
 
   state.player.baseStats = effective;
 }
+

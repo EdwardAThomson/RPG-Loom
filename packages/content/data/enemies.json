@@ -732,5 +732,242 @@
         }
       ]
     }
+  },
+  {
+    "id": "enemy_siren",
+    "name": "Siren",
+    "tags": [
+      "humanoid",
+      "water",
+      "sonic"
+    ],
+    "levelMin": 40,
+    "levelMax": 44,
+    "baseStats": {
+      "hpMax": 180,
+      "atk": 35,
+      "def": 10,
+      "spd": 12,
+      "critChance": 0.15,
+      "critMult": 1.5,
+      "res": 0.4
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_siren_scale",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 2
+        },
+        {
+          "itemId": "item_pearl",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_coral_golem",
+    "name": "Coral Golem",
+    "tags": [
+      "construct",
+      "water",
+      "earth"
+    ],
+    "levelMin": 42,
+    "levelMax": 46,
+    "baseStats": {
+      "hpMax": 350,
+      "atk": 40,
+      "def": 30,
+      "spd": 3,
+      "critChance": 0,
+      "critMult": 1,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_coral_fragment",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 2
+        },
+        {
+          "itemId": "item_stone",
+          "minQty": 3,
+          "maxQty": 6,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_kraken",
+    "name": "Kraken",
+    "rank": "boss",
+    "tags": [
+      "beast",
+      "water",
+      "boss"
+    ],
+    "levelMin": 45,
+    "levelMax": 45,
+    "phases": [
+      {
+        "name": "Submerge",
+        "triggerHpPct": 0.5,
+        "buffs": {
+          "atkMult": 1.5,
+          "spdMult": 0.8
+        }
+      }
+    ],
+    "baseStats": {
+      "hpMax": 1000,
+      "atk": 50,
+      "def": 20,
+      "spd": 5,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.5
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_kraken_tentacle",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_pearl",
+          "minQty": 5,
+          "maxQty": 10,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_automaton",
+    "name": "Brass Automaton",
+    "tags": [
+      "construct",
+      "metal"
+    ],
+    "levelMin": 50,
+    "levelMax": 54,
+    "baseStats": {
+      "hpMax": 220,
+      "atk": 45,
+      "def": 25,
+      "spd": 5,
+      "critChance": 0.05,
+      "critMult": 1.5,
+      "res": 0.6
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_brass_gear",
+          "minQty": 2,
+          "maxQty": 4,
+          "weight": 2
+        },
+        {
+          "itemId": "item_iron_ingot",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_steam_drone",
+    "name": "Steam Drone",
+    "tags": [
+      "construct",
+      "fire",
+      "flying"
+    ],
+    "levelMin": 52,
+    "levelMax": 56,
+    "baseStats": {
+      "hpMax": 150,
+      "atk": 40,
+      "def": 15,
+      "spd": 15,
+      "critChance": 0.1,
+      "critMult": 1.5,
+      "res": 0.3
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_steam_canister",
+          "minQty": 1,
+          "maxQty": 2,
+          "weight": 2
+        },
+        {
+          "itemId": "item_brass_gear",
+          "minQty": 1,
+          "maxQty": 3,
+          "weight": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "enemy_mechanus_prime",
+    "name": "Mechanus Prime",
+    "rank": "boss",
+    "tags": [
+      "construct",
+      "boss",
+      "metal"
+    ],
+    "levelMin": 55,
+    "levelMax": 55,
+    "phases": [
+      {
+        "name": "Overclock",
+        "triggerHpPct": 0.4,
+        "buffs": {
+          "atkMult": 1.3,
+          "spdMult": 2.0
+        }
+      }
+    ],
+    "baseStats": {
+      "hpMax": 2000,
+      "atk": 60,
+      "def": 40,
+      "spd": 8,
+      "critChance": 0.1,
+      "critMult": 2.0,
+      "res": 0.8
+    },
+    "lootTable": {
+      "entries": [
+        {
+          "itemId": "item_automaton_core",
+          "minQty": 1,
+          "maxQty": 1,
+          "weight": 1
+        },
+        {
+          "itemId": "item_titanium_plate",
+          "minQty": 2,
+          "maxQty": 5,
+          "weight": 1
+        }
+      ]
+    }
   }
 ]
