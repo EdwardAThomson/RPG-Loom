@@ -109,6 +109,7 @@ export interface LocationDef {
   description: string;
   requirements?: {
     minLevel?: number;
+    minCombatLevel?: number;
     minSkills?: Partial<Record<SkillId, number>>;
     requiredFlags?: string[];
     minAtk?: number;
@@ -188,6 +189,7 @@ export interface PlayerState {
   id: PlayerId;
   name: string;
   level: number;
+  combatLevel: number;
   xp: number;
   gold: number;
   tactics: TacticsPreset;

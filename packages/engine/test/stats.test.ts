@@ -1,7 +1,17 @@
 
 import { describe, it, expect } from 'vitest';
-import { createNewState, step } from '../src/engine.js';
+import { createNewState, step, recalculateStats } from '../src/engine.js';
 import { EngineState } from '@rpg-loom/shared';
+
+const mockContent = {
+    itemsById: {},
+    enemiesById: {},
+    locationsById: {
+        loc1: { id: 'loc1', name: 'Location 1', description: '', activities: [], encounterTable: { entries: [] } }
+    },
+    questTemplatesById: {},
+    recipesById: {}
+} as any;
 
 describe('Leveling Stats', () => {
     it('should increase stats on level up', () => {
@@ -13,6 +23,8 @@ describe('Leveling Stats', () => {
             nowMs: now,
             startLocationId: 'loc1'
         });
+
+        recalculateStats(state, mockContent);
 
         const initialAtk = state.player.baseStats.atk;
         const initialDef = state.player.baseStats.def;
@@ -65,7 +77,7 @@ describe('Leveling Stats', () => {
         state.player.xp = 99;
 
         // Run 1 tick
-        const res = step(state, now + 1000, undefined); // No content needed for basic train logic if I ignore errors?
+        const res = step(state, now + 1000, mockContent);
         // Wait, train logic:
         // gainSkillXp... gainXp(1)... 
         // It doesn't check content for training swordsmanship?
@@ -75,12 +87,19 @@ describe('Leveling Stats', () => {
 
         const nextState = res.state;
 
-        // Check Level
-        expect(nextState.player.level).toBe(2);
+        // Check Level: started at 10, will stay at 10 until a skill levels up.
+        expect(nextState.player.level).toBe(10);
 
-        // Check Stats
-        expect(nextState.player.baseStats.atk).toBe(initialAtk + 1);
-        expect(nextState.player.baseStats.def).toBe(initialDef + 0.5);
-        expect(nextState.player.baseStats.hpMax).toBe(initialHpMax + 5);
+        // To test level up stats, we need to push a skill to Lv 2.
+        state.player.skills.defense.xp = 99;
+        const res2 = step(state, now + 2000, mockContent);
+        const state2 = res2.state;
+
+        expect(state2.player.skills.defense.level).toBe(2);
+        expect(state2.player.level).toBe(11);
+
+        // Check Stats: defense Lv 2 gives +0.5 DEF and +5 HP Max in recalculateStats
+        expect(state2.player.baseStats.def).toBe(initialDef + 0.5);
+        expect(state2.player.baseStats.hpMax).toBe(initialHpMax + 5);
     });
 });

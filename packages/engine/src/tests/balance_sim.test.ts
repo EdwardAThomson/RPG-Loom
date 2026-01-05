@@ -19,12 +19,13 @@ describe('Balance Simulation', () => {
     // Since we want to see output, we can use console.log and --reporter=verbose
     it('Simulates 1 Hour of Gameplay', () => {
         const resForest = runSim(3600, 'hunt', 'loc_forest');
-        // Expect reasonable progression (e.g. lvl 5-15) not lvl 70+
-        if (resForest.state.player.level > 15) {
-            throw new Error(`Leveling too fast! Reached level ${resForest.state.player.level} in 1 hour.`);
+        const level = resForest.state.player.level;
+        // Expect reasonable progression (e.g. starting at 10, reach 15-30)
+        if (level > 40) {
+            throw new Error(`Leveling too fast! Reached level ${level} in 1 hour.`);
         }
-        if (resForest.state.player.level < 3) {
-            throw new Error(`Leveling too slow? Only reached level ${resForest.state.player.level} in 1 hour.`);
+        if (level < 11) {
+            throw new Error(`Leveling too slow? Only reached level ${level} in 1 hour.`);
         }
         console.log(`Forest Sim Level Reached: ${resForest.state.player.level}`);
 

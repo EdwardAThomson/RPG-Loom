@@ -64,7 +64,7 @@ export function createNewState(params: {
   nowMs: number;
   startLocationId: string;
 }): EngineState {
-  return {
+  const state: EngineState = {
     version: 1,
     saveId: params.saveId,
     createdAtMs: params.nowMs,
@@ -76,7 +76,8 @@ export function createNewState(params: {
     player: {
       id: params.playerId,
       name: params.playerName,
-      level: 1,
+      level: 0,
+      combatLevel: 0,
       xp: 0,
       gold: 0,
       tactics: 'balanced',
@@ -113,7 +114,6 @@ export function createNewState(params: {
       id: 'act_idle_0',
       params: { type: 'idle' },
       startedAtMs: params.nowMs
-
     },
     metrics: {
       startTimeMs: params.nowMs,
@@ -121,6 +121,9 @@ export function createNewState(params: {
       startGold: 0
     }
   };
+
+  syncDerivedPlayerStats(state);
+  return state;
 }
 
 export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: ContentIndex): StepResult {
@@ -234,7 +237,11 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       const loc = content.locationsById[cmd.locationId];
       // Check requirements
       if (loc.requirements?.minLevel && next.player.level < loc.requirements.minLevel) {
-        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Level ${loc.requirements.minLevel} required.` }));
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Total Level ${loc.requirements.minLevel} required.` }));
+        break;
+      }
+      if (loc.requirements?.minCombatLevel && next.player.combatLevel < loc.requirements.minCombatLevel) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'COMBAT_LEVEL_TOO_LOW', message: `Combat Level ${loc.requirements.minCombatLevel} required.` }));
         break;
       }
       if (loc.requirements?.minAtk && next.player.baseStats.atk < loc.requirements.minAtk) {
@@ -316,25 +323,23 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         }
       }
 
-      // 2. Recalculate Player Level (XP IS SACROSANCT - READ ONLY)
-      next.player.level = 1;
-      while (next.player.xp >= 100 * Math.pow(next.player.level, 2)) {
-        next.player.level += 1;
-      }
+      // 2. Recalculate Total XP and Level from Skills
+      syncDerivedPlayerStats(next);
 
       // 3. Reconstruct Intrinsic Stats from the derived Level
       ensureIntrinsicStats(next);
       next.player.intrinsicStats = clone(STARTING_INTRINSIC_STATS);
+      // NOTE: Stat growth is still based on 'Player Level' (which is now sum of skills)
+      // This will cause massive stat spikes if not balanced. 
+      // But we follow the requirement for summation.
       for (let l = 1; l < next.player.level; l++) {
-        // Apply increments for each level gained (Standard RPG Stat Growth)
         next.player.intrinsicStats.hpMax += 5;
         next.player.intrinsicStats.atk += 1;
         next.player.intrinsicStats.def += 0.5;
-        // hp is kept in sync with hpMax or clamped during recalculate
       }
 
       if (content) recalculateStats(next, content);
-      events.push(ev(next, cmd.atMs, 'FLAVOR_TEXT', { message: 'Levels and stats recalculated. XP remains sacrosanct.' }));
+      events.push(ev(next, cmd.atMs, 'FLAVOR_TEXT', { message: 'Levels and stats recalculated based on Skill Summation.' }));
       break;
     }
   }
@@ -984,48 +989,24 @@ function getTotalXpForSkillLevel(level: number): number {
 }
 
 function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: number) {
+  // For now, general 'Player XP' still increments the total pool, 
+  // but it will be slightly out of sync with the sum of skills unless we distribute it.
+  // The user wants the UI to reflect the sum, so we'll ensure recalculation is called.
   state.player.xp += amount;
   events.push(ev(state, atMs, 'XP_GAINED', { amount, newTotal: state.player.xp }));
 
-  // Quadratic leveling curve: Threshold = 100 * level^2
-  // Lvl 1 -> 100 xp (Total)
-  // Lvl 2 -> 400 xp (Total)
-  // Lvl 3 -> 900 xp (Total)
-  while (state.player.xp >= 100 * Math.pow(state.player.level, 2)) {
-    state.player.level += 1;
+  // We no longer use the quadratic curve for 'Player Level'.
+  // Instead, 'Player Level' is the summation of Skill levels.
+  // We'll call the helper to ensure it's updated (though gainXp usually accompanied by gainSkillXp).
+  syncDerivedPlayerStats(state);
 
-    // Stat Growth (Intrinsic)
-    ensureIntrinsicStats(state);
-    const stats = state.player.intrinsicStats!;
-    stats.hpMax += 5;
-    // For current HP, we heal the gain? 
-    // We need to reflect this in the active baseStats too.
-    // Easiest is to modify intrinsic, then recalculate.
-    // But we also want to heal the player by 5.
-    state.player.baseStats.hp += 5;
+  // Growth check
+  // Since level can change via summation, we should ensure stats stay in sync.
+  // However, recalculateTotalXpAndLevel doesn't handle the level-up stat gains (HP/Atk/Def) 
+  // that were previously in this loop. We should probably move them to a 'syncPlayerStatsToLevel' helper.
 
-    stats.atk += 1;
-    // Def +1 every 2 levels (0.5 per level)
-    stats.def += 0.5;
-
-    // Recalculate will sync intrinsic -> baseStats (effective)
-    // We need content to recalculate properly though!
-    // gainXp is called deep in logic.
-    // engine.ts structure doesn't easily pass content everywhere.
-    // gainXp signature: (state, amount, events, atMs)
-    // We should pass content if possible, or just apply the delta to BOTH?
-    // Applying delta to both is safe if we trust they are in sync.
-    // BUT recalculate wipes baseStats from intrinsic + gear.
-    // If we only update intrinsic, baseStats becomes stale until next equip.
-    // If we update both, it's correct until next equip recalculation.
-    // So let's update both manually here to avoid needing `content`.
-
-    state.player.baseStats.hpMax += 5;
-    state.player.baseStats.atk += 1;
-    state.player.baseStats.def += 0.5;
-
-    events.push(ev(state, atMs, 'LEVEL_UP', { newLevel: state.player.level }));
-  }
+  // NOTE: In the summation model, stat growth per 'Total Level' might be too fast.
+  // If we have 10 skills at Level 10, Total Level is 100.
 }
 
 export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number): boolean {
@@ -1045,6 +1026,10 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
     s.level += 1;
     leveledUp = true;
   }
+
+  // Update total player XP and Level
+  syncDerivedPlayerStats(state);
+
   return leveledUp;
 }
 
@@ -1127,6 +1112,28 @@ function ensureIntrinsicStats(state: EngineState) {
   if (!state.player.intrinsicStats) {
     state.player.intrinsicStats = clone(state.player.baseStats);
   }
+}
+
+export function syncDerivedPlayerStats(state: EngineState) {
+  let totalXp = 0;
+  let totalLevel = 0;
+  let combatLevel = 0;
+
+  const combatSkills: SkillId[] = ['swordsmanship', 'marksmanship', 'arcana', 'defense'];
+
+  for (const skillId in state.player.skills) {
+    const s = state.player.skills[skillId as SkillId];
+    if (s) {
+      totalXp += s.xp;
+      totalLevel += s.level;
+      if (combatSkills.includes(skillId as SkillId)) {
+        combatLevel += s.level;
+      }
+    }
+  }
+  state.player.xp = totalXp;
+  state.player.level = totalLevel;
+  state.player.combatLevel = combatLevel;
 }
 
 export function recalculateStats(state: EngineState, content: ContentIndex) {

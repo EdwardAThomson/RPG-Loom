@@ -112,11 +112,15 @@ function AppContent() {
         <div className="stats" style={{ flex: 1, justifyContent: 'center' }}>
           <div className="stat">
             <span style={{ fontSize: '1.2rem', color: '#fff' }}>{player.level}</span>
-            <span>LEVEL</span>
+            <span>TOTAL LEVEL</span>
+          </div>
+          <div className="stat">
+            <span style={{ fontSize: '1.2rem', color: 'var(--color-combat)' }}>{player.combatLevel}</span>
+            <span>COMBAT LEVEL</span>
           </div>
           <div className="stat">
             <span style={{ fontSize: '1.2rem', color: '#fff' }}>{Math.floor(player.xp).toLocaleString()}</span>
-            <span>XP ({xpRate}/hr)</span>
+            <span>TOTAL XP ({xpRate}/hr)</span>
           </div>
           <div className="stat">
             <span style={{ fontSize: '1.2rem', color: 'var(--color-gold)' }}>{player.gold.toLocaleString()}</span>

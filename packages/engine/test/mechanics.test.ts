@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNewState, gainSkillXp, recalculateStats, applyCommand } from '../src/engine.js';
+import { createNewState, gainSkillXp, recalculateStats, applyCommand, syncDerivedPlayerStats } from '../src/engine.js';
 import type { ContentIndex, LocationDef } from '@rpg-loom/shared';
 
 // Mock Content
@@ -19,6 +19,14 @@ const mockLocations: Record<string, LocationDef> = {
         activities: [],
         encounterTable: { entries: [] },
         requirements: { minAtk: 100, minDef: 100 }
+    },
+    'loc_combat_gate': {
+        id: 'loc_combat_gate',
+        name: 'Combat Gate Zone',
+        description: '',
+        activities: [],
+        encounterTable: { entries: [] },
+        requirements: { minCombatLevel: 10 }
     }
 };
 
@@ -87,6 +95,42 @@ describe('Balance Mechanics', () => {
             expect(res.events.find(e => e.type === 'ERROR')).toBeUndefined();
             expect(res.state.currentLocationId).toBe('loc_hard_stat');
         });
+
+        it('should block travel if combat level is too low', () => {
+            let state = createNewState({ saveId: 't', playerId: 'p', playerName: 'n', nowMs: 0, startLocationId: 'loc_easy' });
+            // Initial combat level is 4 (4 skills @ lvl 1)
+
+            const res = applyCommand(state, {
+                type: 'TRAVEL',
+                locationId: 'loc_combat_gate',
+                atMs: 10
+            }, mockContent);
+
+            const errorEvent = res.events.find(e => e.type === 'ERROR');
+            expect(errorEvent).toBeDefined();
+            expect(errorEvent?.payload.code).toBe('COMBAT_LEVEL_TOO_LOW');
+            expect(res.state.currentLocationId).toBe('loc_easy');
+        });
+
+        it('should allow travel if combat level is sufficient', () => {
+            let state = createNewState({ saveId: 't', playerId: 'p', playerName: 'n', nowMs: 0, startLocationId: 'loc_easy' });
+
+            // Level up combat skills to reach level 10
+            state.player.skills.swordsmanship.level = 4;
+            state.player.skills.defense.level = 4;
+            // Total combat skills: 4 + 4 + 1 + 1 = 10
+
+            syncDerivedPlayerStats(state);
+
+            const res = applyCommand(state, {
+                type: 'TRAVEL',
+                locationId: 'loc_combat_gate',
+                atMs: 10
+            }, mockContent);
+
+            expect(res.events.find(e => e.type === 'ERROR')).toBeUndefined();
+            expect(res.state.currentLocationId).toBe('loc_combat_gate');
+        });
     });
 
     describe('Recalculation Sanity', () => {
@@ -116,8 +160,9 @@ describe('Balance Mechanics', () => {
 
             const res = applyCommand(state, { type: 'RESET_SKILLS', atMs: 100 }, mockContent);
 
-            expect(res.state.player.level).toBe(8);
-            expect(res.state.player.xp).toBe(5000); // XP should be preserved
+            // In new system, all 10 skills start at Lv 1, so total level is 10.
+            expect(res.state.player.level).toBe(10);
+            expect(res.state.player.xp).toBe(0); // XP is now sum of skills (which are 0)
         });
     });
 });

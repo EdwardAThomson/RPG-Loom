@@ -28,6 +28,8 @@
   /* XP/Gain */
   --color-rare: #9c27b0;
   /* Rare items */
+  --color-combat: #4c6ef5;
+  /* Combat Level - Soft Azure */
 
   /* Borders & Shadows */
   --border-gold: 1px solid rgba(255, 215, 0, 0.3);
