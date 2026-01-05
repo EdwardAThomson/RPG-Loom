@@ -3,6 +3,7 @@
     "id": "loc_haven",
     "name": "Haven's Cross",
     "type": "town",
+    "image": "/assets/locations/loc_haven.png",
     "description": "A bustling trading post at the crossroads.",
     "activities": [
       "recovery",
@@ -15,6 +16,7 @@
   {
     "id": "loc_forest",
     "name": "Whispering Forest",
+    "image": "/assets/locations/loc_forest.png",
     "activities": [
       "hunt",
       "woodcut",
@@ -72,6 +74,7 @@
   {
     "id": "loc_quarry",
     "name": "Old Quarry",
+    "image": "/assets/locations/loc_quarry.png",
     "requirements": {
       "minLevel": 5
     },
@@ -122,6 +125,7 @@
   {
     "id": "loc_swamp",
     "name": "Misty Swamp",
+    "image": "/assets/locations/loc_swamp.png",
     "requirements": {
       "minLevel": 10
     },
@@ -173,6 +177,7 @@
   {
     "id": "loc_catacombs",
     "name": "Forgotten Catacombs",
+    "image": "/assets/locations/loc_catacombs.png",
     "requirements": {
       "minLevel": 15
     },
@@ -218,6 +223,7 @@
   {
     "id": "loc_peak",
     "name": "Jagged Peak",
+    "image": "/assets/locations/loc_peak.png",
     "requirements": {
       "minLevel": 20
     },
@@ -262,6 +268,7 @@
   {
     "id": "loc_volcanic",
     "name": "Volcanic Crags",
+    "image": "/assets/locations/loc_volcanic.png",
     "description": "A scorched wasteland of ash and magma.",
     "requirements": {
       "minLevel": 25
@@ -323,6 +330,7 @@
   {
     "id": "loc_crystal",
     "name": "Crystal Caverns",
+    "image": "/assets/locations/loc_crystal.png",
     "description": "Glimmering caves deep beneath the earth.",
     "requirements": {
       "minLevel": 35
@@ -378,6 +386,7 @@
   {
     "id": "loc_sunken",
     "name": "Sunken Ruins",
+    "image": "/assets/locations/loc_sunken.png",
     "description": "Ancient flooded temples.",
     "requirements": {
       "minLevel": 40,
@@ -425,6 +434,7 @@
   {
     "id": "loc_clockwork",
     "name": "Clockwork Enclave",
+    "image": "/assets/locations/loc_clockwork.png",
     "description": "A city of gears and steam.",
     "requirements": {
       "minLevel": 50,
@@ -472,6 +482,7 @@
   {
     "id": "loc_deep_mines",
     "name": "Darkiron Depths",
+    "image": "/assets/locations/loc_deep_mines.png",
     "description": "Deep subterranean tunnels rich in dark minerals.",
     "requirements": {
       "minLevel": 60,

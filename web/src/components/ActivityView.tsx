@@ -32,49 +32,40 @@ export function ActivityView({ state, dispatch, content }: Props) {
                     </div>
                 )}
 
-                <div style={{ marginTop: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
+                <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
                     Player HP: {player.baseStats.hp} / {player.baseStats.hpMax}
                 </div>
 
-                <div className="combat-widget" style={{
-                    visibility: state.activeEncounter ? 'visible' : 'hidden',
-                    opacity: state.activeEncounter ? 1 : 0,
-                    marginBottom: state.activeEncounter ? 0 : '1rem'
-                }}>
-                    {state.activeEncounter ? (
-                        <>
-                            <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
-                            <div style={{ fontSize: '1.1rem' }}>
-                                {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
-                            </div>
-                            <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
-                            <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
-                            </div>
-                        </>
-                    ) : (
-                        // Placeholder content to reserve height exactly matches the active state structure
-                        <>
-                            <h3 style={{ marginBottom: '0.5rem' }}>&nbsp;</h3>
-                            <div style={{ fontSize: '1.1rem' }}>&nbsp;</div>
-                            <div style={{ fontSize: '0.9rem' }}>&nbsp;</div>
-                            <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                &nbsp;
-                            </div>
-                        </>
-                    )}
-                </div>
+                {content?.locationsById?.[state.currentLocationId]?.image && (
+                    <div style={{ width: '80%', margin: '0 auto 0.5rem auto', borderRadius: '8px', overflow: 'hidden', border: '1px solid #333' }}>
+                        <img
+                            src={content.locationsById[state.currentLocationId].image}
+                            alt={content.locationsById[state.currentLocationId].name}
+                            style={{ width: '100%', height: 'auto', display: 'block' }}
+                        />
+                    </div>
+                )}
+
+                {state.activeEncounter && (
+                    <div className="combat-widget">
+                        <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
+                        <div style={{ fontSize: '1.1rem' }}>
+                            {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
+                        </div>
+                        <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
+                        <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                            HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <section style={{
-                marginBottom: '1.5rem',
-                visibility: state.activeEncounter ? 'visible' : 'hidden',
-                opacity: state.activeEncounter ? 1 : 0,
-                transition: 'opacity 0.2s'
-            }}>
-                <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Combat Stance</h3>
-                <TacticsSelector player={player} dispatch={dispatch} />
-            </section>
+            {state.activeEncounter && (
+                <section style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Combat Stance</h3>
+                    <TacticsSelector player={player} dispatch={dispatch} />
+                </section>
+            )}
 
             <div className="actions">
                 <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>

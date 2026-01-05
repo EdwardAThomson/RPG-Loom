@@ -106,6 +106,7 @@ export interface LocationDef {
   id: LocationId;
   name: string;
   type?: 'town' | 'wild';
+  image?: string;
   description: string;
   requirements?: {
     minLevel?: number;
