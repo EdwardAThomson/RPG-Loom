@@ -5,15 +5,9 @@ interface Props {
     importSave: (str: string) => void;
     hardReset: () => void;
     onClose: () => void;
-    // Debug
-    tickRate: number;
-    setTickRate: (ms: number) => void;
-    seed: number; // Placeholder, or we can look up from state if available
-    tickIndex: number;
-    onResetSkills: () => void;
 }
 
-export function SettingsModal({ exportSave, importSave, hardReset, onClose, tickRate, setTickRate, seed, tickIndex, onResetSkills }: Props) {
+export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Props) {
     const [importString, setImportString] = useState('');
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
@@ -73,32 +67,6 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose, tick
                         <button onClick={handleImport} disabled={!importString} style={{ alignSelf: 'flex-end', opacity: importString ? 1 : 0.5 }}>
                             Import Save
                         </button>
-                    </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid #333', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-                    <h3 style={{ color: '#aaa', fontSize: '1rem', textTransform: 'uppercase' }}>Debug Tools</h3>
-
-                    <div style={{ background: '#111', padding: '1rem', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'monospace', marginBottom: '1rem' }}>
-                            Tick Index: {tickIndex}<br />
-                            RNG Seed: {seed}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#888' }}>Speed:</span>
-                            <button onClick={() => setTickRate(1000)} style={{ flex: 1, borderColor: tickRate === 1000 ? 'var(--color-gold)' : '#333' }}>Normal (1s)</button>
-                            <button onClick={() => setTickRate(100)} style={{ flex: 1, borderColor: tickRate === 100 ? 'var(--color-gold)' : '#333' }}>Fast (0.1s)</button>
-                        </div>
-
-                        <div style={{ marginTop: '1rem', borderTop: '1px dashed #333', paddingTop: '1rem' }}>
-                            <button onClick={onResetSkills} style={{ width: '100%', borderColor: '#f90', color: '#f90' }}>
-                                Recalculate Levels
-                            </button>
-                            <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', textAlign: 'center' }}>
-                                Adjusts levels to new difficulty. Preserves Total XP.
-                            </p>
-                        </div>
                     </div>
                 </div>
 

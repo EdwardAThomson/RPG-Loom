@@ -26,7 +26,11 @@ export function ActivityView({ state, dispatch, content }: Props) {
             <h2>Current Activity</h2>
             <div className="activity-status">
                 <div className="current-action">{activity.params.type.toUpperCase()}</div>
-                {'locationId' in activity.params && <div className="location">{(activity.params as any).locationId}</div>}
+                {'locationId' in activity.params && (
+                    <div className="location">
+                        {content?.locationsById?.[(activity.params as any).locationId]?.name || (activity.params as any).locationId}
+                    </div>
+                )}
 
                 <div style={{ marginTop: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
                     Player HP: {player.baseStats.hp} / {player.baseStats.hpMax}
@@ -40,7 +44,9 @@ export function ActivityView({ state, dispatch, content }: Props) {
                     {state.activeEncounter ? (
                         <>
                             <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
-                            <div style={{ fontSize: '1.1rem' }}>{state.activeEncounter.enemyId}</div>
+                            <div style={{ fontSize: '1.1rem' }}>
+                                {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
+                            </div>
                             <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
                             <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
                                 HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
@@ -151,19 +157,56 @@ export function ActivityView({ state, dispatch, content }: Props) {
             {activity.params.type === 'trade' && <MarketView state={state} dispatch={dispatch} content={content} />}
 
 
-            <div className="divider" style={{ width: '100%', height: '1px', background: '#333', margin: '1rem 0' }}></div>
-
-            {/* Train */}
-            <button
-                disabled={player.gold < 1}
-                style={{
-                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                    ...(activity.params.type === 'train' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                }}
-                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}
-            >
-                Train Sword (1 Gold)
-            </button>
+            {isTown && (
+                <div className="training-section">
+                    <div className="divider" style={{ width: '100%', height: '1px', background: '#333', margin: '1rem 0' }}></div>
+                    <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Training Grounds
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        <button
+                            disabled={player.gold < 1}
+                            style={{
+                                ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                                ...(activity.params.type === 'train' && (activity.params as any).skillId === 'swordsmanship' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
+                            }}
+                            onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}
+                        >
+                            Train Sword (1g)
+                        </button>
+                        <button
+                            disabled={player.gold < 1}
+                            style={{
+                                ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                                ...(activity.params.type === 'train' && (activity.params as any).skillId === 'defense' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
+                            }}
+                            onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'defense' }, atMs: Date.now() })}
+                        >
+                            Train Shield (1g)
+                        </button>
+                        <button
+                            disabled={player.gold < 1}
+                            style={{
+                                ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                                ...(activity.params.type === 'train' && (activity.params as any).skillId === 'marksmanship' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
+                            }}
+                            onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'marksmanship' }, atMs: Date.now() })}
+                        >
+                            Train Archery (1g)
+                        </button>
+                        <button
+                            disabled={player.gold < 1}
+                            style={{
+                                ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                                ...(activity.params.type === 'train' && (activity.params as any).skillId === 'arcana' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
+                            }}
+                            onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'arcana' }, atMs: Date.now() })}
+                        >
+                            Train Magic (1g)
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Stop */}
             <button

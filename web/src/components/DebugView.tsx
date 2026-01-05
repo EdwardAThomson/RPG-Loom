@@ -6,9 +6,13 @@ interface Props {
     state: EngineState;
     content: ContentIndex;
     dispatch: (cmd: PlayerCommand) => void;
+    // Engine Controls
+    tickRate: number;
+    setTickRate: (ms: number) => void;
+    onResetSkills: () => void;
 }
 
-export function DebugView({ state, content, dispatch }: Props) {
+export function DebugView({ state, content, dispatch, tickRate, setTickRate, onResetSkills }: Props) {
     const [manualOutput, setManualOutput] = useState<string>('');
 
     const currentLocation = content.locationsById[state.currentLocationId];
@@ -60,6 +64,29 @@ export function DebugView({ state, content, dispatch }: Props) {
                 <h3>Activity State</h3>
                 <div style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>
                     {JSON.stringify(state.activity, null, 2)}
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '1rem', border: '1px solid #444', padding: '0.5rem' }}>
+                <h3>Engine Settings</h3>
+                <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'monospace', marginBottom: '1rem' }}>
+                    Tick Index: {state.tickIndex}<br />
+                    Last Tick: {new Date(state.lastTickAtMs).toLocaleTimeString()}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#888' }}>Speed:</span>
+                    <button onClick={() => setTickRate(1000)} style={{ flex: 1, background: tickRate === 1000 ? 'rgba(255, 215, 0, 0.1)' : '#222', borderColor: tickRate === 1000 ? 'var(--color-gold)' : '#333' }}>Normal (1s)</button>
+                    <button onClick={() => setTickRate(100)} style={{ flex: 1, background: tickRate === 100 ? 'rgba(255, 215, 0, 0.2)' : '#222', borderColor: tickRate === 100 ? 'var(--color-gold)' : '#333' }}>Fast (0.1s)</button>
+                </div>
+
+                <div style={{ marginTop: '1rem', borderTop: '1px dashed #333', paddingTop: '1rem' }}>
+                    <button onClick={onResetSkills} style={{ width: '100%', borderColor: '#f90', color: '#f90', background: 'transparent', cursor: 'pointer' }}>
+                        Recalculate Levels
+                    </button>
+                    <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', textAlign: 'center' }}>
+                        Adjusts levels to new difficulty. Preserves Total XP.
+                    </p>
                 </div>
             </div>
 

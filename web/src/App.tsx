@@ -150,18 +150,6 @@ function AppContent() {
         importSave={importSave}
         hardReset={hardReset}
         onClose={() => setShowSettings(false)}
-
-        // Debug
-        tickRate={tickRate}
-        setTickRate={setTickRate}
-        seed={0} // Seed not currently exposed in EngineState
-        tickIndex={state?.tickIndex || 0}
-        onResetSkills={() => {
-          if (window.confirm("This will recalculate your levels based on the new difficulty curve. Your Total XP will be preserved. Are you sure?")) {
-            dispatch({ type: 'RESET_SKILLS', atMs: Date.now() });
-            setShowSettings(false);
-          }
-        }}
       />
       }
 
@@ -174,12 +162,23 @@ function AppContent() {
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
-          {activeTab === 'quests' && <QuestView state={state} />}
-          {activeTab === 'debug' && <DebugView state={state} content={content} dispatch={dispatch} />}
+          {activeTab === 'quests' && <QuestView state={state} content={content} />}
+          {activeTab === 'debug' && <DebugView
+            state={state}
+            content={content}
+            dispatch={dispatch}
+            tickRate={tickRate}
+            setTickRate={setTickRate}
+            onResetSkills={() => {
+              if (window.confirm("This will recalculate your levels based on the new difficulty curve. Your Total XP will be preserved. Are you sure?")) {
+                dispatch({ type: 'RESET_SKILLS', atMs: Date.now() });
+              }
+            }}
+          />}
           {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}
         </div>
 
-        <EventView events={events} />
+        <EventView events={events} content={content} />
       </main>
     </div>
   );

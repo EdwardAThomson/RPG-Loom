@@ -3,6 +3,7 @@ import { GameEvent } from '@rpg-loom/shared';
 
 interface Props {
     events: GameEvent[];
+    content: any;
 }
 
 type DisplayEvent = GameEvent | {
@@ -13,11 +14,20 @@ type DisplayEvent = GameEvent | {
 };
 
 // Helper to format event summary parts
-function formatEvent(ev: any) {
+function formatEvent(ev: any, content: any) {
     if (ev.type === 'XP_GAINED') return `+${ev.payload.amount} XP`;
     if (ev.type === 'GOLD_CHANGED') return `+${ev.payload.amount} Gold`;
-    if (ev.type === 'LOOT_GAINED') return `Loot: ${ev.payload.items.map((i: any) => i.itemId.replace('item_', '')).join(', ')}`;
-    if (ev.type === 'ENCOUNTER_RESOLVED') return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${ev.payload.enemyId}`;
+    if (ev.type === 'LOOT_GAINED') {
+        const itemNames = ev.payload.items.map((i: any) => {
+            const name = content?.itemsById?.[i.itemId]?.name;
+            return name || i.itemId.replace('item_', '');
+        });
+        return `Loot: ${itemNames.join(', ')}`;
+    }
+    if (ev.type === 'ENCOUNTER_RESOLVED') {
+        const enemyName = content?.enemiesById?.[ev.payload.enemyId]?.name || ev.payload.enemyId;
+        return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${enemyName}`;
+    }
     if (ev.type === 'FLAVOR_TEXT') return ev.payload.message;
     if (ev.type === 'ERROR') {
         if (ev.payload.code === 'INSUFFICIENT_GOLD') return `Stopped: ${ev.payload.message}`;
@@ -26,7 +36,7 @@ function formatEvent(ev: any) {
     return ev.type;
 }
 
-export function EventView({ events }: Props) {
+export function EventView({ events, content }: Props) {
     // Auto-scroll could go here if needed, but flex-col-reverse handles the "bottom" pinning nicely.
 
     return (
@@ -56,13 +66,13 @@ export function EventView({ events }: Props) {
                                         id: last.id + '_sum',
                                         atMs: last.atMs,
                                         type: 'SUMMARY',
-                                        payload: { parts: [formatEvent(last)] }
+                                        payload: { parts: [formatEvent(last, content)] }
                                     };
                                     aggregatedEvents[aggregatedEvents.length - 1] = newSummary;
-                                    newSummary.payload.parts.push(formatEvent(ev));
+                                    newSummary.payload.parts.push(formatEvent(ev, content));
                                 } else {
                                     // Already a summary, push new part
-                                    last.payload.parts.push(formatEvent(ev));
+                                    last.payload.parts.push(formatEvent(ev, content));
                                 }
                                 continue;
                             }
@@ -95,7 +105,7 @@ export function EventView({ events }: Props) {
                             <div key={ev.id} className={`event-entry ${typeClass}`}>
                                 <span className="time">{new Date(ev.atMs).toLocaleTimeString([], { hour12: false })}</span>
                                 <span className="content">
-                                    {formatEvent(ev)}
+                                    {formatEvent(ev, content)}
                                 </span>
                             </div>
                         );

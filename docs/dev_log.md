@@ -1,5 +1,30 @@
 # Developer Log
 
+## 2026-01-05
+
+### UI Readability & Refinement (Completed)
+
+*   **Readability Overhaul**:
+    *   Updated `ActivityView`, `EventView`, and `QuestView` to perform lookups in the `content` index.
+    *   Replaced raw internal IDs (e.g., `loc_catacombs`, `item_copper_ore`) with human-readable names everywhere in the UI and event log.
+*   **Debug Tools Reorganization**:
+    *   **Relocation**: Moved all developer tools (Tick Rate control, Seed display, Level Recalculation) from the "Settings" modal to the dedicated "Debug" tab.
+    *   **Interface Cleanup**: Removed the "Debug" tab from the main navigation menu to present a cleaner, user-focused interface while keeping dev tools accessible in the codebase.
+    *   **Settings Focus**: The Settings modal is now strictly dedicated to Save Management (Import/Export) and Hard Reset.
+
+### Training System & Combat Skills (Completed)
+
+*   **Expanded Training**:
+    *   Added dedicated training buttons for **Shield** (Defense), **Archery** (Marksmanship), and **Magic** (Arcana).
+    *   Configured training to cost 1 Gold per tick, consistent with existing melee training.
+*   **World Logic**:
+    *   Restricted training activities to **Town** locations. The "Training Grounds" UI section now automatically hides when the player is in the wild.
+
+### Build System & Bug Fixes (Completed)
+
+*   **TypeScript Fix**: Resolved a persistent `minCombatLevel` error in the engine package by purging redundant and outdated `.d.ts` files in `packages/shared`. This fixed a source-of-truth conflict in the monorepo.
+*   **Walkthrough**: Created and maintained a `walkthrough.md` to document feature verification and UI changes for the session.
+
 ## 2026-01-04
 
 ### Gathering Skills Debugging & Refactoring (Completed)
