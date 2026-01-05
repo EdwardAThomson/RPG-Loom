@@ -152,6 +152,12 @@ function AppContent() {
         setTickRate={setTickRate}
         seed={0} // Seed not currently exposed in EngineState
         tickIndex={state?.tickIndex || 0}
+        onResetSkills={() => {
+          if (window.confirm("This will recalculate your levels based on the new difficulty curve. Your Total XP will be preserved. Are you sure?")) {
+            dispatch({ type: 'RESET_SKILLS', atMs: Date.now() });
+            setShowSettings(false);
+          }
+        }}
       />
       }
 

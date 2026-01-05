@@ -29,9 +29,9 @@ describe('Skill Stat Scaling', () => {
         state.player.skills.swordsmanship.level = 2;
         recalculateStats(state, mockContent);
 
-        // swordsmanship: +1 ATK per level
-        // Delta should be +1
-        expect(state.player.baseStats.atk).toBe(initialAtk + 1);
+        // swordsmanship: +0.5 ATK per level
+        // Delta should be +0.5
+        expect(state.player.baseStats.atk).toBe(initialAtk + 0.5);
     });
 
     it('should increase SPD and Crit when marksmanship levels up', () => {
@@ -72,8 +72,8 @@ describe('Skill Stat Scaling', () => {
         state.player.skills.defense.level = 5;
         recalculateStats(state, mockContent);
 
-        // +1 DEF per level -> +4
-        expect(state.player.baseStats.def).toBe(initialDef + 4);
+        // +0.5 DEF per level -> +2
+        expect(state.player.baseStats.def).toBe(initialDef + 2);
         // +5 HP per level -> +20
         expect(state.player.baseStats.hpMax).toBe(initialHpMax + 20);
     });

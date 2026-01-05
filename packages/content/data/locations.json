@@ -380,7 +380,9 @@
     "name": "Sunken Ruins",
     "description": "Ancient flooded temples.",
     "requirements": {
-      "minLevel": 40
+      "minLevel": 40,
+      "minAtk": 100,
+      "minDef": 80
     },
     "activities": [
       "hunt",
@@ -425,7 +427,9 @@
     "name": "Clockwork Enclave",
     "description": "A city of gears and steam.",
     "requirements": {
-      "minLevel": 50
+      "minLevel": 50,
+      "minAtk": 150,
+      "minDef": 120
     },
     "activities": [
       "hunt",
@@ -470,7 +474,9 @@
     "name": "Darkiron Depths",
     "description": "Deep subterranean tunnels rich in dark minerals.",
     "requirements": {
-      "minLevel": 60
+      "minLevel": 60,
+      "minAtk": 200,
+      "minDef": 150
     },
     "activities": [
       "hunt",

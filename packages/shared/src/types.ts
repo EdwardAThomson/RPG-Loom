@@ -111,6 +111,8 @@ export interface LocationDef {
     minLevel?: number;
     minSkills?: Partial<Record<SkillId, number>>;
     requiredFlags?: string[];
+    minAtk?: number;
+    minDef?: number;
   };
   activities: ActivityType[];
   encounterTable: EncounterTable;
@@ -339,6 +341,10 @@ export type PlayerCommand =
     type: 'DEBUG_ADD_ITEM';
     itemId: ItemId;
     qty: number;
+    atMs: number;
+  }
+  | {
+    type: 'RESET_SKILLS';
     atMs: number;
   };
 

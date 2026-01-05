@@ -45,6 +45,17 @@ export interface StepResult {
 
 const DEFAULT_CONFIG: EngineConfig = { tickMs: 1000 };
 
+const STARTING_INTRINSIC_STATS = {
+  hp: 25,
+  hpMax: 25,
+  atk: 5,
+  def: 3,
+  spd: 5,
+  critChance: 0.05,
+  critMult: 1.5,
+  res: 0.05
+};
+
 // ---- Public API ----
 export function createNewState(params: {
   saveId: string;
@@ -79,16 +90,7 @@ export function createNewState(params: {
         critMult: 1.5,
         res: 0.05
       },
-      intrinsicStats: {
-        hp: 25,
-        hpMax: 25,
-        atk: 5,
-        def: 3,
-        spd: 5,
-        critChance: 0.05,
-        critMult: 1.5,
-        res: 0.05
-      },
+      intrinsicStats: clone(STARTING_INTRINSIC_STATS),
       skills: {
         swordsmanship: { id: 'swordsmanship', level: 1, xp: 0 },
         marksmanship: { id: 'marksmanship', level: 1, xp: 0 },
@@ -235,6 +237,14 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Level ${loc.requirements.minLevel} required.` }));
         break;
       }
+      if (loc.requirements?.minAtk && next.player.baseStats.atk < loc.requirements.minAtk) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'STAT_TOO_LOW', message: `Attack ${loc.requirements.minAtk} required.` }));
+        break;
+      }
+      if (loc.requirements?.minDef && next.player.baseStats.def < loc.requirements.minDef) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'STAT_TOO_LOW', message: `Defense ${loc.requirements.minDef} required.` }));
+        break;
+      }
 
       next.currentLocationId = cmd.locationId;
       // Stop current activity and idle at new location
@@ -291,6 +301,40 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       next.player.gold += val;
       events.push(ev(next, cmd.atMs, 'ITEM_CONSUMED', { itemId: cmd.itemId }));
       events.push(ev(next, cmd.atMs, 'GOLD_CHANGED', { amount: val, newTotal: next.player.gold }));
+      break;
+    }
+
+    case 'RESET_SKILLS': {
+      // 1. Recalculate Skill Levels (XP IS SACROSANCT - READ ONLY)
+      for (const key in next.player.skills) {
+        const s = next.player.skills[key as SkillId];
+        if (s) {
+          s.level = 1;
+          while (s.xp >= getTotalXpForSkillLevel(s.level + 1)) {
+            s.level++;
+          }
+        }
+      }
+
+      // 2. Recalculate Player Level (XP IS SACROSANCT - READ ONLY)
+      next.player.level = 1;
+      while (next.player.xp >= 100 * Math.pow(next.player.level, 2)) {
+        next.player.level += 1;
+      }
+
+      // 3. Reconstruct Intrinsic Stats from the derived Level
+      ensureIntrinsicStats(next);
+      next.player.intrinsicStats = clone(STARTING_INTRINSIC_STATS);
+      for (let l = 1; l < next.player.level; l++) {
+        // Apply increments for each level gained (Standard RPG Stat Growth)
+        next.player.intrinsicStats.hpMax += 5;
+        next.player.intrinsicStats.atk += 1;
+        next.player.intrinsicStats.def += 0.5;
+        // hp is kept in sync with hpMax or clamped during recalculate
+      }
+
+      if (content) recalculateStats(next, content);
+      events.push(ev(next, cmd.atMs, 'FLAVOR_TEXT', { message: 'Levels and stats recalculated. XP remains sacrosanct.' }));
       break;
     }
   }
@@ -422,6 +466,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         // XP
         if (gainSkillXp(next, 'woodcutting', 1) && content) recalculateStats(next, content);
         gainXp(next, 1, events, tickAtMs);
+        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop, but get no good wood.` }));
       }
@@ -454,7 +499,9 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
 
         // XP
         if (gainSkillXp(next, 'mining', 1) && content) recalculateStats(next, content);
+
         gainXp(next, 1, events, tickAtMs);
+        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe but find nothing.` }));
       }
@@ -487,7 +534,9 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
 
         // XP
         if (gainSkillXp(next, 'foraging', 1) && content) recalculateStats(next, content);
+
         gainXp(next, 1, events, tickAtMs);
+        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
       } else {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You find nothing of interest.` }));
       }
@@ -526,6 +575,8 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
       events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You ${verb}.` }));
 
       const loot = rollLoot(lootTable, `gather:${next.saveId}:${a.locationId}:${next.tickIndex}`);
+      // DEBUG LOG
+      // console.log(`[Engine] Gather tick: loot count ${loot.length}`);
 
       if (loot.length) {
         if (skillId) {
@@ -657,7 +708,9 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
           bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
         }
         gainXp(next, 1, events, tickAtMs);
-        checkQuestCompletion(next, q.id, content, events, tickAtMs);
+        // checkQuestCompletion(next, q.id, content, events, tickAtMs); // redundant now as bumpQuestProgressFromLoot does it
+      } else {
+        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You search for quest items, but can't find them here.` }));
       }
       return { state: next, events };
     }
@@ -691,6 +744,11 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       delete next.activeEncounter; // Panic cleanup
       return { state: next, events };
     }
+
+    // Calculate Scaled Stats (Dynamic Level Scaling)
+    const levelDelta = Math.max(0, next.activeEncounter.enemyLevel - (enemy.levelMin ?? 1));
+    const scaledAtk = enemy.baseStats.atk + (levelDelta * 1.0);
+    const scaledDef = enemy.baseStats.def + (levelDelta * 0.5);
 
     // Boss Phase / Enrage Check
     let currentAtkMult = 1.0;
@@ -728,7 +786,11 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     const skillDmgBonus = offSkillLevel * 0.005; // +0.5% per level
     playerAtkMult += skillDmgBonus;
 
-    const dmgToEnemy = Math.max(1, Math.floor((pStats.atk * playerAtkMult) - enemy.baseStats.def));
+    // Damage Formula: Percentage Mitigation
+    // dmg = atk * (100 / (100 + def))
+    const damageMultiplier = 100 / (100 + scaledDef);
+    const rawDmgToEnemy = (pStats.atk * playerAtkMult) * damageMultiplier;
+    const dmgToEnemy = Math.max(1, Math.floor(rawDmgToEnemy));
     next.activeEncounter.enemyHp -= dmgToEnemy;
 
     // Gain Offense XP
@@ -758,12 +820,14 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     }
 
     // Enemy Attack
-    const enemyAtk = enemy.baseStats.atk * (currentAtkMult);
+    const enemyAtk = scaledAtk * (currentAtkMult);
     // Defense Skill
     const defSkillLevel = next.player.skills.defense.level;
     const mitigationPct = Math.min(0.2, defSkillLevel * 0.002); // 0.2% per level, cap 20%
 
-    const dmgToPlayer = Math.max(0, Math.floor(enemyAtk - pStats.def));
+    // Damage Formula: Percentage Mitigation
+    const mitigationMult = 100 / (100 + pStats.def);
+    const dmgToPlayer = Math.floor(enemyAtk * mitigationMult);
     const mitigatedDmg = Math.floor(dmgToPlayer * (1 - mitigationPct));
 
     // Apply Damage
@@ -810,11 +874,23 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 
   const enemyMaxHp = Math.floor(enemy.baseStats.hpMax * hpScale);
 
+  // Enemy Stat Scaling (Level Delta)
+  const levelDelta = Math.max(0, enemyLevel - (enemy.levelMin ?? 1));
+  const scaledAtk = enemy.baseStats.atk + (levelDelta * 1.0);
+  const scaledDef = enemy.baseStats.def + (levelDelta * 0.5);
+
   next.activeEncounter = {
     enemyId,
     enemyLevel,
     enemyHp: enemyMaxHp,
-    enemyMaxHp
+    enemyMaxHp,
+    // Store scaled stats for combat loop to use? 
+    // Currently activeEncounter only stores enemyId/HP/Level.
+    // We should probably compute this dynamically in the loop or store it.
+    // MVP: Let's compute it in the loop to avoid State migration issues.
+    // But wait, resolveEncounterTick recalculates stats every tick? No.
+    // It reads `enemy.baseStats`.
+    // We need to modify the loop to read SCALED stats.
   };
   events.push(ev(next, tickAtMs, 'ENCOUNTER_STARTED', { locationId: loc.id, enemyId, enemyLevel }));
 
@@ -830,11 +906,13 @@ function bumpQuestProgressFromKill(state: EngineState, killedEnemyId: string, ev
     if (tmpl.objectiveType === 'kill' && tmpl.targetEnemyId === killedEnemyId) {
       q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
       events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+      checkQuestCompletion(state, q.id, content, events, atMs);
     }
   }
 }
 
 function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: ItemId; qty: number }>, events: GameEvent[], atMs: number, content: ContentIndex) {
+  // console.log(`[Engine] bumpQuestProgressFromLoot called with ${loot.length} items`);
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
     const tmpl = content.questTemplatesById[q.templateId];
@@ -844,6 +922,7 @@ function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: Ite
       if (gained > 0) {
         q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
         events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+        checkQuestCompletion(state, q.id, content, events, atMs);
       }
     }
   }
@@ -857,6 +936,7 @@ function bumpQuestProgressFromCraft(state: EngineState, recipeId: string, events
     if (tmpl.objectiveType === 'craft' && tmpl.targetRecipeId === recipeId) {
       q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
       events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+      checkQuestCompletion(state, q.id, content, events, atMs);
     }
   }
 }
@@ -888,6 +968,21 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
 }
 
 // ---- XP/Leveling ----
+/**
+ * Returns the TOTAL XP required to REACH the start of the given level.
+ * Level 1: 0 XP
+ * Level 2: 100 XP
+ * Level 3: 220 XP (100 + 120)
+ * etc.
+ */
+function getTotalXpForSkillLevel(level: number): number {
+  let total = 0;
+  for (let i = 1; i < level; i++) {
+    total += Math.floor(100 * Math.pow(1.2, i - 1));
+  }
+  return total;
+}
+
 function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: number) {
   state.player.xp += amount;
   events.push(ev(state, atMs, 'XP_GAINED', { amount, newTotal: state.player.xp }));
@@ -942,8 +1037,11 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
   }
   s.xp += amount;
   let leveledUp = false;
-  // MVP: level up every 50 xp
-  while (s.xp >= s.level * 50) {
+
+  // Exponential XP Curve (Total XP model)
+  // Lvl 1 -> 100 (Total) -> Lvl 2
+  // Lvl 2 -> 220 (Total) -> Lvl 3
+  while (s.xp >= getTotalXpForSkillLevel(s.level + 1)) {
     s.level += 1;
     leveledUp = true;
   }
@@ -1027,10 +1125,6 @@ function ev<TType extends GameEvent['type']>(state: EngineState, atMs: number, t
 // Ensure state is migrated
 function ensureIntrinsicStats(state: EngineState) {
   if (!state.player.intrinsicStats) {
-    // Migration: assume current baseStats ARE the intrinsic stats (minus equipment?)
-    // For MVP, just copy them. If player had equipment on, they get a permanent buff from "snapshotting" current stats as intrinsic.
-    // Ideally we'd strip equipment stats, but we can't easily reverse without content index.
-    // Acceptable risk for dev.
     state.player.intrinsicStats = clone(state.player.baseStats);
   }
 }
@@ -1066,14 +1160,14 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
 
   const s = state.player.skills;
   if (s.swordsmanship) {
-    effective.atk += Math.max(0, s.swordsmanship.level - 1) * 1;
+    effective.atk += Math.max(0, s.swordsmanship.level - 1) * 0.5;
   }
   if (s.marksmanship) {
     effective.spd += Math.max(0, s.marksmanship.level - 1) * 1;
     effective.critChance += Math.max(0, s.marksmanship.level - 1) * 0.005;
   }
   if (s.defense) {
-    effective.def += Math.max(0, s.defense.level - 1) * 1;
+    effective.def += Math.max(0, s.defense.level - 1) * 0.5;
     effective.hpMax += Math.max(0, s.defense.level - 1) * 5;
   }
 

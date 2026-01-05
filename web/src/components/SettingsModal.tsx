@@ -10,9 +10,10 @@ interface Props {
     setTickRate: (ms: number) => void;
     seed: number; // Placeholder, or we can look up from state if available
     tickIndex: number;
+    onResetSkills: () => void;
 }
 
-export function SettingsModal({ exportSave, importSave, hardReset, onClose, tickRate, setTickRate, seed, tickIndex }: Props) {
+export function SettingsModal({ exportSave, importSave, hardReset, onClose, tickRate, setTickRate, seed, tickIndex, onResetSkills }: Props) {
     const [importString, setImportString] = useState('');
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
@@ -88,6 +89,15 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose, tick
                             <span style={{ fontSize: '0.8rem', color: '#888' }}>Speed:</span>
                             <button onClick={() => setTickRate(1000)} style={{ flex: 1, borderColor: tickRate === 1000 ? 'var(--color-gold)' : '#333' }}>Normal (1s)</button>
                             <button onClick={() => setTickRate(100)} style={{ flex: 1, borderColor: tickRate === 100 ? 'var(--color-gold)' : '#333' }}>Fast (0.1s)</button>
+                        </div>
+
+                        <div style={{ marginTop: '1rem', borderTop: '1px dashed #333', paddingTop: '1rem' }}>
+                            <button onClick={onResetSkills} style={{ width: '100%', borderColor: '#f90', color: '#f90' }}>
+                                Recalculate Levels
+                            </button>
+                            <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', textAlign: 'center' }}>
+                                Adjusts levels to new difficulty. Preserves Total XP.
+                            </p>
                         </div>
                     </div>
                 </div>
