@@ -23,6 +23,7 @@
 ### Build System & Bug Fixes (Completed)
 
 *   **TypeScript Fix**: Resolved a persistent `minCombatLevel` error in the engine package by purging redundant and outdated `.d.ts` files in `packages/shared`. This fixed a source-of-truth conflict in the monorepo.
+*   **ActivityView Fix**: Resolved a "Declaration or statement expected" syntax error in `ActivityView.tsx` caused by stray trailing brackets.
 *   **Walkthrough**: Created and maintained a `walkthrough.md` to document feature verification and UI changes for the session.
 
 ## 2026-01-04
