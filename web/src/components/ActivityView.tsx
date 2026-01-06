@@ -25,7 +25,12 @@ export function ActivityView({ state, dispatch, content }: Props) {
     return (
         <>
             <section className="card">
-                <h2>Current Activity</h2>
+                <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span>Current Activity</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-gold)', textTransform: 'none', fontWeight: 'normal', opacity: 0.8, letterSpacing: '0.5px' }}>
+                        {currentLocName}
+                    </span>
+                </h2>
                 <div className="activity-status">
                     <div className="current-action">{activity.params.type.toUpperCase()}</div>
                     {'locationId' in activity.params && (
