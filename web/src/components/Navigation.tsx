@@ -15,6 +15,7 @@ export function Navigation({ activeTab, onTabChange }: Props) {
         { id: 'crafting', label: 'Crafting' },
         { id: 'character', label: 'Character' },
         { id: 'quests', label: 'Quests' },
+        { id: 'debug', label: 'Debug' },
     ];
 
     return (

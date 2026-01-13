@@ -311,6 +311,17 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       break;
     }
 
+    case 'ENHANCE_QUEST': {
+      const quest = next.quests.find(q => q.id === cmd.questId);
+      if (quest) {
+        quest.aiNarrative = {
+          ...cmd.narrative,
+          generatedAtMs: cmd.atMs
+        };
+      }
+      break;
+    }
+
     case 'RESET_SKILLS': {
       // 1. Recalculate Skill Levels (XP IS SACROSANCT - READ ONLY)
       for (const key in next.player.skills) {
@@ -419,7 +430,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         startedAtMs: tickAtMs
       };
       events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECOVERY_COMPLETE', message: 'You have recovered.' })); // Using ERROR as a generic notification for now? No, let's just log activity set.
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: 'You have recovered.' }));
     }
     return { state: next, events };
   }

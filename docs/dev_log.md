@@ -1,5 +1,67 @@
 # Developer Log
 
+## 2026-01-13
+
+### Universal LLM Backend Integration (Completed)
+
+*   **Multi-Provider LLM System**:
+    *   Integrated Universal LLM Backend from `newtemp/` into RPG-Loom gateway.
+    *   Converted JavaScript codebase to TypeScript with full type safety.
+    *   **Supported Providers**: 7 total - Gemini (CLI + Cloud), OpenAI, Claude (CLI + Cloud), Codex CLI, Mock.
+    *   **Architecture**: Adapter pattern for CLI tools, unified generator for all providers.
+*   **Phase 1 - Provider Infrastructure**:
+    *   Created `gateway/src/llm/` directory structure with providers, adapters, cloud clients, and unified generator.
+    *   Installed Cloud API SDKs: `@google/generative-ai`, `openai`, `@anthropic-ai/sdk`.
+    *   Implemented CLI adapters for Gemini, Claude, and Codex with JSON streaming support.
+    *   Built Cloud API clients for Gemini, OpenAI, and Claude.
+*   **Phase 2 - Narrative System Integration**:
+    *   Updated `NarrativeTaskSchema` to support optional `model` field for per-request model selection.
+    *   Replaced old `geminiCliGenerate` function (~90 lines) with unified `generateUnified()`.
+    *   Added `getApiKeyForProvider()` helper for Cloud API authentication.
+    *   **Backward Compatible**: All existing narrative tasks continue to work, no breaking changes.
+*   **Phase 3 - General-Purpose Endpoints**:
+    *   Added `POST /api/llm/generate` - Direct LLM generation for any use case.
+    *   Added `GET /api/llm/providers` - Lists all available providers and models.
+    *   Enables non-narrative AI features (quest enhancement, agent API, dynamic content).
+*   **Testing**:
+    *   Created comprehensive test scripts for all 3 phases.
+    *   ✅ All TypeScript compilation passing.
+    *   ✅ Mock backend tested and working.
+    *   ✅ Gemini CLI tested with actual generation.
+    *   ✅ Provider listing endpoint verified.
+
+### AI Quest Enhancement Feature (Completed)
+
+*   **Data Model Updates**:
+    *   Added `aiNarrative` field to `QuestInstanceState` for storing AI-generated content.
+    *   Implemented `ENHANCE_QUEST` command type in engine.
+    *   Engine handler stores AI narrative with quest instances.
+*   **Quest Enhancement Service**:
+    *   Created `questEnhancement.ts` service with API integration.
+    *   **Smart Prompt Building**: Contextual prompts based on quest type, target, location, and difficulty.
+    *   **JSON Parsing**: Robust parsing with fallback handling for malformed responses.
+    *   **Error Handling**: Graceful degradation when AI generation fails.
+*   **UI Implementation**:
+    *   Added "✨ Enhance with AI" button to active quests in `QuestView`.
+    *   **Loading States**: Shows "✨ Enhancing..." while generating.
+    *   **Visual Indicators**: AI-enhanced quests display purple glow and "✨ AI" badge.
+    *   **AI Narrative Display**: Shows AI-generated title, description, and flavor text.
+    *   **Disabled State**: Button shows "✨ Enhanced" and is disabled after enhancement.
+*   **Features**:
+    *   AI only affects narrative, not game mechanics (rewards, requirements unchanged).
+    *   Enhancement is optional - players choose when to use AI.
+    *   AI narrative persists in save data.
+    *   Works with any configured LLM provider (defaults to Gemini CLI).
+*   **Ready for Testing**: All TypeScript compilation passing, ready for manual testing in browser.
+
+### Technical Achievements
+
+*   **Code Quality**: Full TypeScript conversion with strict typing throughout.
+*   **Architecture**: Clean separation of concerns (adapters, services, UI components).
+*   **Testing**: Comprehensive test coverage with automated test scripts.
+*   **Documentation**: Created implementation plans, test results, and API documentation.
+*   **Backward Compatibility**: Zero breaking changes to existing functionality.
+
 ## 2026-01-05
 
 ### UI Readability & Refinement (Completed)

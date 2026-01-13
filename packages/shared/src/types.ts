@@ -125,6 +125,8 @@ export interface LocationDef {
 
 export interface QuestTemplateDef {
   id: QuestTemplateId;
+  name?: string;
+  description?: string;
   objectiveType: 'kill' | 'gather' | 'deliver' | 'explore' | 'craft' | 'escort' | 'reputation';
   // targets refer to existing content IDs
   targetEnemyId?: EnemyId;
@@ -214,6 +216,14 @@ export interface QuestInstanceState {
   npcId?: NpcId;
   createdAtMs: number;
   completedAtMs?: number;
+
+  // AI-generated narrative (optional)
+  aiNarrative?: {
+    title?: string;
+    description?: string;
+    flavorText?: string;
+    generatedAtMs?: number;
+  };
 }
 
 export type ActivityParams =
@@ -344,6 +354,16 @@ export type PlayerCommand =
     type: 'DEBUG_ADD_ITEM';
     itemId: ItemId;
     qty: number;
+    atMs: number;
+  }
+  | {
+    type: 'ENHANCE_QUEST';
+    questId: QuestInstanceId;
+    narrative: {
+      title?: string;
+      description?: string;
+      flavorText?: string;
+    };
     atMs: number;
   }
   | {

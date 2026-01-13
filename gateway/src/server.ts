@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { spawn, type ChildProcess } from 'node:child_process';
-import readline from 'node:readline';
 
 import { NarrativeBlockSchema, NarrativeTaskSchema } from '@rpg-loom/shared';
 import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
+
+// NEW: Import unified LLM generator
+import { generateUnified } from './llm/generator.js';
+import { AVAILABLE_PROVIDERS } from './llm/providers.js';
 
 // --- In-memory task store (MVP) ---
 type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
@@ -18,9 +20,7 @@ interface TaskRecord {
   error?: string;
   // active SSE connections for this task
   streams: Set<express.Response>;
-
-  // active subprocess (for cancel)
-  proc?: ChildProcess;
+  // NOTE: proc field removed - process management now handled by unified generator
 }
 
 const tasks = new Map<string, TaskRecord>();
@@ -28,6 +28,7 @@ const tasks = new Map<string, TaskRecord>();
 const CreateTaskReqSchema = z.object({
   type: z.enum(['quest_flavor', 'npc_dialogue', 'rumor_feed', 'journal_entry']),
   backendId: z.string().min(1).nullable().optional(),
+  model: z.string().min(1).nullable().optional(), // NEW: Optional model selection
   references: z.record(z.string(), z.string()).optional().default({}),
   facts: z.record(z.string(), z.any())
 });
@@ -50,6 +51,7 @@ app.post('/api/tasks', (req, res) => {
     type: parsed.data.type,
     createdAtMs: Date.now(),
     backendId: parsed.data.backendId ?? null,
+    model: parsed.data.model, // NEW: Include model selection
     references: parsed.data.references ?? {},
     facts: parsed.data.facts
   };
@@ -119,19 +121,72 @@ app.post('/api/tasks/:id/cancel', (req, res) => {
   if (!record) return res.status(404).json({ error: 'not_found' });
   if (record.status === 'running' || record.status === 'queued') {
     record.status = 'canceled';
-    try {
-      record.proc?.kill('SIGTERM');
-    } catch { }
+    // NOTE: Process cancellation now handled internally by unified generator
     broadcast(record, { type: 'error', data: { message: 'canceled' } });
     endStreams(record);
   }
   res.json({ ok: true, status: record.status });
 });
 
+// --- General-Purpose LLM Endpoints (Phase 3) ---
+
+// POST /api/llm/generate - Direct LLM generation
+app.post('/api/llm/generate', async (req, res) => {
+  const schema = z.object({
+    provider: z.string().min(1),
+    model: z.string().min(1).optional(),
+    prompt: z.string().min(1),
+    maxTokens: z.number().int().positive().optional(),
+    temperature: z.number().min(0).max(2).optional()
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  try {
+    const apiKey = getApiKeyForProvider(parsed.data.provider);
+    const result = await generateUnified({
+      provider: parsed.data.provider,
+      model: parsed.data.model,
+      prompt: parsed.data.prompt,
+      apiKey,
+      maxTokens: parsed.data.maxTokens,
+      temperature: parsed.data.temperature
+    });
+
+    res.json({ text: result });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/llm/providers - List available providers
+app.get('/api/llm/providers', (_req, res) => {
+  res.json({ providers: AVAILABLE_PROVIDERS });
+});
+
 const PORT = Number(process.env.PORT ?? 8787);
 app.listen(PORT, () => {
   console.log(`[gateway] listening on http://localhost:${PORT}`);
 });
+
+// --- Helper: Get API key for provider ---
+function getApiKeyForProvider(provider: string): string | undefined {
+  const normalized = provider.toLowerCase().replace('-cli', '');
+
+  switch (normalized) {
+    case 'gemini':
+      return process.env.GEMINI_API_KEY;
+    case 'openai':
+      return process.env.OPENAI_API_KEY;
+    case 'claude':
+      return process.env.CLAUDE_API_KEY;
+    default:
+      return undefined;
+  }
+}
 
 // --- Task runner ---
 async function runTask(record: TaskRecord): Promise<void> {
@@ -142,11 +197,31 @@ async function runTask(record: TaskRecord): Promise<void> {
   const backendId = (record.task.backendId ?? process.env.DEFAULT_NARRATIVE_BACKEND ?? 'mock').toLowerCase();
 
   const output = await (async (): Promise<NarrativeBlockDTO> => {
-    if (backendId === 'gemini' || backendId === 'gemini-cli' || backendId === 'gemini_cli') {
-      return await geminiCliGenerate(record);
+    // Mock backend (no external dependencies)
+    if (backendId === 'mock') {
+      return await mockGenerateStreaming(record);
     }
-    // default: mock (deterministic-ish)
-    return await mockGenerateStreaming(record);
+
+    // All other providers use unified generator
+    const prompt = buildNarrativePrompt(record.task);
+    const apiKey = getApiKeyForProvider(backendId);
+
+    try {
+      const rawText = await generateUnified({
+        provider: backendId,
+        model: record.task.model ?? undefined, // Convert null to undefined
+        prompt,
+        apiKey,
+        maxTokens: 500,
+        temperature: 0.8
+      });
+
+      // Convert raw text to NarrativeBlock
+      return coerceNarrativeBlockFromText(rawText, record.task);
+    } catch (error: any) {
+      // If generation fails, throw error to be caught by outer handler
+      throw new Error(`LLM generation failed: ${error.message}`);
+    }
   })();
 
   // Validate output schema
@@ -212,93 +287,7 @@ function mockGenerate(task: NarrativeTaskDTO): NarrativeBlockDTO {
   };
 }
 
-// --- Gemini CLI backend (headless mode) ---
-// Uses: gemini --output-format stream-json --prompt "..." [-m MODEL]
-// Docs: https://geminicli.com/docs/cli/headless/
-async function geminiCliGenerate(record: TaskRecord): Promise<NarrativeBlockDTO> {
-  const cmd = process.env.GEMINI_CMD ?? 'gemini';
-  const model = process.env.GEMINI_MODEL;
-
-  const prompt = buildNarrativePrompt(record.task);
-  const args: string[] = ['--output-format', 'stream-json', '--prompt', prompt];
-  if (model) args.push('--model', model);
-
-  const proc = spawn(cmd, args, {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: process.env
-  });
-
-  record.proc = proc;
-
-  const rl = readline.createInterface({ input: proc.stdout });
-  const rlErr = readline.createInterface({ input: proc.stderr });
-
-  let assistantText = '';
-  let sawResult = false;
-  let lastError: string | null = null;
-
-  rl.on('line', (line) => {
-    if (record.status === 'canceled') return;
-    const trimmed = line.trim();
-    if (!trimmed) return;
-
-    try {
-      const evt = JSON.parse(trimmed) as any;
-      if (evt?.type === 'message' && evt?.role === 'assistant' && typeof evt?.content === 'string') {
-        // In stream-json mode, assistant messages may be emitted as deltas.
-        const chunk = evt.content;
-        if (evt.delta === true || evt.delta === undefined) {
-          assistantText += chunk;
-          broadcast(record, { type: 'token', data: chunk });
-        }
-      }
-
-      if (evt?.type === 'error' && evt?.message) {
-        lastError = String(evt.message);
-        broadcast(record, { type: 'line', data: `[gemini warning] ${lastError}` });
-      }
-
-      if (evt?.type === 'result') {
-        sawResult = true;
-        if (evt?.status && evt.status !== 'success') {
-          lastError = lastError ?? `gemini result status: ${evt.status}`;
-        }
-      }
-    } catch {
-      // Not JSON? Treat as plain output
-      assistantText += trimmed + '\n';
-      broadcast(record, { type: 'line', data: trimmed });
-    }
-  });
-
-  rlErr.on('line', (line) => {
-    if (record.status === 'canceled') return;
-    const msg = line.trim();
-    if (!msg) return;
-    lastError = msg;
-    broadcast(record, { type: 'line', data: `[gemini] ${msg}` });
-  });
-
-  const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
-    proc.on('close', (code, signal) => resolve({ code, signal }));
-  });
-
-  record.proc = undefined;
-
-  if (record.status === 'canceled') throw new Error('canceled');
-
-  if (exit.code !== 0) {
-    throw new Error(lastError ?? `gemini exited with code ${exit.code}${exit.signal ? ` signal ${exit.signal}` : ''}`);
-  }
-
-  if (!assistantText.trim()) {
-    throw new Error(lastError ?? 'gemini produced no assistant output');
-  }
-
-  // Parse assistant output -> NarrativeBlock
-  const block = coerceNarrativeBlockFromText(assistantText, record.task);
-  return block;
-}
+// NOTE: Old geminiCliGenerate function removed - now using unified generator
 
 function buildNarrativePrompt(task: NarrativeTaskDTO): string {
   // Keep this short; facts are already structured.

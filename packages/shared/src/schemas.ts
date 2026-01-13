@@ -129,6 +129,7 @@ export const NarrativeTaskSchema = z.object({
   type: NarrativeTaskTypeSchema,
   createdAtMs: z.number().int().nonnegative(),
   backendId: z.string().min(1).nullable(),
+  model: z.string().min(1).nullable().optional(), // NEW: Optional model selection (nullable to allow undefined)
   references: z.record(z.string(), z.string()).default({}),
   facts: z.record(z.string(), z.any())
 });

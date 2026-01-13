@@ -162,7 +162,7 @@ function AppContent() {
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
-          {activeTab === 'quests' && <QuestView state={state} content={content} />}
+          {activeTab === 'quests' && <QuestView state={state} content={content} dispatch={dispatch} />}
           {activeTab === 'debug' && <DebugView
             state={state}
             content={content}

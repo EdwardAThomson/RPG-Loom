@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { EngineState, ContentIndex, PlayerCommand } from '@rpg-loom/shared';
+import { EngineState, ContentIndex, PlayerCommand, SkillId } from '@rpg-loom/shared';
 import { step } from '@rpg-loom/engine';
 
 interface Props {
@@ -12,10 +12,59 @@ interface Props {
     onResetSkills: () => void;
 }
 
+// Helper: Calculate expected level for given XP (matches engine logic)
+function getTotalXpForSkillLevel(level: number): number {
+    let total = 0;
+    for (let i = 1; i < level; i++) {
+        total += Math.floor(100 * Math.pow(1.2, i - 1));
+    }
+    return total;
+}
+
+function getExpectedLevel(xp: number): number {
+    let level = 1;
+    while (xp >= getTotalXpForSkillLevel(level + 1)) {
+        level++;
+    }
+    return level;
+}
+
 export function DebugView({ state, content, dispatch, tickRate, setTickRate, onResetSkills }: Props) {
     const [manualOutput, setManualOutput] = useState<string>('');
 
     const currentLocation = content.locationsById[state.currentLocationId];
+
+    // Skill Validation
+    const skillValidation: Array<{ skillId: SkillId; name: string; currentLevel: number; expectedLevel: number; xp: number; isValid: boolean }> = [];
+    const skillNames: Record<SkillId, string> = {
+        swordsmanship: 'Melee',
+        marksmanship: 'Ranged',
+        arcana: 'Magic',
+        defense: 'Defense',
+        mining: 'Mining',
+        woodcutting: 'Woodcutting',
+        foraging: 'Foraging',
+        blacksmithing: 'Smithing',
+        woodworking: 'Woodcraft',
+        leatherworking: 'Leatherwork'
+    };
+
+    for (const skillId of Object.keys(state.player.skills) as SkillId[]) {
+        const skill = state.player.skills[skillId];
+        if (skill) {
+            const expectedLevel = getExpectedLevel(skill.xp);
+            skillValidation.push({
+                skillId,
+                name: skillNames[skillId] || skillId,
+                currentLevel: skill.level,
+                expectedLevel,
+                xp: skill.xp,
+                isValid: skill.level === expectedLevel
+            });
+        }
+    }
+
+    const invalidSkills = skillValidation.filter(s => !s.isValid);
 
     const handleManualTick = () => {
         try {
@@ -67,6 +116,50 @@ export function DebugView({ state, content, dispatch, tickRate, setTickRate, onR
                 </div>
             </div>
 
+            {/* Skill Validation Section */}
+            <div style={{ marginBottom: '1rem', border: invalidSkills.length > 0 ? '2px solid #f90' : '1px solid #444', padding: '0.5rem', background: invalidSkills.length > 0 ? 'rgba(255, 153, 0, 0.05)' : 'transparent' }}>
+                <h3>Skill Validation</h3>
+                {invalidSkills.length === 0 ? (
+                    <p style={{ color: '#4caf50', fontSize: '0.9rem' }}>✓ All skills have valid levels</p>
+                ) : (
+                    <>
+                        <p style={{ color: '#f90', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                            ⚠️ Found {invalidSkills.length} skill(s) with invalid levels
+                        </p>
+                        <div style={{ fontSize: '0.8rem', fontFamily: 'monospace', marginBottom: '1rem' }}>
+                            {invalidSkills.map(s => (
+                                <div key={s.skillId} style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.3)', marginBottom: '0.5rem', borderLeft: '3px solid #f90' }}>
+                                    <div style={{ color: '#fff', fontWeight: 'bold' }}>{s.name}</div>
+                                    <div style={{ color: '#f90' }}>Current Level: {s.currentLevel} (WRONG)</div>
+                                    <div style={{ color: '#4caf50' }}>Expected Level: {s.expectedLevel} (CORRECT)</div>
+                                    <div style={{ color: '#888' }}>XP: {Math.floor(s.xp).toLocaleString()}</div>
+                                </div>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => {
+                                dispatch({ type: 'RESET_SKILLS', atMs: Date.now() });
+                            }}
+                            style={{
+                                width: '100%',
+                                border: '2px solid #4caf50',
+                                color: '#4caf50',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                padding: '0.75rem',
+                                fontSize: '1rem',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            Fix Invalid Levels (No Confirmation)
+                        </button>
+                        <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', textAlign: 'center' }}>
+                            Instantly recalculates all skill levels based on XP. Preserves all XP.
+                        </p>
+                    </>
+                )}
+            </div>
+
             <div style={{ marginBottom: '1rem', border: '1px solid #444', padding: '0.5rem' }}>
                 <h3>Engine Settings</h3>
                 <div style={{ fontSize: '0.8rem', color: '#666', fontFamily: 'monospace', marginBottom: '1rem' }}>
@@ -81,7 +174,21 @@ export function DebugView({ state, content, dispatch, tickRate, setTickRate, onR
                 </div>
 
                 <div style={{ marginTop: '1rem', borderTop: '1px dashed #333', paddingTop: '1rem' }}>
-                    <button onClick={onResetSkills} style={{ width: '100%', borderColor: '#f90', color: '#f90', background: 'transparent', cursor: 'pointer' }}>
+                    <button
+                        onClick={onResetSkills}
+                        style={{
+                            width: '100%',
+                            border: '2px solid #f90',
+                            color: '#f90',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: '0.75rem',
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            position: 'relative',
+                            zIndex: 10
+                        }}
+                    >
                         Recalculate Levels
                     </button>
                     <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', textAlign: 'center' }}>
