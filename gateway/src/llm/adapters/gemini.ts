@@ -11,14 +11,16 @@ export class GeminiAdapter implements CLIAdapter {
     buildCommand({ prompt, model }: CLIAdapterParams): CLIInvocation {
         const command = process.env.GEMINI_CMD ?? 'gemini';
         const args: string[] = [
-            '--output-format', 'stream-json',
-            '--prompt', prompt
+            '--output-format', 'stream-json'
         ];
 
         // Add model if specified
         if (model) {
             args.push('--model', model);
         }
+
+        // Add prompt as positional argument (not --prompt flag which is deprecated)
+        args.push(prompt);
 
         return {
             command,

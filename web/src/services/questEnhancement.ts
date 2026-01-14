@@ -5,6 +5,7 @@
  */
 
 import type { QuestInstanceState, QuestTemplateDef, ContentIndex } from '@rpg-loom/shared';
+import { getAISettings } from './aiSettings';
 
 const API_URL = 'http://localhost:8787';
 
@@ -20,18 +21,17 @@ export interface QuestNarrative {
 export async function enhanceQuest(
     quest: QuestInstanceState,
     template: QuestTemplateDef,
-    content: ContentIndex,
-    provider: string = 'gemini-cli',
-    model?: string
+    content: ContentIndex
 ): Promise<QuestNarrative> {
+    const settings = getAISettings();
     const prompt = buildQuestEnhancementPrompt(quest, template, content);
 
     const response = await fetch(`${API_URL}/api/llm/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            provider,
-            model: model || 'gemini-3-flash-preview',
+            provider: settings.provider,
+            model: settings.model,
             prompt,
             maxTokens: 300,
             temperature: 0.8

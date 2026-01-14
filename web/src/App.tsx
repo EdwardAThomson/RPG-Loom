@@ -13,6 +13,7 @@ import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
 import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
+import { AIDebugModal } from './components/AIDebugModal';
 import React from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -51,6 +52,7 @@ function AppContent() {
   const { state, events, dispatch, content, exportSave, importSave, hardReset, tickRate, setTickRate } = useGameEngine();
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
+  const [showAIDebug, setShowAIDebug] = useState(false);
 
   // XP Rate (Last 60s)
   const [xpRate, setXpRate] = useState(0);
@@ -96,6 +98,13 @@ function AppContent() {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  // Listen for AI Debug open event
+  useEffect(() => {
+    const handleOpenAIDebug = () => setShowAIDebug(true);
+    window.addEventListener('openAIDebug', handleOpenAIDebug);
+    return () => window.removeEventListener('openAIDebug', handleOpenAIDebug);
   }, []);
 
   if (!state) return <div className="container">Loading Realm...</div>;
@@ -152,6 +161,8 @@ function AppContent() {
         onClose={() => setShowSettings(false)}
       />
       }
+
+      {showAIDebug && <AIDebugModal onClose={() => setShowAIDebug(false)} />}
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 

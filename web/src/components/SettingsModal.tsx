@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAISettings, saveAISettings } from '../services/aiSettings';
 
 interface Props {
     exportSave: () => string;
@@ -12,6 +13,39 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
     const [showResetModal, setShowResetModal] = useState(false);
     const [resetConfirmText, setResetConfirmText] = useState('');
+
+    // AI Settings
+    const [aiProvider, setAiProvider] = useState('gemini-cli');
+    const [aiModel, setAiModel] = useState('gemini-3-flash-preview');
+    const [availableProviders, setAvailableProviders] = useState<any>(null);
+
+    // Load AI settings from localStorage
+    useEffect(() => {
+        const settings = getAISettings();
+        setAiProvider(settings.provider);
+        setAiModel(settings.model);
+
+        // Fetch available providers
+        fetch('http://localhost:8787/api/llm/providers')
+            .then(res => res.json())
+            .then(data => setAvailableProviders(data.providers))
+            .catch(err => console.error('Failed to fetch providers:', err));
+    }, []);
+
+    const handleProviderChange = (provider: string) => {
+        setAiProvider(provider);
+        // Set default model for provider
+        if (availableProviders?.[provider]?.models?.[0]) {
+            const defaultModel = availableProviders[provider].models[0];
+            setAiModel(defaultModel);
+            saveAISettings({ provider, model: defaultModel });
+        }
+    };
+
+    const handleModelChange = (model: string) => {
+        setAiModel(model);
+        saveAISettings({ provider: aiProvider, model });
+    };
 
     const handleCopy = () => {
         const data = exportSave();
@@ -73,7 +107,112 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
                         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
                     </div>
 
+                    {/* AI Settings */}
                     <div style={{ marginBottom: '2rem' }}>
+                        <h3>AI Settings</h3>
+                        <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
+                            Configure the AI provider and model for quest enhancement and adventure generation.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {/* Provider Selection */}
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
+                                    AI Provider:
+                                </label>
+                                <select
+                                    value={aiProvider}
+                                    onChange={(e) => handleProviderChange(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        background: '#111',
+                                        border: '1px solid #444',
+                                        borderRadius: '4px',
+                                        color: '#fff',
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {availableProviders ? (
+                                        Object.entries(availableProviders).map(([key, provider]: [string, any]) => (
+                                            <option key={key} value={key}>
+                                                {provider.name} {provider.type === 'cloud' ? '(Cloud API)' : provider.type === 'cli' ? '(CLI)' : ''}
+                                            </option>
+                                        ))
+                                    ) : (
+                                        <option>Loading providers...</option>
+                                    )}
+                                </select>
+                            </div>
+
+                            {/* Model Selection */}
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
+                                    Model:
+                                </label>
+                                <select
+                                    value={aiModel}
+                                    onChange={(e) => handleModelChange(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        background: '#111',
+                                        border: '1px solid #444',
+                                        borderRadius: '4px',
+                                        color: '#fff',
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer'
+                                    }}
+                                    disabled={!availableProviders}
+                                >
+                                    {availableProviders?.[aiProvider]?.models?.map((model: string) => (
+                                        <option key={model} value={model}>
+                                            {model}
+                                        </option>
+                                    )) || <option>No models available</option>}
+                                </select>
+                            </div>
+
+                            {/* Info */}
+                            <div style={{
+                                padding: '0.75rem',
+                                background: 'rgba(147, 51, 234, 0.1)',
+                                border: '1px solid #9333ea',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                color: '#ccc'
+                            }}>
+                                <strong style={{ color: '#9333ea' }}>ℹ️ Note:</strong> These settings apply to quest enhancement and AI-generated adventures. Cloud API providers require API keys to be configured in the gateway.
+                            </div>
+
+                            {/* AI Debug Console Button */}
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    // Open AI Debug Modal
+                                    const event = new CustomEvent('openAIDebug');
+                                    window.dispatchEvent(event);
+                                }}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    background: 'transparent',
+                                    border: '1px solid #9333ea',
+                                    borderRadius: '4px',
+                                    color: '#9333ea',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    marginTop: '0.75rem'
+                                }}
+                            >
+                                🔧 Open AI Debug Console
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '2rem', borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
                         <h3>Save Management</h3>
                         <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
                             Backup your save or transfer it to another device.

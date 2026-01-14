@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EngineState, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
 import { getAvailableQuests } from '@rpg-loom/engine';
 import { enhanceQuest } from '../services/questEnhancement';
+import { generateAdventureQuest } from '../services/adventureQuestGeneration';
 
 interface Props {
     state: EngineState;
@@ -12,6 +13,8 @@ interface Props {
 export function QuestView({ state, content, dispatch }: Props) {
     const [enhancingQuest, setEnhancingQuest] = useState<string | null>(null);
     const [enhanceError, setEnhanceError] = useState<string | null>(null);
+    const [generatingAdventure, setGeneratingAdventure] = useState(false);
+    const [adventureError, setAdventureError] = useState<string | null>(null);
 
     const activeQuests = state.quests.filter(q => q.status === 'active');
     const completedQuests = state.quests.filter(q => q.status === 'completed');
@@ -72,6 +75,39 @@ export function QuestView({ state, content, dispatch }: Props) {
             setEnhanceError(error.message || 'Failed to generate narrative');
         } finally {
             setEnhancingQuest(null);
+        }
+    };
+
+    const handleStartAdventure = (questId: string) => {
+        dispatch({
+            type: 'SET_ACTIVITY',
+            params: { type: 'adventure', questId },
+            atMs: Date.now()
+        });
+    };
+
+    const handleGenerateAdventure = async () => {
+        setGeneratingAdventure(true);
+        setAdventureError(null);
+
+        try {
+            const spec = await generateAdventureQuest(
+                state.currentLocationId,
+                state.player.level,
+                content
+            );
+
+            dispatch({
+                type: 'GENERATE_ADVENTURE_QUEST',
+                locationId: state.currentLocationId,
+                adventureSpec: spec,
+                atMs: Date.now()
+            });
+        } catch (error: any) {
+            console.error('Failed to generate adventure:', error);
+            setAdventureError(error.message || 'Failed to generate adventure quest');
+        } finally {
+            setGeneratingAdventure(false);
         }
     };
 
@@ -178,6 +214,44 @@ export function QuestView({ state, content, dispatch }: Props) {
                         ))}
                     </div>
                 )}
+
+                {/* Generate AI Adventure Button */}
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #444' }}>
+                    <button
+                        onClick={handleGenerateAdventure}
+                        disabled={generatingAdventure}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem 1.5rem',
+                            background: generatingAdventure
+                                ? '#555'
+                                : 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: generatingAdventure ? 'not-allowed' : 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            opacity: generatingAdventure ? 0.6 : 1,
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {generatingAdventure ? '✨ Generating Adventure...' : '✨ Generate AI Adventure Quest'}
+                    </button>
+                    {adventureError && (
+                        <div style={{
+                            marginTop: '0.5rem',
+                            padding: '0.5rem',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid #ef4444',
+                            borderRadius: '4px',
+                            color: '#ef4444',
+                            fontSize: '0.85rem'
+                        }}>
+                            {adventureError}
+                        </div>
+                    )}
+                </div>
             </section>
 
             {/* Active Quests */}
@@ -192,9 +266,11 @@ export function QuestView({ state, content, dispatch }: Props) {
                         {activeQuests.map(q => {
                             const tmpl = content?.questTemplatesById?.[q.templateId];
                             const questName = tmpl?.name || q.templateId.replace('qt_', '').replace(/_/g, ' ').toUpperCase();
-                            const isQuestActivity = state.activity.params.type === 'quest' &&
-                                'questId' in state.activity.params &&
-                                state.activity.params.questId === q.id;
+                            const isAdventure = q.templateId === 'dynamic_adventure';
+                            const isQuestActivity = (
+                                (state.activity.params.type === 'quest' && 'questId' in state.activity.params && state.activity.params.questId === q.id) ||
+                                (state.activity.params.type === 'adventure' && 'questId' in state.activity.params && state.activity.params.questId === q.id)
+                            );
 
                             return (
                                 <div
@@ -246,9 +322,54 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         </div>
                                     </div>
 
+                                    {/* Adventure Steps Display */}
+                                    {q.adventureSteps && (
+                                        <div style={{ marginTop: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #9333ea' }}>
+                                            <div style={{ fontSize: '0.85rem', color: '#9333ea', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                                                Adventure Progress:
+                                            </div>
+                                            {q.adventureSteps.map(step => {
+                                                const stepLocation = step.locationId ? content?.locationsById[step.locationId] : null;
+                                                const isCurrentLocation = !step.locationId || step.locationId === state.currentLocationId;
+                                                const canProgress = step.completed || (
+                                                    isCurrentLocation &&
+                                                    q.adventureSteps!.slice(0, step.stepNumber - 1).every(s => s.completed)
+                                                );
+
+                                                return (
+                                                    <div key={step.stepNumber} style={{
+                                                        fontSize: '0.85rem',
+                                                        color: step.completed ? '#4ade80' : (canProgress ? '#fff' : '#666'),
+                                                        marginBottom: '0.5rem',
+                                                        display: 'flex',
+                                                        alignItems: 'start',
+                                                        gap: '0.5rem'
+                                                    }}>
+                                                        <span style={{ minWidth: '20px' }}>
+                                                            {step.completed ? '✓' : (canProgress ? '○' : '🔒')}
+                                                        </span>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div>{step.description}</div>
+                                                            {stepLocation && (
+                                                                <div style={{
+                                                                    fontSize: '0.75rem',
+                                                                    color: isCurrentLocation ? '#4ade80' : '#fbbf24',
+                                                                    marginTop: '0.25rem'
+                                                                }}>
+                                                                    📍 {stepLocation.name}
+                                                                    {!isCurrentLocation && ' (Travel required)'}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button
-                                            onClick={() => handleStartQuestActivity(q.id)}
+                                            onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
                                             disabled={isQuestActivity}
                                             style={{
                                                 padding: '0.5rem 1rem',

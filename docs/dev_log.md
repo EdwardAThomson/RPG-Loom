@@ -1,5 +1,66 @@
 # Developer Log
 
+## 2026-01-14
+
+### Quest Replenishment System (Completed)
+
+*   **Quest Availability Tracking**:
+    *   Added `questAvailability` field to `EngineState` for tracking daily quests and quest chains.
+    *   Implemented backward-compatible migration (`ensureQuestAvailability()`) for existing saves.
+    *   **Daily Quests**: 24-hour cooldown system with configurable duration.
+    *   **Quest Chains**: Sequential unlocking based on completion of previous steps.
+*   **Quest Chain Implementation**:
+    *   Fixed chain progression tracking to use `chainId` instead of individual template IDs.
+    *   All quests in a chain now share the same progress tracker.
+    *   **Bug Fix**: Resolved issue where chain quests wouldn't unlock after completing previous steps.
+*   **Content Expansion**:
+    *   Added 6 daily quests: Copper Collection, Timber Supply, Pest Patrol, Iron Shipment, Stone Quota, Herb Gathering.
+    *   Added 3 quest chains:
+        *   **Ore Mastery** (I-III): Progressive mining challenges (5 → 15 → 30 copper ore).
+        *   **Combat Training** (I-III): Sequential combat progression (rats → bandits → golems).
+        *   **Woodcutting Mastery** (I-III): Lumberjack skill progression (20 → 50 → 100 wood).
+*   **UI Enhancements**:
+    *   Added current location display to Quest Board header.
+    *   Improved quest progress event display in event log with merging support.
+
+### AI-Generated Adventure Quests (Completed)
+
+*   **New Quest Type - Adventures**:
+    *   Added `'adventure'` objective type and activity type to support AI-generated quests.
+    *   **Multi-Location Support**: Adventures can span multiple locations with location-specific steps.
+    *   **Time-Based Progression**: Steps complete over 2-5 minutes with narrative updates.
+*   **AI Generation Service**:
+    *   Created `adventureQuestGeneration.ts` service for generating dynamic quests.
+    *   **Context-Aware Prompting**: Uses current location, player level, available enemies/items.
+    *   **Reward Scaling**: Automatically scales XP and gold based on player level.
+    *   **Robust Parsing**: JSON parsing with fallback adventure for malformed responses.
+*   **Engine Integration**:
+    *   Implemented `GENERATE_ADVENTURE_QUEST` command handler.
+    *   Added adventure activity handler with multi-location progression logic.
+    *   **Location Checking**: Verifies player is at required location before step progression.
+    *   **Reward Distribution**: Grants XP, gold, and items on adventure completion.
+*   **UI Implementation**:
+    *   Added prominent "✨ Generate AI Adventure Quest" button to Quest Board.
+    *   **Adventure Steps Display**:
+        *   Visual status indicators: ✓ (completed), ○ (available), 🔒 (locked).
+        *   Location requirements shown with 📍 icon.
+        *   Color-coded by status: green (at location), yellow (travel required), gray (locked).
+    *   **Activity Detection**: Updated to recognize both quest and adventure activities.
+    *   **Smart Button Logic**: Uses correct handler based on quest type (adventure vs regular).
+*   **Features**:
+    *   Each adventure is unique and procedurally generated.
+    *   Dark fantasy themes with engaging narrative arcs.
+    *   3-5 step adventures taking 2-5 minutes to complete.
+    *   Better rewards than simple gather/kill quests.
+    *   Optional multi-location progression for epic adventures.
+
+### Technical Achievements
+
+*   **Type Safety**: Extended `QuestInstanceState` with adventure-specific fields.
+*   **Backward Compatibility**: Quest availability migration ensures old saves work seamlessly.
+*   **Error Handling**: Graceful fallbacks for AI generation failures.
+*   **Code Organization**: Clean separation between quest types and activity handlers.
+
 ## 2026-01-13
 
 ### Universal LLM Backend Integration (Completed)

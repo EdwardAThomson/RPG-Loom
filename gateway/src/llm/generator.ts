@@ -134,37 +134,59 @@ async function generateWithCLI(params: {
         cwd
     });
 
-    // Read stdout
-    const rl = readline.createInterface({ input: proc.stdout });
     let output = '';
     let lastError: string | null = null;
+    let stderrOutput = '';
 
-    for await (const line of rl) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+    // Read stdout and stderr concurrently to prevent deadlock
+    const [stdoutData, stderrData] = await Promise.all([
+        // Read stdout
+        (async () => {
+            const rl = readline.createInterface({ input: proc.stdout });
+            let data = '';
 
-        // Handle JSON streaming format
-        if (invocation.responseFormat === 'json-stream') {
-            try {
-                const evt = JSON.parse(trimmed);
+            for await (const line of rl) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
 
-                // Extract assistant messages
-                if (evt?.type === 'message' && evt?.role === 'assistant' && typeof evt?.content === 'string') {
-                    output += evt.content;
+                // Handle JSON streaming format
+                if (invocation.responseFormat === 'json-stream') {
+                    try {
+                        const evt = JSON.parse(trimmed);
+
+                        // Extract assistant messages
+                        if (evt?.type === 'message' && evt?.role === 'assistant' && typeof evt?.content === 'string') {
+                            data += evt.content;
+                        }
+
+                        // Track errors
+                        if (evt?.type === 'error' && evt?.message) {
+                            lastError = String(evt.message);
+                        }
+                    } catch {
+                        // Not JSON, skip (likely debug output)
+                    }
+                } else {
+                    // Plain text format
+                    data += trimmed + '\n';
                 }
-
-                // Track errors
-                if (evt?.type === 'error' && evt?.message) {
-                    lastError = String(evt.message);
-                }
-            } catch {
-                // Not JSON, skip (likely debug output)
             }
-        } else {
-            // Plain text format
-            output += trimmed + '\n';
-        }
-    }
+            return data;
+        })(),
+
+        // Read stderr
+        (async () => {
+            const rl = readline.createInterface({ input: proc.stderr });
+            let data = '';
+            for await (const line of rl) {
+                data += line + '\n';
+            }
+            return data;
+        })()
+    ]);
+
+    output = stdoutData;
+    stderrOutput = stderrData;
 
     // Wait for process to exit
     const exitCode = await new Promise<number>((resolve) => {
@@ -172,11 +194,40 @@ async function generateWithCLI(params: {
     });
 
     if (exitCode !== 0) {
-        throw new Error(lastError ?? `CLI process exited with code ${exitCode}`);
+        // Build verbose error message
+        const errorParts = [
+            `CLI process failed (exit code ${exitCode})`,
+            `Provider: ${provider}`,
+            `Command: ${invocation.command} ${invocation.args.join(' ')}`
+        ];
+
+        if (lastError) {
+            errorParts.push(`Error: ${lastError}`);
+        }
+
+        if (stderrOutput.trim()) {
+            errorParts.push(`Stderr:\n${stderrOutput.trim()}`);
+        }
+
+        if (output.trim()) {
+            errorParts.push(`Stdout:\n${output.trim()}`);
+        }
+
+        throw new Error(errorParts.join('\n'));
     }
 
     if (!output.trim()) {
-        throw new Error(lastError ?? 'CLI produced no output');
+        const errorParts = [
+            'CLI produced no output',
+            `Provider: ${provider}`,
+            `Command: ${invocation.command} ${invocation.args.join(' ')}`
+        ];
+
+        if (stderrOutput.trim()) {
+            errorParts.push(`Stderr:\n${stderrOutput.trim()}`);
+        }
+
+        throw new Error(errorParts.join('\n'));
     }
 
     return output.trim();

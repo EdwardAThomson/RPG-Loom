@@ -51,7 +51,8 @@ export type ActivityType =
   | 'craft'
   | 'train'
   | 'trade'
-  | 'explore';
+  | 'explore'
+  | 'adventure';
 
 export type TacticsPreset = 'aggressive' | 'balanced' | 'defensive';
 
@@ -127,7 +128,7 @@ export interface QuestTemplateDef {
   id: QuestTemplateId;
   name?: string;
   description?: string;
-  objectiveType: 'kill' | 'gather' | 'deliver' | 'explore' | 'craft' | 'escort' | 'reputation';
+  objectiveType: 'kill' | 'gather' | 'deliver' | 'explore' | 'craft' | 'escort' | 'reputation' | 'adventure';
   // targets refer to existing content IDs
   targetEnemyId?: EnemyId;
   targetItemId?: ItemId;
@@ -235,6 +236,22 @@ export interface QuestInstanceState {
     flavorText?: string;
     generatedAtMs?: number;
   };
+
+  // For AI-generated adventures
+  adventureSteps?: Array<{
+    stepNumber: number;
+    description: string;
+    locationId?: LocationId;
+    completed: boolean;
+  }>;
+  estimatedDurationMs?: number;
+
+  // Rewards for AI-generated adventures
+  adventureRewards?: {
+    xp: number;
+    gold: number;
+    items?: Array<{ itemId: ItemId; qty: number }>;
+  };
 }
 
 export type ActivityParams =
@@ -248,7 +265,8 @@ export type ActivityParams =
   | { type: 'craft'; recipeId: RecipeId }
   | { type: 'train'; skillId: SkillId }
   | { type: 'trade'; locationId: LocationId }
-  | { type: 'explore'; locationId: LocationId };
+  | { type: 'explore'; locationId: LocationId }
+  | { type: 'adventure'; questId: QuestInstanceId };
 
 export interface ActivityPlan {
   id: string;
@@ -388,6 +406,27 @@ export type PlayerCommand =
   }
   | {
     type: 'RESET_SKILLS';
+    atMs: number;
+  }
+  | {
+    type: 'GENERATE_ADVENTURE_QUEST';
+    locationId: LocationId;
+    adventureSpec: {
+      title: string;
+      description: string;
+      steps: Array<{
+        stepNumber: number;
+        description: string;
+        locationId?: LocationId;
+      }>;
+      estimatedDurationMs: number;
+      difficulty: 1 | 2 | 3 | 4 | 5;
+      rewards: {
+        xp: number;
+        gold: number;
+        items?: Array<{ itemId: ItemId; qty: number }>;
+      };
+    };
     atMs: number;
   };
 

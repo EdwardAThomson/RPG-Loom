@@ -323,6 +323,39 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       break;
     }
 
+    case 'GENERATE_ADVENTURE_QUEST': {
+      // Create a dynamic adventure quest from AI-generated spec
+      const spec = cmd.adventureSpec;
+      const quest: QuestInstanceState = {
+        id: `q_adventure_${next.tickIndex}`,
+        templateId: 'dynamic_adventure', // Special marker for AI quests
+        status: 'active',
+        progress: { current: 0, required: spec.steps.length },
+        locationId: cmd.locationId,
+        createdAtMs: cmd.atMs,
+        adventureSteps: spec.steps.map(s => ({
+          ...s,
+          completed: false
+        })),
+        estimatedDurationMs: spec.estimatedDurationMs,
+        adventureRewards: spec.rewards,
+        aiNarrative: {
+          title: spec.title,
+          description: spec.description,
+          generatedAtMs: cmd.atMs
+        }
+      };
+      next.quests.push(quest);
+      events.push(
+        ev(next, cmd.atMs, 'QUEST_ACCEPTED', {
+          questId: quest.id,
+          templateId: quest.templateId,
+          locationId: cmd.locationId
+        })
+      );
+      break;
+    }
+
     case 'RESET_SKILLS': {
       // 1. Recalculate Skill Levels (XP IS SACROSANCT - READ ONLY)
       for (const key in next.player.skills) {
@@ -733,6 +766,91 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     }
 
     // other objective types are future work.
+    return { state: next, events };
+  }
+
+  if (a.type === 'adventure') {
+    // AI-generated adventure with multi-location support
+    const q = next.quests.find(x => x.id === a.questId);
+    if (!q || q.status !== 'active' || !q.adventureSteps) {
+      return { state: next, events };
+    }
+
+    // Find the next incomplete step
+    const nextStepIndex = q.adventureSteps.findIndex(s => !s.completed);
+    if (nextStepIndex === -1) {
+      // All steps complete
+      return { state: next, events };
+    }
+
+    const nextStep = q.adventureSteps[nextStepIndex];
+
+    // Check if player is at the required location (if specified)
+    if (nextStep.locationId && next.currentLocationId !== nextStep.locationId) {
+      // Player needs to travel to the location
+      const requiredLocation = content?.locationsById[nextStep.locationId];
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+        message: `Travel to ${requiredLocation?.name || nextStep.locationId} to continue the adventure.`
+      }));
+      return { state: next, events };
+    }
+
+    // Progress through adventure steps over time
+    const stepDuration = (q.estimatedDurationMs || 180000) / q.adventureSteps.length;
+    const elapsedMs = tickAtMs - (next.activity.startedAtMs + (nextStepIndex * stepDuration));
+
+    if (elapsedMs >= stepDuration) {
+      // Complete this step
+      nextStep.completed = true;
+      q.progress.current = nextStepIndex + 1;
+
+      events.push(ev(next, tickAtMs, 'QUEST_PROGRESS', {
+        questId: q.id,
+        gained: 1,
+        current: q.progress.current,
+        required: q.progress.required
+      }));
+
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+        message: nextStep.description
+      }));
+
+      // Check completion
+      if (q.progress.current >= q.progress.required) {
+        // Adventure complete - grant rewards
+        const rewards = q.adventureRewards || { xp: 300, gold: 150 };
+
+        // We need to store rewards in the quest for completion
+        // For now, manually grant rewards here
+        if (rewards.xp) gainXp(next, rewards.xp, events, tickAtMs);
+        if (rewards.gold) {
+          next.player.gold += rewards.gold;
+          events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: rewards.gold, newTotal: next.player.gold }));
+        }
+        if (rewards.items) {
+          for (const item of rewards.items) {
+            addItem(next.inventory, item.itemId, item.qty);
+          }
+          events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: rewards.items }));
+        }
+
+        q.status = 'completed';
+        q.completedAtMs = tickAtMs;
+        events.push(ev(next, tickAtMs, 'QUEST_COMPLETED', {
+          questId: q.id,
+          templateId: q.templateId,
+          rewards: rewards as any
+        }));
+
+        // Set activity to idle
+        next.activity = {
+          id: `act_idle_${next.tickIndex}`,
+          params: { type: 'idle' },
+          startedAtMs: tickAtMs
+        };
+      }
+    }
+
     return { state: next, events };
   }
 
