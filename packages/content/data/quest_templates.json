@@ -416,5 +416,365 @@
       "xp": 1500,
       "gold": 800
     }
+  },
+  {
+    "id": "qt_daily_copper_ore",
+    "name": "Daily: Copper Collection",
+    "description": "The smith needs a steady supply of copper ore.",
+    "objectiveType": "gather",
+    "targetItemId": "item_copper_ore",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 100,
+      "gold": 50
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_wood",
+    "name": "Daily: Timber Supply",
+    "description": "Gather wood for the village carpenters.",
+    "objectiveType": "gather",
+    "targetItemId": "item_wood",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 10,
+    "qtyMax": 10,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 80,
+      "gold": 40
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_rat_hunt",
+    "name": "Daily: Pest Patrol",
+    "description": "Keep the rat population under control.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_rat",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 120,
+      "gold": 60
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_iron_ore",
+    "name": "Daily: Iron Shipment",
+    "description": "The quarry needs iron ore delivered daily.",
+    "objectiveType": "gather",
+    "targetItemId": "item_iron_ore",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 150,
+      "gold": 75
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_stone",
+    "name": "Daily: Stone Quota",
+    "description": "Meet the daily stone mining quota.",
+    "objectiveType": "gather",
+    "targetItemId": "item_stone",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 15,
+    "qtyMax": 15,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 140,
+      "gold": 70
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_herbs",
+    "name": "Daily: Herb Gathering",
+    "description": "Collect herbs for the apothecary.",
+    "objectiveType": "gather",
+    "targetItemId": "item_herb_green",
+    "locationPool": [
+      "loc_swamp"
+    ],
+    "qtyMin": 8,
+    "qtyMax": 8,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 160,
+      "gold": 80
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_ore_mastery_1",
+    "name": "Ore Mastery I",
+    "description": "Begin your journey as a master miner.",
+    "objectiveType": "gather",
+    "targetItemId": "item_copper_ore",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 150,
+      "gold": 75
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "ore_mastery",
+      "chainStep": 1,
+      "nextQuestId": "qt_ore_mastery_2"
+    }
+  },
+  {
+    "id": "qt_ore_mastery_2",
+    "name": "Ore Mastery II",
+    "description": "Your mining skills are improving. Gather more ore.",
+    "objectiveType": "gather",
+    "targetItemId": "item_copper_ore",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 15,
+    "qtyMax": 15,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 150
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "ore_mastery",
+      "chainStep": 2,
+      "nextQuestId": "qt_ore_mastery_3"
+    }
+  },
+  {
+    "id": "qt_ore_mastery_3",
+    "name": "Ore Mastery III",
+    "description": "Become a legendary miner. Prove your mastery.",
+    "objectiveType": "gather",
+    "targetItemId": "item_copper_ore",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 30,
+    "qtyMax": 30,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 600,
+      "gold": 300,
+      "items": [
+        {
+          "itemId": "item_copper_ingot",
+          "qty": 10
+        }
+      ]
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "ore_mastery",
+      "chainStep": 3
+    }
+  },
+  {
+    "id": "qt_combat_training_1",
+    "name": "Combat Training I",
+    "description": "Prove yourself in battle against rats.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_rat",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 10,
+    "qtyMax": 10,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 200,
+      "gold": 100
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "combat_training",
+      "chainStep": 1,
+      "nextQuestId": "qt_combat_training_2"
+    }
+  },
+  {
+    "id": "qt_combat_training_2",
+    "name": "Combat Training II",
+    "description": "Face tougher foes. Hunt bandits.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_bandit",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 8,
+    "qtyMax": 8,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 400,
+      "gold": 200,
+      "items": [
+        {
+          "itemId": "item_simple_potion",
+          "qty": 5
+        }
+      ]
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "combat_training",
+      "chainStep": 2,
+      "nextQuestId": "qt_combat_training_3"
+    }
+  },
+  {
+    "id": "qt_combat_training_3",
+    "name": "Combat Training III",
+    "description": "Master warrior training. Defeat golems.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_golem",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 800,
+      "gold": 400,
+      "items": [
+        {
+          "itemId": "item_chainmail",
+          "qty": 1
+        }
+      ]
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "combat_training",
+      "chainStep": 3
+    }
+  },
+  {
+    "id": "qt_woodcutting_mastery_1",
+    "name": "Woodcutting Mastery I",
+    "description": "Start your path to becoming a master lumberjack.",
+    "objectiveType": "gather",
+    "targetItemId": "item_wood",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 20,
+    "qtyMax": 20,
+    "difficulty": 1,
+    "rewardPack": {
+      "xp": 150,
+      "gold": 75
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "woodcutting_mastery",
+      "chainStep": 1,
+      "nextQuestId": "qt_woodcutting_mastery_2"
+    }
+  },
+  {
+    "id": "qt_woodcutting_mastery_2",
+    "name": "Woodcutting Mastery II",
+    "description": "Your axe skills are improving. Gather more timber.",
+    "objectiveType": "gather",
+    "targetItemId": "item_wood",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 50,
+    "qtyMax": 50,
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 150,
+      "items": [
+        {
+          "itemId": "item_plank",
+          "qty": 20
+        }
+      ]
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "woodcutting_mastery",
+      "chainStep": 2,
+      "nextQuestId": "qt_woodcutting_mastery_3"
+    }
+  },
+  {
+    "id": "qt_woodcutting_mastery_3",
+    "name": "Woodcutting Mastery III",
+    "description": "Become a legendary lumberjack.",
+    "objectiveType": "gather",
+    "targetItemId": "item_wood",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "qtyMin": 100,
+    "qtyMax": 100,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 600,
+      "gold": 300,
+      "items": [
+        {
+          "itemId": "item_plank",
+          "qty": 50
+        }
+      ]
+    },
+    "replenishment": {
+      "type": "chain",
+      "chainId": "woodcutting_mastery",
+      "chainStep": 3
+    }
   }
 ]

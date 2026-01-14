@@ -110,6 +110,7 @@ export function createNewState(params: {
     inventory: [],
     equipment: {},
     quests: [],
+    questAvailability: {}, // Quest replenishment tracking
     activity: {
       id: 'act_idle_0',
       params: { type: 'idle' },
@@ -921,7 +922,7 @@ function bumpQuestProgressFromKill(state: EngineState, killedEnemyId: string, ev
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'kill' && tmpl.targetEnemyId === killedEnemyId) {
       q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
       checkQuestCompletion(state, q.id, content, events, atMs);
     }
   }
@@ -937,7 +938,7 @@ function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: Ite
       const gained = loot.filter((x) => x.itemId === tmpl.targetItemId).reduce((s, x) => s + x.qty, 0);
       if (gained > 0) {
         q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained, current: q.progress.current, required: q.progress.required }));
         checkQuestCompletion(state, q.id, content, events, atMs);
       }
     }
@@ -951,7 +952,7 @@ function bumpQuestProgressFromCraft(state: EngineState, recipeId: string, events
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'craft' && tmpl.targetRecipeId === recipeId) {
       q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, current: q.progress.current, required: q.progress.required }));
+      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
       checkQuestCompletion(state, q.id, content, events, atMs);
     }
   }
@@ -961,6 +962,9 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   const q = state.quests.find((x) => x.id === questId);
   if (!q || q.status !== 'active') return;
   if (q.progress.current < q.progress.required) return;
+
+  // Ensure state is migrated for old saves
+  ensureQuestAvailability(state);
 
   const tmpl = content.questTemplatesById[q.templateId];
   if (!tmpl) return;
@@ -981,6 +985,25 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   }
 
   events.push(ev(state, atMs, 'QUEST_COMPLETED', { questId: q.id, templateId: q.templateId, rewards }));
+
+  // Handle quest replenishment
+  if (tmpl.replenishment) {
+    if (tmpl.replenishment.type === 'daily') {
+      // Set cooldown for daily quest
+      const cooldownMs = (tmpl.replenishment.cooldownHours || 24) * 60 * 60 * 1000;
+      state.questAvailability[tmpl.id] = {
+        type: 'daily',
+        lastCompletedMs: atMs,
+        availableAfterMs: atMs + cooldownMs
+      };
+    } else if (tmpl.replenishment.type === 'chain' && tmpl.replenishment.chainId) {
+      // Update chain progress using chainId as the key
+      const chainId = tmpl.replenishment.chainId;
+      const current = state.questAvailability[chainId] || { type: 'chain', chainProgress: 0 };
+      current.chainProgress = tmpl.replenishment.chainStep || 0;
+      state.questAvailability[chainId] = current;
+    }
+  }
 }
 
 // ---- XP/Leveling ----
@@ -1125,6 +1148,12 @@ function ensureIntrinsicStats(state: EngineState) {
   }
 }
 
+function ensureQuestAvailability(state: EngineState) {
+  if (!state.questAvailability) {
+    state.questAvailability = {};
+  }
+}
+
 export function syncDerivedPlayerStats(state: EngineState) {
   let totalXp = 0;
   let totalLevel = 0;
@@ -1194,5 +1223,71 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
   effective.hp = Math.min(effective.hp, effective.hpMax);
 
   state.player.baseStats = effective;
+}
+
+// ---- Quest Availability Helper ----
+
+/**
+ * Get available quests for the current location, respecting replenishment rules
+ */
+export function getAvailableQuests(state: EngineState, content: ContentIndex): QuestTemplateDef[] {
+  const now = Date.now();
+  const available: QuestTemplateDef[] = [];
+
+  // Ensure state is migrated for old saves
+  ensureQuestAvailability(state);
+
+  // Safety check: ensure questTemplatesById exists
+  if (!content?.questTemplatesById) {
+    return available;
+  }
+
+  for (const template of Object.values(content.questTemplatesById)) {
+    // Skip if already active
+    if (state.quests.some(q => q.templateId === template.id && q.status === 'active')) {
+      continue;
+    }
+
+    // Check location
+    if (!template.locationPool.includes(state.currentLocationId)) {
+      continue;
+    }
+
+    // Check replenishment rules
+    if (template.replenishment) {
+      if (template.replenishment.type === 'daily') {
+        // Check cooldown using template ID
+        const availability = state.questAvailability[template.id];
+        if (availability?.availableAfterMs && now < availability.availableAfterMs) {
+          continue; // Still on cooldown
+        }
+      } else if (template.replenishment.type === 'chain' && template.replenishment.chainId) {
+        // Check chain progress using chainId
+        const chainId = template.replenishment.chainId;
+        const chainAvailability = state.questAvailability[chainId];
+        const chainStep = template.replenishment.chainStep || 1;
+        const chainProgress = chainAvailability?.chainProgress || 0;
+
+        // Check if previous step is complete
+        if (chainProgress < chainStep - 1) {
+          continue; // Previous step not complete
+        }
+
+        // Don't show if already completed this step
+        if (chainProgress >= chainStep) {
+          continue;
+        }
+      }
+    } else {
+      // One-time quest - check if completed
+      if (state.quests.some(q => q.templateId === template.id && q.status === 'completed')) {
+        continue;
+      }
+    }
+
+    available.push(template);
+  }
+
+  return available;
 }
 

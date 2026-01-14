@@ -138,6 +138,17 @@ export interface QuestTemplateDef {
   locationPool: LocationId[];
   rewardPack: RewardPack;
   difficulty: 1 | 2 | 3 | 4 | 5;
+
+  // Quest replenishment configuration (optional)
+  replenishment?: {
+    type: 'daily' | 'chain';
+    // For daily quests
+    cooldownHours?: number; // Default 24
+    // For quest chains
+    chainId?: string; // e.g., 'ore_mastery'
+    chainStep?: number; // 1, 2, 3, etc.
+    nextQuestId?: QuestTemplateId; // Next quest in chain
+  };
 }
 
 export interface NpcDef {
@@ -283,6 +294,15 @@ export interface EngineState {
     enemyMaxHp: number;
   };
 
+  // Quest availability tracking (for daily quests and chains)
+  // Keys can be either QuestTemplateId (for daily quests) or chainId string (for chain progress)
+  questAvailability: Record<QuestTemplateId | string, {
+    type: 'daily' | 'chain';
+    lastCompletedMs?: number; // For daily quests
+    availableAfterMs?: number; // When it becomes available again
+    chainProgress?: number; // Current step in chain (for chain entries keyed by chainId)
+  }>;
+
   // metrics tracking
   metrics: EngineMetrics;
 }
@@ -404,7 +424,7 @@ export type GameEvent =
   | BaseEvent<'TICK_PROCESSED', { ticks: number }>
   | BaseEvent<'ACTIVITY_SET', { activity: ActivityParams }>
   | BaseEvent<'QUEST_ACCEPTED', { questId: QuestInstanceId; templateId: QuestTemplateId; locationId: LocationId; npcId?: NpcId }>
-  | BaseEvent<'QUEST_PROGRESS', { questId: QuestInstanceId; current: number; required: number }>
+  | BaseEvent<'QUEST_PROGRESS', { questId: QuestInstanceId; gained: number; current: number; required: number }>
   | BaseEvent<'QUEST_COMPLETED', { questId: QuestInstanceId; templateId: QuestTemplateId; rewards: RewardPack }>
   | BaseEvent<'ENCOUNTER_STARTED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number }>
   | BaseEvent<'ENCOUNTER_RESOLVED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number; outcome: 'win' | 'loss' | 'escape' }>

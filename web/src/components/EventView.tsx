@@ -24,6 +24,13 @@ function formatEvent(ev: any, content: any) {
         });
         return `Loot: ${itemNames.join(', ')}`;
     }
+    if (ev.type === 'QUEST_PROGRESS') {
+        // Find quest to get item/enemy name
+        const gained = ev.payload.gained;
+        const current = ev.payload.current;
+        const required = ev.payload.required;
+        return `Quest Progress: +${gained} (${current}/${required})`;
+    }
     if (ev.type === 'ENCOUNTER_RESOLVED') {
         const enemyName = content?.enemiesById?.[ev.payload.enemyId]?.name || ev.payload.enemyId;
         return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${enemyName}`;
@@ -57,8 +64,8 @@ export function EventView({ events, content }: Props) {
 
                             // Check if mergeable
                             if (last.atMs === ev.atMs &&
-                                (ev.type === 'XP_GAINED' || ev.type === 'GOLD_CHANGED' || ev.type === 'LOOT_GAINED') &&
-                                (last.type === 'XP_GAINED' || last.type === 'GOLD_CHANGED' || last.type === 'LOOT_GAINED' || last.type === 'ENCOUNTER_RESOLVED' || last.type === 'SUMMARY')) {
+                                (ev.type === 'XP_GAINED' || ev.type === 'GOLD_CHANGED' || ev.type === 'LOOT_GAINED' || ev.type === 'QUEST_PROGRESS') &&
+                                (last.type === 'XP_GAINED' || last.type === 'GOLD_CHANGED' || last.type === 'LOOT_GAINED' || last.type === 'QUEST_PROGRESS' || last.type === 'ENCOUNTER_RESOLVED' || last.type === 'SUMMARY')) {
 
                                 if (last.type !== 'SUMMARY') {
                                     // Upgrade valid previous event to SUMMARY

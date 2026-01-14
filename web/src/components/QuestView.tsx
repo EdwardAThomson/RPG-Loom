@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { EngineState, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
+import { getAvailableQuests } from '@rpg-loom/engine';
 import { enhanceQuest } from '../services/questEnhancement';
 
 interface Props {
@@ -15,24 +16,8 @@ export function QuestView({ state, content, dispatch }: Props) {
     const activeQuests = state.quests.filter(q => q.status === 'active');
     const completedQuests = state.quests.filter(q => q.status === 'completed');
 
-    // Get available quests for current location
-    const availableQuests: QuestTemplateDef[] = [];
-    if (content?.questTemplatesById) {
-        const activeTemplateIds = new Set(state.quests.map(q => q.templateId));
-
-        for (const [templateId, template] of Object.entries(content.questTemplatesById)) {
-            const tmpl = template as QuestTemplateDef;
-            // Show quest if:
-            // 1. Player is in a location that matches the quest's locationPool
-            // 2. Quest is not already active or completed
-            const isInLocation = tmpl.locationPool.includes(state.currentLocationId);
-            const notTaken = !activeTemplateIds.has(templateId);
-
-            if (isInLocation && notTaken) {
-                availableQuests.push(tmpl);
-            }
-        }
-    }
+    // Get available quests using new filtering logic
+    const availableQuests = content ? getAvailableQuests(state, content) : [];
 
     // Sort by difficulty
     availableQuests.sort((a, b) => a.difficulty - b.difficulty);
@@ -95,18 +80,18 @@ export function QuestView({ state, content, dispatch }: Props) {
     };
 
     const getObjectiveText = (tmpl: QuestTemplateDef) => {
-        const qty = `${tmpl.qtyMin}${tmpl.qtyMin !== tmpl.qtyMax ? `-${tmpl.qtyMax}` : ''}`;
+        const qty = `${tmpl.qtyMin}${tmpl.qtyMin !== tmpl.qtyMax ? `-${tmpl.qtyMax}` : ''} `;
 
         switch (tmpl.objectiveType) {
             case 'kill':
                 const enemyName = content?.enemiesById?.[tmpl.targetEnemyId || '']?.name || tmpl.targetEnemyId;
-                return `Kill ${qty} ${enemyName}`;
+                return `Kill ${qty} ${enemyName} `;
             case 'gather':
                 const itemName = content?.itemsById?.[tmpl.targetItemId || '']?.name || tmpl.targetItemId;
-                return `Gather ${qty} ${itemName}`;
+                return `Gather ${qty} ${itemName} `;
             case 'craft':
                 const recipeName = content?.recipesById?.[tmpl.targetRecipeId || '']?.name || tmpl.targetRecipeId;
-                return `Craft ${qty} ${recipeName}`;
+                return `Craft ${qty} ${recipeName} `;
             default:
                 return tmpl.objectiveType;
         }
@@ -115,21 +100,28 @@ export function QuestView({ state, content, dispatch }: Props) {
     const formatRewards = (rewards: any) => {
         const parts: string[] = [];
         if (rewards.xp) parts.push(`${rewards.xp} XP`);
-        if (rewards.gold) parts.push(`${rewards.gold}g`);
+        if (rewards.gold) parts.push(`${rewards.gold} g`);
         if (rewards.items?.length) {
             rewards.items.forEach((item: any) => {
                 const itemName = content?.itemsById?.[item.itemId]?.name || item.itemId;
-                parts.push(`${item.qty}x ${itemName}`);
+                parts.push(`${item.qty}x ${itemName} `);
             });
         }
         return parts.join(', ');
     };
+
+    // Get current location name
+    const currentLocation = content?.locationsById?.[state.currentLocationId];
+    const locationName = currentLocation?.name || state.currentLocationId;
 
     return (
         <div style={{ display: 'grid', gap: '1.5rem' }}>
             {/* Quest Board - Available Quests */}
             <section className="card">
                 <h2>Quest Board</h2>
+                <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                    Current Location: <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{locationName}</span>
+                </div>
                 {availableQuests.length === 0 ? (
                     <div style={{ color: '#666', fontStyle: 'italic' }}>
                         No quests available at this location. Try exploring other areas!
@@ -243,7 +235,7 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
                                         <div style={{ flex: 1, height: '8px', background: '#222', borderRadius: '4px', overflow: 'hidden' }}>
                                             <div style={{
-                                                width: `${Math.min(100, (q.progress.current / q.progress.required) * 100)}%`,
+                                                width: `${Math.min(100, (q.progress.current / q.progress.required) * 100)}% `,
                                                 height: '100%',
                                                 background: 'var(--color-success)',
                                                 transition: 'width 0.3s ease'
