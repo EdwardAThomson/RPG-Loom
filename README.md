@@ -1,108 +1,165 @@
 # RPG Loom
 
-A deterministic, text-first **idle RPG** with an optional **AI narrative layer** (Gemini).
+A deterministic **incremental RPG** with **AI-powered dynamic content generation**.
 
-The core game runs fully **without AI**. When enabled, AI adds quest flavor, NPC dialogue, rumors, and journal entries — but **never changes outcomes**.
+The core game runs fully **without AI**. When enabled, AI generates unique adventure quests, enhances quest narratives, and adds flavor to the game world — while maintaining deterministic gameplay mechanics.
 
-## 🚧 Current Status: Milestone D (Completed) 🚧
+![Screenshot](Screenshot_20260114.png)
 
-**The Core Loop, UI, and Content Baseline are complete.**
-*   **Web Client**: Robust React-based UI with Tabbed Navigation (Activity, Inventory, Character, Quests).
-*   **Combat**: Multi-tick deterministic combat with real-time **Tactics Switching** and specialized enemy phases.
-*   **Expanded Content**: Full material progression (Bronze → Iron → Steel → Darksteel), tiered locations, and craftable sets.
-*   **Progression**: Balanced xp/gold curves, reputation tracking, and meaningful equipment upgrades.
-*   **Persistence**: Auto-save to LocalStorage with manual Import/Export (Base64) for backup.
-*   **Debug Tools**: Built-in speed control (Fast Forward) for testing.
+## 🎮 Current Status: Feature-Complete Alpha
 
-## Key ideas
+**Core Systems:**
 
-- **Deterministic engine**: rules and outcomes are code-driven and reproducible.
-- **Commands → Engine → Events**: the UI sends commands, the engine emits events.
-- **AI is optional**: narrative only (JSON output + strict validation). If AI is unavailable, the game still plays normally.
-- **Future-ready**: designed for async multiplayer and instanced co-op later (no real-time overworld).
+- ✅ **Deterministic Engine**: Reproducible game state with seeded RNG
+- ✅ **Combat System**: Multi-tick combat with tactics, equipment, and skills
+- ✅ **Crafting & Gathering**: Mining, woodcutting, foraging, and smithing
+- ✅ **Quest System**: Daily quests, quest chains, and AI-generated adventures
+- ✅ **Progression**: Skill-based leveling, equipment tiers, and reputation
+- ✅ **Persistence**: Auto-save with import/export functionality
 
-## Monorepo layout
+**AI Features:**
+
+- ✅ **AI-Generated Adventure Quests**: Dynamic multi-location quests with unique narratives
+- ✅ **Quest Enhancement**: AI rewrites quest descriptions for variety
+- ✅ **Multi-Provider Support**: Gemini (CLI/Cloud), OpenAI, Claude, and more
+- ✅ **AI Settings Menu**: Configure provider and model preferences
+- ✅ **AI Debug Console**: Troubleshoot generation with detailed logging
+
+**UI & UX:**
+
+- ✅ **Tabbed Navigation**: Activity, Travel, Inventory, Crafting, Character, Quests
+- ✅ **Real-time Updates**: Live event log with smart message merging
+- ✅ **Equipment Manager**: Visual equipment grid with drag-to-equip
+- ✅ **Quest Tracking**: Progress bars, step indicators, and location requirements
+- ✅ **Debug Tools**: Tick rate control, skill reset, and item spawner
+
+## Key Features
+
+### Quest System
+
+- **Daily Quests**: 24-hour cooldown quests for consistent rewards
+- **Quest Chains**: Sequential multi-part quests that unlock progressively
+- **AI Adventures**: Dynamically generated 3-5 step adventures with:
+  - Multi-location progression
+  - Time-based completion (2-5 minutes)
+  - Contextual narratives based on player level and location
+  - Scaled rewards (XP, gold, items)
+
+### AI Integration
+
+- **Multi-Provider LLM Support**: 
+  - Gemini (CLI & Cloud API)
+  - OpenAI (GPT-4, GPT-5)
+  - Claude (CLI & Cloud API)
+  - Codex CLI
+  - Mock backend for testing
+- **Configurable Settings**: Choose provider and model from Settings menu
+- **Debug Console**: Test AI generation with detailed output logs
+- **Graceful Degradation**: Game remains fully playable without AI
+
+### Deterministic Gameplay
+
+- **Seeded RNG**: All randomness is reproducible with save state
+- **Command-Event Architecture**: UI sends commands, engine emits events
+- **Offline Simulation**: Catch-up mechanics for time spent away
+- **No AI in Core Loop**: AI only affects narrative, never game mechanics
+
+## Monorepo Layout
 
 - `web/` — React (Vite) client UI
-- `gateway/` — Node API for narrative tasks + SSE streaming + AI backends (Gemini / mock)
-- `sdk/` — typed client for the gateway
-- `packages/engine/` — deterministic simulation engine
+- `gateway/` — Node API for LLM integration with multi-provider support
+- `sdk/` — Typed client for the gateway
+- `packages/engine/` — Deterministic simulation engine
 - `packages/content/` — JSON content packs (items, enemies, locations, quests, recipes)
-- `packages/shared/` — shared types + zod schemas + utilities
-- `docs/` — specs, plan, architecture, tech stack
+- `packages/shared/` — Shared types, Zod schemas, and utilities
+- `docs/` — Development log, specs, and architecture
 
 ## Requirements
 
-- Node.js **LTS** (recommended: 20+)
-- npm or pnpm
+- **Node.js** LTS (recommended: 20+)
+- **npm** or **pnpm**
 
-### Optional (for AI narrative)
-- Gemini CLI (local backend)
-- Gemini API key
+### Optional (for AI features)
 
-## Quick start
+- **Gemini CLI** (recommended): `npm install -g @google/gemini-cli`
+- **API Keys** for Cloud providers (Gemini, OpenAI, Claude)
+
+## Quick Start
 
 ```bash
 npm install
 
-# terminal A
+# Terminal A - Start the gateway
 npm run dev:gateway
 
-# terminal B
+# Terminal B - Start the web client
 npm run dev:web
-````
+```
 
-Open the web app (typically): `http://localhost:5173`
+Open the web app at: `http://localhost:5173`
 
-## Enable Gemini narrative (optional)
+## AI Configuration
 
-1. Install Gemini CLI:
+### Using Gemini CLI (Recommended)
 
+1. **Install Gemini CLI:**
 ```bash
 npm install -g @google/gemini-cli
 ```
 
-2. Provide credentials:
-
+2. **Authenticate:**
 ```bash
-export GEMINI_API_KEY="YOUR_KEY"
+gemini auth
 ```
 
-3. Set the default narrative backend:
+3. **Configure in-game:**
+
+   - Click Settings (⚙️) in the top right
+   - Under "AI Settings", select `gemini-cli` as provider
+   - Choose `gemini-3-flash-preview` as model
+   - Click "🔧 Open AI Debug Console" to test
+
+### Using Cloud APIs
+
+Set environment variables for your chosen provider:
 
 ```bash
-export DEFAULT_NARRATIVE_BACKEND=gemini-cli
-# optional model override:
-export GEMINI_MODEL=gemini-2.5-pro
+# Gemini Cloud API
+export GEMINI_API_KEY="your-key-here"
+
+# OpenAI
+export OPENAI_API_KEY="your-key-here"
+
+# Claude
+export ANTHROPIC_API_KEY="your-key-here"
 ```
 
-Then run the gateway:
+Then configure the provider in Settings → AI Settings.
 
-```bash
-npm run dev:gateway
-```
+## Development Guidelines
 
-If Gemini is not installed or not configured, the gateway will fall back to a mock/no-op narrative backend and the game remains playable.
+### Engine Rules
 
-## Development notes
+- **No `Math.random()`** in `packages/engine` (use seeded RNG)
+- **No wall-clock reads** inside engine functions (time is passed as input)
+- **Deterministic state transitions** for reproducibility
 
-* The engine must remain deterministic:
+### AI Integration Rules
 
-  * **No `Math.random()`** in `packages/engine`
-  * No wall-clock reads inside engine functions (time is passed as input)
-* AI outputs must be:
+- **JSON-only outputs** with schema validation
+- **Cannot invent content IDs** (must use existing items/enemies/locations)
+- **Narrative only** - AI never affects game mechanics or outcomes
+- **Graceful fallbacks** when AI is unavailable
 
-  * JSON-only
-  * validated (schema + length budgets)
-  * unable to invent content IDs
+## Documentation
 
-## Docs
-
-* `docs/PLAN.md` — milestone plan
-* `docs/TECH_STACK.md` — tech stack choices
-* `docs/ARCHITECTURE.md` — system architecture and data flow
+- `docs/dev_log.md` — Development history and feature log
+- `docs/PLAN.md` — Milestone plan
+- `docs/TECH_STACK.md` — Technology choices
+- `docs/ARCHITECTURE.md` — System architecture
 
 ## License
 
-TBD (choose MIT/Apache-2.0/etc.)
+MIT
+
 
