@@ -4,6 +4,12 @@ A deterministic **incremental RPG** with **AI-powered dynamic content generation
 
 The core game runs fully **without AI**. When enabled, AI generates unique adventure quests, enhances quest narratives, and adds flavor to the game world — while maintaining deterministic gameplay mechanics.
 
+## YouTube Videos
+
+* [RPG Loom - Project Start](https://www.youtube.com/watch?v=In-FWxJHEmI)
+* [Automated Game Development](https://youtu.be/bPcV4SZ55VE)
+
+
 ![Screenshot](Screenshot_20260114.png)
 
 ## 🎮 Current Status: Feature-Complete Alpha
