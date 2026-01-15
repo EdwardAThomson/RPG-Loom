@@ -323,47 +323,139 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     </div>
 
                                     {/* Adventure Steps Display */}
-                                    {q.adventureSteps && (
-                                        <div style={{ marginTop: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #9333ea' }}>
-                                            <div style={{ fontSize: '0.85rem', color: '#9333ea', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                                                Adventure Progress:
-                                            </div>
-                                            {q.adventureSteps.map(step => {
-                                                const stepLocation = step.locationId ? content?.locationsById[step.locationId] : null;
-                                                const isCurrentLocation = !step.locationId || step.locationId === state.currentLocationId;
-                                                const canProgress = step.completed || (
-                                                    isCurrentLocation &&
-                                                    q.adventureSteps!.slice(0, step.stepNumber - 1).every(s => s.completed)
-                                                );
+                                    {q.adventureSteps && q.adventureSteps.length > 0 && (() => {
+                                        // Debug logging
+                                        console.log('Adventure steps for quest:', q.id, q.adventureSteps);
 
-                                                return (
-                                                    <div key={step.stepNumber} style={{
-                                                        fontSize: '0.85rem',
-                                                        color: step.completed ? '#4ade80' : (canProgress ? '#fff' : '#666'),
-                                                        marginBottom: '0.5rem',
-                                                        display: 'flex',
-                                                        alignItems: 'start',
-                                                        gap: '0.5rem'
-                                                    }}>
-                                                        <span style={{ minWidth: '20px' }}>
-                                                            {step.completed ? '✓' : (canProgress ? '○' : '🔒')}
-                                                        </span>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div>{step.description}</div>
-                                                            {stepLocation && (
-                                                                <div style={{
-                                                                    fontSize: '0.75rem',
-                                                                    color: isCurrentLocation ? '#4ade80' : '#fbbf24',
-                                                                    marginTop: '0.25rem'
-                                                                }}>
-                                                                    📍 {stepLocation.name}
-                                                                    {!isCurrentLocation && ' (Travel required)'}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                        // Handle both old and new formats
+                                        const stepsToDisplay = q.adventureSteps.map((step: any) => {
+                                            // Old format: { stepNumber, description, locationId, completed }
+                                            // New format: { stepNumber, template, narrative, status, subQuestId }
+
+                                            if (step.template) {
+                                                // New format - use as-is
+                                                return step;
+                                            } else if (step.description) {
+                                                // Old format - convert to new format for display
+                                                const previousStep = q.adventureSteps!.find((s: any) => s.stepNumber === step.stepNumber - 1);
+                                                return {
+                                                    stepNumber: step.stepNumber,
+                                                    status: step.completed ? 'completed' :
+                                                        (step.stepNumber === 1 || (previousStep && (('completed' in previousStep && previousStep.completed) || previousStep.status === 'completed')))
+                                                            ? 'active' : 'locked',
+                                                    template: step.locationId ? {
+                                                        type: 'explore' as const,
+                                                        targetLocationId: step.locationId,
+                                                        durationMs: 30000
+                                                    } : null,
+                                                    narrative: {
+                                                        description: step.description
+                                                    }
+                                                };
+                                            }
+                                            return null;
+                                        }).filter((step: any) => step !== null);
+
+                                        console.log('Steps to display:', stepsToDisplay.length);
+
+                                        return (
+                                            <div style={{ marginTop: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #9333ea' }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#9333ea', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                                                    Adventure Progress:
+                                                </div>
+                                                {stepsToDisplay.length === 0 ? (
+                                                    <div style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>
+                                                        ⚠️ Quest data is incomplete. Try abandoning and generating a new adventure.
                                                     </div>
-                                                );
-                                            })}
+                                                ) : (
+                                                    stepsToDisplay.map((step: any, idx: number) => {
+                                                        const statusIcon = step.status === 'completed' ? '✓' :
+                                                            step.status === 'active' ? '→' : '🔒';
+                                                        const statusColor = step.status === 'completed' ? '#4ade80' :
+                                                            step.status === 'active' ? '#fbbf24' : '#666';
+
+                                                        // Get location for travel/explore/deliver steps
+                                                        let stepLocation = null;
+                                                        let targetLocationId: string | null = null;
+                                                        if (step.template?.type === 'travel') {
+                                                            targetLocationId = step.template.targetLocationId;
+                                                        } else if (step.template?.type === 'explore') {
+                                                            targetLocationId = step.template.targetLocationId;
+                                                        } else if (step.template?.type === 'deliver') {
+                                                            targetLocationId = step.template.targetLocationId;
+                                                        }
+                                                        if (targetLocationId) {
+                                                            stepLocation = content?.locationsById[targetLocationId];
+                                                        }
+
+                                                        // Get sub-quest if it exists
+                                                        const subQuest = step.subQuestId ?
+                                                            state.quests.find(sq => sq.id === step.subQuestId) : null;
+
+                                                        return (
+                                                            <div key={step.stepNumber} style={{
+                                                                fontSize: '0.85rem',
+                                                                color: statusColor,
+                                                                marginBottom: '0.5rem',
+                                                                display: 'flex',
+                                                                alignItems: 'start',
+                                                                gap: '0.5rem'
+                                                            }}>
+                                                                <span style={{ minWidth: '20px' }}>
+                                                                    {statusIcon}
+                                                                </span>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <div>{step.narrative?.description || 'Unknown step'}</div>
+                                                                    {step.narrative?.context && (
+                                                                        <div style={{
+                                                                            fontSize: '0.75rem',
+                                                                            color: '#888',
+                                                                            marginTop: '0.25rem',
+                                                                            fontStyle: 'italic'
+                                                                        }}>
+                                                                            {step.narrative.context}
+                                                                        </div>
+                                                                    )}
+                                                                    {stepLocation && targetLocationId && (
+                                                                        <div style={{
+                                                                            fontSize: '0.75rem',
+                                                                            color: state.currentLocationId === targetLocationId ? '#4ade80' : '#fbbf24',
+                                                                            marginTop: '0.25rem'
+                                                                        }}>
+                                                                            📍 {stepLocation.name}
+                                                                            {state.currentLocationId !== targetLocationId && ' (Travel required)'}
+                                                                        </div>
+                                                                    )}
+                                                                    {subQuest && (
+                                                                        <div style={{
+                                                                            fontSize: '0.75rem',
+                                                                            color: '#9333ea',
+                                                                            marginTop: '0.25rem'
+                                                                        }}>
+                                                                            Sub-quest: {subQuest.progress.current}/{subQuest.progress.required}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Show if this is a sub-quest */}
+                                    {q.templateId.startsWith('dynamic_') && (
+                                        <div style={{
+                                            marginTop: '0.5rem',
+                                            padding: '0.5rem',
+                                            background: 'rgba(147, 51, 234, 0.1)',
+                                            border: '1px solid #9333ea',
+                                            borderRadius: '4px',
+                                            fontSize: '0.75rem',
+                                            color: '#9333ea'
+                                        }}>
+                                            ⚔️ Part of an Adventure Quest
                                         </div>
                                     )}
 

@@ -544,6 +544,153 @@
     }
   },
   {
+    "id": "qt_daily_skeleton_hunt",
+    "name": "Daily: Undead Patrol",
+    "description": "Clear out the restless undead in the catacombs.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_skeleton",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 200,
+      "gold": 100
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_silver_ore",
+    "name": "Daily: Silver Extraction",
+    "description": "Mine silver ore from the haunted depths.",
+    "objectiveType": "gather",
+    "targetItemId": "item_silver_ore",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 220,
+      "gold": 110
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_bone_fragments",
+    "name": "Daily: Bone Collection",
+    "description": "Gather bone fragments for the necromancer's research.",
+    "objectiveType": "gather",
+    "targetItemId": "item_bone_fragment",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "qtyMin": 8,
+    "qtyMax": 8,
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 210,
+      "gold": 105
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_yeti_hunt",
+    "name": "Daily: Yeti Culling",
+    "description": "Hunt yetis to protect mountain travelers.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_yeti",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 3,
+    "qtyMax": 3,
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 150
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_gold_ore",
+    "name": "Daily: Gold Rush",
+    "description": "Mine precious gold ore from the peak.",
+    "objectiveType": "gather",
+    "targetItemId": "item_gold_ore",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 3,
+    "qtyMax": 3,
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 350,
+      "gold": 175
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_frost_stone",
+    "name": "Daily: Frost Harvest",
+    "description": "Gather frost stones from the frozen heights.",
+    "objectiveType": "gather",
+    "targetItemId": "item_frost_stone",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 8,
+    "qtyMax": 8,
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 320,
+      "gold": 160
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
+    "id": "qt_daily_harpy_hunt",
+    "name": "Daily: Sky Hunters",
+    "description": "Hunt harpies threatening the mountain pass.",
+    "objectiveType": "kill",
+    "targetEnemyId": "enemy_harpy",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "qtyMin": 4,
+    "qtyMax": 4,
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 330,
+      "gold": 165
+    },
+    "replenishment": {
+      "type": "daily",
+      "cooldownHours": 24
+    }
+  },
+  {
     "id": "qt_ore_mastery_1",
     "name": "Ore Mastery I",
     "description": "Begin your journey as a master miner.",

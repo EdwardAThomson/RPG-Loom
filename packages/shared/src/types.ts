@@ -124,6 +124,15 @@ export interface LocationDef {
   foragingTable?: LootTable;
 }
 
+// Adventure step templates - deterministic quest types that AI can select
+export type AdventureStepTemplate =
+  | { type: 'kill'; targetEnemyId: EnemyId; qty: number }
+  | { type: 'gather'; targetItemId: ItemId; qty: number }
+  | { type: 'travel'; targetLocationId: LocationId }
+  | { type: 'explore'; targetLocationId: LocationId; durationMs: number }
+  | { type: 'craft'; targetRecipeId: RecipeId; qty: number }
+  | { type: 'deliver'; targetItemId: ItemId; targetLocationId: LocationId; qty: number };
+
 export interface QuestTemplateDef {
   id: QuestTemplateId;
   name?: string;
@@ -237,14 +246,17 @@ export interface QuestInstanceState {
     generatedAtMs?: number;
   };
 
-  // For AI-generated adventures
+  // For AI-generated adventures (template-based)
   adventureSteps?: Array<{
     stepNumber: number;
-    description: string;
-    locationId?: LocationId;
-    completed: boolean;
+    status: 'locked' | 'active' | 'completed';
+    template: AdventureStepTemplate;
+    narrative: {
+      description: string;
+      context?: string;
+    };
+    subQuestId?: QuestInstanceId;
   }>;
-  estimatedDurationMs?: number;
 
   // Rewards for AI-generated adventures
   adventureRewards?: {
@@ -416,10 +428,12 @@ export type PlayerCommand =
       description: string;
       steps: Array<{
         stepNumber: number;
-        description: string;
-        locationId?: LocationId;
+        template: AdventureStepTemplate;
+        narrative: {
+          description: string;
+          context?: string;
+        };
       }>;
-      estimatedDurationMs: number;
       difficulty: 1 | 2 | 3 | 4 | 5;
       rewards: {
         xp: number;

@@ -4,6 +4,7 @@ import type {
   GameEvent,
   InventoryStack,
   ItemId,
+  LocationId,
   LootTable,
   PlayerCommand,
   QuestInstanceState,
@@ -188,6 +189,10 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       const q = next.quests.find((x) => x.id === cmd.questId);
       if (q && q.status === 'active') {
         q.status = 'abandoned';
+        // If this is an adventure quest, clean up sub-quests
+        if (q.adventureSteps) {
+          abandonAdventure(next, q.id);
+        }
       }
       break;
     }
@@ -264,6 +269,13 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       delete next.activeEncounter;
 
       events.push(ev(next, cmd.atMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
+
+      // Check for travel quest completion
+      if (content) {
+        checkTravelQuests(next, cmd.locationId, events, cmd.atMs, content);
+        checkDeliverQuests(next, events, cmd.atMs, content);
+      }
+
       break;
     }
     case 'BUY_ITEM': {
@@ -333,11 +345,13 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         progress: { current: 0, required: spec.steps.length },
         locationId: cmd.locationId,
         createdAtMs: cmd.atMs,
-        adventureSteps: spec.steps.map(s => ({
-          ...s,
-          completed: false
+        adventureSteps: spec.steps.map((s, idx) => ({
+          stepNumber: s.stepNumber,
+          status: idx === 0 ? 'active' : 'locked', // First step is active, rest are locked
+          template: s.template,
+          narrative: s.narrative,
+          subQuestId: undefined
         })),
-        estimatedDurationMs: spec.estimatedDurationMs,
         adventureRewards: spec.rewards,
         aiNarrative: {
           title: spec.title,
@@ -346,6 +360,22 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         }
       };
       next.quests.push(quest);
+
+      // Spawn first sub-quest based on step 1 template
+      if (content) {
+        const firstSubQuest = spawnAdventureSubQuest(next, quest, 0, content, cmd.atMs);
+        if (firstSubQuest) {
+          next.quests.push(firstSubQuest);
+          events.push(
+            ev(next, cmd.atMs, 'QUEST_ACCEPTED', {
+              questId: firstSubQuest.id,
+              templateId: firstSubQuest.templateId,
+              locationId: firstSubQuest.locationId
+            })
+          );
+        }
+      }
+
       events.push(
         ev(next, cmd.atMs, 'QUEST_ACCEPTED', {
           questId: quest.id,
@@ -648,6 +678,8 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
       // For now, just flavor text for explore/trade if no loot table
       if (a.type === 'explore') {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You explore the area.` }));
+        // Check for explore quest progression
+        progressExploreQuests(next, events, tickAtMs, content);
       } else if (a.type === 'trade') {
         events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You look for trade opportunities.` }));
       }
@@ -769,90 +801,6 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     return { state: next, events };
   }
 
-  if (a.type === 'adventure') {
-    // AI-generated adventure with multi-location support
-    const q = next.quests.find(x => x.id === a.questId);
-    if (!q || q.status !== 'active' || !q.adventureSteps) {
-      return { state: next, events };
-    }
-
-    // Find the next incomplete step
-    const nextStepIndex = q.adventureSteps.findIndex(s => !s.completed);
-    if (nextStepIndex === -1) {
-      // All steps complete
-      return { state: next, events };
-    }
-
-    const nextStep = q.adventureSteps[nextStepIndex];
-
-    // Check if player is at the required location (if specified)
-    if (nextStep.locationId && next.currentLocationId !== nextStep.locationId) {
-      // Player needs to travel to the location
-      const requiredLocation = content?.locationsById[nextStep.locationId];
-      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
-        message: `Travel to ${requiredLocation?.name || nextStep.locationId} to continue the adventure.`
-      }));
-      return { state: next, events };
-    }
-
-    // Progress through adventure steps over time
-    const stepDuration = (q.estimatedDurationMs || 180000) / q.adventureSteps.length;
-    const elapsedMs = tickAtMs - (next.activity.startedAtMs + (nextStepIndex * stepDuration));
-
-    if (elapsedMs >= stepDuration) {
-      // Complete this step
-      nextStep.completed = true;
-      q.progress.current = nextStepIndex + 1;
-
-      events.push(ev(next, tickAtMs, 'QUEST_PROGRESS', {
-        questId: q.id,
-        gained: 1,
-        current: q.progress.current,
-        required: q.progress.required
-      }));
-
-      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
-        message: nextStep.description
-      }));
-
-      // Check completion
-      if (q.progress.current >= q.progress.required) {
-        // Adventure complete - grant rewards
-        const rewards = q.adventureRewards || { xp: 300, gold: 150 };
-
-        // We need to store rewards in the quest for completion
-        // For now, manually grant rewards here
-        if (rewards.xp) gainXp(next, rewards.xp, events, tickAtMs);
-        if (rewards.gold) {
-          next.player.gold += rewards.gold;
-          events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: rewards.gold, newTotal: next.player.gold }));
-        }
-        if (rewards.items) {
-          for (const item of rewards.items) {
-            addItem(next.inventory, item.itemId, item.qty);
-          }
-          events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: rewards.items }));
-        }
-
-        q.status = 'completed';
-        q.completedAtMs = tickAtMs;
-        events.push(ev(next, tickAtMs, 'QUEST_COMPLETED', {
-          questId: q.id,
-          templateId: q.templateId,
-          rewards: rewards as any
-        }));
-
-        // Set activity to idle
-        next.activity = {
-          id: `act_idle_${next.tickIndex}`,
-          params: { type: 'idle' },
-          startedAtMs: tickAtMs
-        };
-      }
-    }
-
-    return { state: next, events };
-  }
 
   return { state: next, events };
 }
@@ -1009,11 +957,6 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 
   const enemyMaxHp = Math.floor(enemy.baseStats.hpMax * hpScale);
 
-  // Enemy Stat Scaling (Level Delta)
-  const levelDelta = Math.max(0, enemyLevel - (enemy.levelMin ?? 1));
-  const scaledAtk = enemy.baseStats.atk + (levelDelta * 1.0);
-  const scaledDef = enemy.baseStats.def + (levelDelta * 0.5);
-
   next.activeEncounter = {
     enemyId,
     enemyLevel,
@@ -1076,6 +1019,88 @@ function bumpQuestProgressFromCraft(state: EngineState, recipeId: string, events
   }
 }
 
+/**
+ * Check and complete travel quests when player arrives at destination
+ */
+function checkTravelQuests(state: EngineState, locationId: LocationId, events: GameEvent[], atMs: number, content: ContentIndex) {
+  for (const q of state.quests) {
+    if (q.status !== 'active') continue;
+
+    // Check dynamic travel quests (from adventures)
+    if (q.templateId === 'dynamic_travel' && q.locationId === locationId) {
+      q.progress.current = q.progress.required;
+      events.push(ev(state, atMs, 'QUEST_PROGRESS', {
+        questId: q.id,
+        gained: 1,
+        current: q.progress.current,
+        required: q.progress.required
+      }));
+      checkQuestCompletion(state, q.id, content, events, atMs);
+    }
+  }
+}
+
+/**
+ * Check and complete deliver quests when player has items at location
+ */
+function checkDeliverQuests(state: EngineState, events: GameEvent[], atMs: number, content: ContentIndex) {
+  for (const q of state.quests) {
+    if (q.status !== 'active') continue;
+
+    // Check dynamic deliver quests (from adventures)
+    if (q.templateId.startsWith('dynamic_deliver_')) {
+      const itemId = q.templateId.replace('dynamic_deliver_', '');
+      const hasItems = state.inventory.find(stack => stack.itemId === itemId && stack.qty >= q.progress.required);
+      const atLocation = state.currentLocationId === q.locationId;
+
+      if (hasItems && atLocation && q.progress.current < q.progress.required) {
+        q.progress.current = q.progress.required;
+        events.push(ev(state, atMs, 'QUEST_PROGRESS', {
+          questId: q.id,
+          gained: q.progress.required,
+          current: q.progress.current,
+          required: q.progress.required
+        }));
+        checkQuestCompletion(state, q.id, content, events, atMs);
+      }
+    }
+  }
+}
+
+/**
+ * Progress explore quests (time-based at location)
+ */
+function progressExploreQuests(state: EngineState, events: GameEvent[], atMs: number, content: ContentIndex) {
+  for (const q of state.quests) {
+    if (q.status !== 'active') continue;
+
+    // Check dynamic explore quests (from adventures)
+    if (q.templateId === 'dynamic_explore') {
+      const atLocation = state.currentLocationId === q.locationId;
+      const isExploring = state.activity.params.type === 'explore' &&
+        state.activity.params.locationId === q.locationId;
+
+      if (atLocation && isExploring && q.progress.current < q.progress.required) {
+        // Simple completion after some time (could be enhanced with duration check)
+        const elapsedMs = atMs - q.createdAtMs;
+        const requiredMs = 30000; // 30 seconds default
+
+        if (elapsedMs >= requiredMs) {
+          q.progress.current = q.progress.required;
+          events.push(ev(state, atMs, 'QUEST_PROGRESS', {
+            questId: q.id,
+            gained: 1,
+            current: q.progress.current,
+            required: q.progress.required
+          }));
+          checkQuestCompletion(state, q.id, content, events, atMs);
+        }
+      }
+    }
+  }
+}
+
+
 function checkQuestCompletion(state: EngineState, questId: string, content: ContentIndex, events: GameEvent[], atMs: number) {
   const q = state.quests.find((x) => x.id === questId);
   if (!q || q.status !== 'active') return;
@@ -1083,6 +1108,26 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
 
   // Ensure state is migrated for old saves
   ensureQuestAvailability(state);
+
+  // Check if this is a dynamic quest (adventure sub-quest)
+  const isDynamicQuest = q.templateId.startsWith('dynamic_');
+
+  if (isDynamicQuest) {
+    // Dynamic quests don't have templates, mark as completed
+    q.status = 'completed';
+    q.completedAtMs = atMs;
+
+    // No rewards for sub-quests (rewards come from parent adventure)
+    events.push(ev(state, atMs, 'QUEST_COMPLETED', {
+      questId: q.id,
+      templateId: q.templateId,
+      rewards: {} as any
+    }));
+
+    // Check if this is an adventure sub-quest and handle step progression
+    handleAdventureSubQuestCompletion(state, q.id, content, events, atMs);
+    return;
+  }
 
   const tmpl = content.questTemplatesById[q.templateId];
   if (!tmpl) return;
@@ -1123,6 +1168,247 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
     }
   }
 }
+
+// ---- Adventure Quest Helpers ----
+/**
+ * Spawns a sub-quest from an adventure step template
+ */
+function spawnAdventureSubQuest(
+  state: EngineState,
+  adventureQuest: QuestInstanceState,
+  stepIndex: number,
+  _content: ContentIndex,
+  atMs: number
+): QuestInstanceState | null {
+  const step = adventureQuest.adventureSteps![stepIndex];
+  const template = step.template;
+
+  // Determine location for the sub-quest
+  let locationId: string;
+  if (template.type === 'travel' || template.type === 'explore' || template.type === 'deliver') {
+    locationId = template.targetLocationId;
+  } else {
+    // For kill/gather/craft, use adventure's current location or find appropriate location
+    locationId = adventureQuest.locationId;
+  }
+
+  // Create quest based on template type
+  const subQuestId = `q_adv_sub_${adventureQuest.id}_step${stepIndex}_${state.tickIndex}`;
+
+  let subQuest: QuestInstanceState;
+
+  if (template.type === 'kill') {
+    subQuest = {
+      id: subQuestId,
+      templateId: `dynamic_kill_${template.targetEnemyId}`,
+      status: 'active',
+      locationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: template.qty },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Kill ${template.qty} ${template.targetEnemyId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else if (template.type === 'gather') {
+    subQuest = {
+      id: subQuestId,
+      templateId: `dynamic_gather_${template.targetItemId}`,
+      status: 'active',
+      locationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: template.qty },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Gather ${template.qty} ${template.targetItemId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else if (template.type === 'craft') {
+    subQuest = {
+      id: subQuestId,
+      templateId: `dynamic_craft_${template.targetRecipeId}`,
+      status: 'active',
+      locationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: template.qty },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Craft ${template.qty} ${template.targetRecipeId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else if (template.type === 'travel') {
+    // Travel quests auto-complete when player is at location
+    subQuest = {
+      id: subQuestId,
+      templateId: 'dynamic_travel',
+      status: 'active',
+      locationId: template.targetLocationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: 1 },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Travel to ${template.targetLocationId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else if (template.type === 'explore') {
+    // Explore quests are time-based
+    subQuest = {
+      id: subQuestId,
+      templateId: 'dynamic_explore',
+      status: 'active',
+      locationId: template.targetLocationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: 1 },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Explore ${template.targetLocationId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else if (template.type === 'deliver') {
+    // Deliver quests check inventory + location
+    subQuest = {
+      id: subQuestId,
+      templateId: `dynamic_deliver_${template.targetItemId}`,
+      status: 'active',
+      locationId: template.targetLocationId,
+      createdAtMs: atMs,
+      progress: { current: 0, required: template.qty },
+      aiNarrative: {
+        title: step.narrative.description,
+        description: step.narrative.context || `Deliver ${template.qty} ${template.targetItemId} to ${template.targetLocationId}`,
+        generatedAtMs: atMs
+      }
+    };
+  } else {
+    return null; // Unknown template type
+  }
+
+  // Link sub-quest to adventure step
+  step.subQuestId = subQuest.id;
+
+  return subQuest;
+}
+
+/**
+ * Activates the next adventure step and spawns its sub-quest
+ */
+function activateNextAdventureStep(
+  state: EngineState,
+  adventureQuestId: string,
+  content: ContentIndex,
+  events: GameEvent[],
+  atMs: number
+): void {
+  const adventure = state.quests.find(q => q.id === adventureQuestId);
+  if (!adventure || !adventure.adventureSteps) return;
+
+  // Find next locked step
+  const nextStepIndex = adventure.adventureSteps.findIndex(s => s.status === 'locked');
+  if (nextStepIndex === -1) return; // No more steps
+
+  const nextStep = adventure.adventureSteps[nextStepIndex];
+  nextStep.status = 'active';
+
+  // Spawn sub-quest for this step
+  const subQuest = spawnAdventureSubQuest(state, adventure, nextStepIndex, content, atMs);
+  if (subQuest) {
+    state.quests.push(subQuest);
+    events.push(ev(state, atMs, 'QUEST_ACCEPTED', {
+      questId: subQuest.id,
+      templateId: subQuest.templateId,
+      locationId: subQuest.locationId
+    }));
+    events.push(ev(state, atMs, 'FLAVOR_TEXT', {
+      message: `New objective: ${nextStep.narrative.description}`
+    }));
+  }
+}
+
+/**
+ * Handles completion of an adventure sub-quest
+ */
+function handleAdventureSubQuestCompletion(
+  state: EngineState,
+  subQuestId: string,
+  content: ContentIndex,
+  events: GameEvent[],
+  atMs: number
+): void {
+  // Find the parent adventure quest
+  const adventure = state.quests.find(q =>
+    q.adventureSteps?.some(s => s.subQuestId === subQuestId)
+  );
+
+  if (!adventure || !adventure.adventureSteps) return;
+
+  // Find the completed step
+  const stepIndex = adventure.adventureSteps.findIndex(s => s.subQuestId === subQuestId);
+  if (stepIndex === -1) return;
+
+  const step = adventure.adventureSteps[stepIndex];
+  step.status = 'completed';
+  adventure.progress.current = stepIndex + 1;
+
+  events.push(ev(state, atMs, 'QUEST_PROGRESS', {
+    questId: adventure.id,
+    gained: 1,
+    current: adventure.progress.current,
+    required: adventure.progress.required
+  }));
+
+  // Check if adventure is complete
+  if (adventure.progress.current >= adventure.progress.required) {
+    // All steps complete - award adventure rewards
+    adventure.status = 'completed';
+    adventure.completedAtMs = atMs;
+
+    const rewards = adventure.adventureRewards || { xp: 300, gold: 150 };
+    if (rewards.xp) gainXp(state, rewards.xp, events, atMs);
+    if (rewards.gold) {
+      state.player.gold += rewards.gold;
+      events.push(ev(state, atMs, 'GOLD_CHANGED', { amount: rewards.gold, newTotal: state.player.gold }));
+    }
+    if (rewards.items) {
+      for (const item of rewards.items) {
+        addItem(state.inventory, item.itemId, item.qty);
+      }
+      events.push(ev(state, atMs, 'LOOT_GAINED', { items: rewards.items }));
+    }
+
+    events.push(ev(state, atMs, 'QUEST_COMPLETED', {
+      questId: adventure.id,
+      templateId: adventure.templateId,
+      rewards: rewards as any
+    }));
+  } else {
+    // Activate next step
+    activateNextAdventureStep(state, adventure.id, content, events, atMs);
+  }
+}
+
+/**
+ * Cleans up all sub-quests when an adventure is abandoned
+ */
+function abandonAdventure(state: EngineState, adventureQuestId: string): void {
+  const adventure = state.quests.find(q => q.id === adventureQuestId);
+  if (!adventure || !adventure.adventureSteps) return;
+
+  // Abandon all active sub-quests
+  for (const step of adventure.adventureSteps) {
+    if (step.subQuestId) {
+      const subQuest = state.quests.find(q => q.id === step.subQuestId);
+      if (subQuest && subQuest.status === 'active') {
+        subQuest.status = 'abandoned';
+      }
+    }
+  }
+}
+
 
 // ---- XP/Leveling ----
 /**
