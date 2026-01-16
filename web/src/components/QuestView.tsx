@@ -379,6 +379,14 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         'locationId' in state.activity.params &&
                                         state.activity.params.locationId === q.locationId;
                                 }
+
+                                // For dynamic craft quests, check if we're in crafting activity with target recipe
+                                if (!isQuestActivity && q.templateId.startsWith('dynamic_craft_')) {
+                                    const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
+                                    isQuestActivity = state.activity.params.type === 'craft' &&
+                                        'recipeId' in state.activity.params &&
+                                        state.activity.params.recipeId === targetRecipeId;
+                                }
                             }
 
                             return (
@@ -571,19 +579,17 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button
                                             onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
-                                            disabled={isQuestActivity}
                                             style={{
                                                 padding: '0.5rem 1rem',
-                                                background: isQuestActivity ? '#555' : 'var(--color-primary)',
-                                                border: 'none',
+                                                background: isQuestActivity ? '#444' : 'var(--color-primary)',
+                                                border: isQuestActivity ? '1px solid #666' : 'none',
                                                 borderRadius: '4px',
-                                                color: '#fff',
-                                                cursor: isQuestActivity ? 'not-allowed' : 'pointer',
-                                                fontSize: '0.85rem',
-                                                opacity: isQuestActivity ? 0.6 : 1
+                                                color: isQuestActivity ? '#888' : '#fff',
+                                                cursor: 'pointer',
+                                                fontSize: '0.85rem'
                                             }}
                                         >
-                                            {isQuestActivity ? 'In Progress' : 'Start Quest'}
+                                            {isQuestActivity ? 'Refocus' : 'Start Quest'}
                                         </button>
                                         <button
                                             onClick={() => handleAbandonQuest(q.id)}

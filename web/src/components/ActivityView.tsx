@@ -39,6 +39,52 @@ export function ActivityView({ state, dispatch, content }: Props) {
                         </div>
                     )}
 
+                    {(() => {
+                        const activeQuests = state.quests.filter(q => q.status === 'active');
+                        const focusedQuest = activeQuests.find(q => {
+                            if (q.templateId.startsWith('dynamic_gather_') && activity.params.type === (
+                                content?.locationsById?.[q.locationId]?.miningTable?.entries.some((e: any) => e.itemId === q.templateId.replace('dynamic_gather_', '')) ? 'mine' :
+                                    content?.locationsById?.[q.locationId]?.woodcuttingTable?.entries.some((e: any) => e.itemId === q.templateId.replace('dynamic_gather_', '')) ? 'woodcut' : 'forage'
+                            ) && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
+
+                            if (q.templateId === 'dynamic_explore' && activity.params.type === 'explore' && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
+
+                            if (q.templateId.startsWith('dynamic_kill_')) {
+                                const targetEnemyId = q.templateId.replace('dynamic_kill_', '');
+                                if (activity.params.type === 'hunt' && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
+                            }
+
+                            if (q.templateId.startsWith('dynamic_craft_')) {
+                                const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
+                                if (activity.params.type === 'craft' && 'recipeId' in activity.params && activity.params.recipeId === targetRecipeId) return true;
+                            }
+
+                            if (activity.params.type === 'quest' && 'questId' in activity.params && activity.params.questId === q.id) return true;
+
+                            return false;
+                        });
+
+                        if (focusedQuest) {
+                            return (
+                                <div style={{
+                                    marginTop: '0.25rem',
+                                    fontSize: '0.7rem',
+                                    color: 'var(--color-primary)',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '1px',
+                                    background: 'rgba(52, 152, 219, 0.1)',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    display: 'inline-block',
+                                    border: '1px solid rgba(52, 152, 219, 0.3)'
+                                }}>
+                                    ✨ QUEST FOCUS: {focusedQuest.aiNarrative?.title || focusedQuest.templateId.replace('dynamic_', '').replace('_', ' ').toUpperCase()}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
+
                     <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
                         Player HP: {player.baseStats.hp} / {player.baseStats.hpMax}
                     </div>
@@ -249,8 +295,8 @@ export function ActivityView({ state, dispatch, content }: Props) {
                         position: 'fixed',
                         top: 0,
                         left: 0,
-                        width: '100vw',
-                        height: '100vh',
+                        right: 0,
+                        bottom: 0,
                         background: 'rgba(0,0,0,0.95)',
                         display: 'flex',
                         justifyContent: 'center',
@@ -291,22 +337,38 @@ export function ActivityView({ state, dispatch, content }: Props) {
 
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+                        className="close-button-expanded"
                         style={{
                             position: 'absolute',
-                            top: '30px',
-                            right: '30px',
-                            background: 'rgba(255,255,255,0.1)',
+                            top: '40px',
+                            right: '40px',
+                            background: 'rgba(255,255,255,0.05)',
                             color: '#fff',
-                            border: '1px solid rgba(255,255,255,0.2)',
+                            border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: '50%',
-                            width: '50px',
-                            height: '50px',
-                            fontSize: '1.5rem',
+                            width: '56px',
+                            height: '56px',
+                            fontSize: '1.8rem',
                             cursor: 'pointer',
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            transition: 'background 0.2s'
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(8px)',
+                            zIndex: 10000
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                            e.currentTarget.style.borderColor = 'var(--color-gold)';
+                            e.currentTarget.style.color = 'var(--color-gold)';
+                            e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                            e.currentTarget.style.color = '#fff';
+                            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
                         }}
                     >
                         ✕

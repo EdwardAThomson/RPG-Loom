@@ -134,7 +134,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
 
   switch (cmd.type) {
     case 'DEBUG_ADD_ITEM': {
-      next.inventory.push({ itemId: cmd.itemId, qty: cmd.qty });
+      addItem(next.inventory, cmd.itemId, cmd.qty);
       events.push(ev(next, cmd.atMs, 'LOOT_GAINED', { items: [{ itemId: cmd.itemId, qty: cmd.qty }] }));
       break;
     }
@@ -537,107 +537,15 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     return { state: next, events };
   }
   if (a.type === 'woodcut') {
-    // Debug logs removed
-
-    if (!content) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
-      return { state: next, events };
-    }
-    const loc = content.locationsById[a.locationId];
-    if (!loc) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
-      return { state: next, events };
-    }
-    if (!loc.woodcuttingTable) {
-      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no trees here.` }));
-    } else {
-      const loot = rollLoot(loc.woodcuttingTable, `wc:${next.saveId}:${next.tickIndex}`);
-      if (loot.length) {
-        // Emit Flavor FIRST so Loot and XP can merge on the next line
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop some wood.` }));
-
-        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
-        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
-
-        // XP
-        if (gainSkillXp(next, 'woodcutting', 1, events, tickAtMs) && content) recalculateStats(next, content);
-        gainXp(next, 1, events, tickAtMs);
-        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
-      } else {
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop, but get no good wood.` }));
-      }
-    }
-    return { state: next, events };
+    return performWoodcutTick(next, a.locationId, tickAtMs, content);
   }
 
   if (a.type === 'mine') {
-    // Debug logs removed
-
-    if (!content) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
-      return { state: next, events };
-    }
-    const loc = content.locationsById[a.locationId];
-    if (!loc) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
-      return { state: next, events };
-    }
-    if (!loc.miningTable) {
-      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no ore veins here.` }));
-    } else {
-      const loot = rollLoot(loc.miningTable, `mine:${next.saveId}:${next.tickIndex}`);
-      if (loot.length) {
-        // Flavor First
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe.` }));
-
-        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
-        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
-
-        // XP
-        if (gainSkillXp(next, 'mining', 1, events, tickAtMs) && content) recalculateStats(next, content);
-
-        gainXp(next, 1, events, tickAtMs);
-        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
-      } else {
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe but find nothing.` }));
-      }
-    }
-    return { state: next, events };
+    return performMineTick(next, a.locationId, tickAtMs, content);
   }
 
   if (a.type === 'forage') {
-    // Debug logs removed
-
-    if (!content) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
-      return { state: next, events };
-    }
-    const loc = content.locationsById[a.locationId];
-    if (!loc) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${a.locationId}` }));
-      return { state: next, events };
-    }
-    if (!loc.foragingTable) {
-      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There is nothing to forage here.` }));
-    } else {
-      const loot = rollLoot(loc.foragingTable, `forage:${next.saveId}:${next.tickIndex}`);
-      if (loot.length) {
-        // Flavor First
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You scour the area.` }));
-
-        for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
-        events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
-
-        // XP
-        if (gainSkillXp(next, 'foraging', 1, events, tickAtMs) && content) recalculateStats(next, content);
-
-        gainXp(next, 1, events, tickAtMs);
-        bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
-      } else {
-        events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You find nothing of interest.` }));
-      }
-    }
-    return { state: next, events };
+    return performForageTick(next, a.locationId, tickAtMs, content);
   }
 
   if (a.type === 'explore' || a.type === 'trade') {
@@ -705,60 +613,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   }
 
   if (a.type === 'craft') {
-    if (!content) {
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
-      return { state: next, events };
-    }
-    const recipeId = a.recipeId;
-    const recipe = content.recipesById[recipeId];
-    if (!recipe) {
-      // Stop invalid craft
-      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECIPE_MISSING', message: `Unknown recipe ${recipeId}` }));
-      return { state: next, events };
-    }
-
-    if (!recipe.inputs.every((i) => hasItem(next.inventory, i.itemId, i.qty))) {
-      // can't craft; stop
-      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
-      return { state: next, events };
-    }
-
-    // Material Saving Check
-    // Determine skill to use
-    const skillId = recipe.skill || 'crafting'; // Fallback if old data
-    const skill = next.player.skills[skillId];
-    // If skill doesn't exist (e.g. 'crafting' removed), handle gracefully? 
-    // Types should prevent this now, but let's be safe.
-    const skillLevel = skill ? skill.level : 1;
-
-    // Check level requirement
-    if (recipe.requiredSkillLevel && skillLevel < recipe.requiredSkillLevel) {
-      next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
-      events.push(ev(next, tickAtMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Need ${recipe.skill} Lv.${recipe.requiredSkillLevel}` }));
-      return { state: next, events };
-    }
-
-    const saveChance = Math.min(0.25, skillLevel * 0.005); // 0.5% per level, cap 25%
-    const materialsSaved = hashFloat(`save:${next.saveId}:${next.tickIndex}`) < saveChance;
-
-    if (!materialsSaved) {
-      for (const i of recipe.inputs) removeItem(next.inventory, i.itemId, i.qty);
-    } else {
-      events.push(ev(next, tickAtMs, 'SKILL_PROCS', { skillId, effect: 'material_save' } as any));
-    }
-
-    for (const o of recipe.outputs) addItem(next.inventory, o.itemId, o.qty);
-    events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: recipe.outputs.map((o) => ({ itemId: o.itemId, qty: o.qty })) }));
-
-    // XP
-    // 10 XP base + scaled?
-    const xpGain = Math.max(10, (recipe.requiredSkillLevel || 1) * 10);
-    gainXp(next, 5, events, tickAtMs); // Player XP
-    if (skillId && skill && gainSkillXp(next, skillId, xpGain, events, tickAtMs) && content) recalculateStats(next, content);
-
-    bumpQuestProgressFromCraft(next, a.recipeId, events, tickAtMs, content);
-    return { state: next, events };
+    return performCraftTick(next, a.recipeId, tickAtMs, content);
   }
 
   if (a.type === 'hunt') {
@@ -783,69 +638,51 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         return resolveEncounterTick(next, tickAtMs, q.locationId, content, enemyId);
       }
 
-      // For dynamic_explore quests, need to be in explore activity
+      // For dynamic_explore quests, progress is tracked via progressExploreQuests
       if (q.templateId === 'dynamic_explore') {
-        // Check if already exploring at the right location
-        if (next.activity.params.type !== 'explore' ||
-          !('locationId' in next.activity.params) ||
-          next.activity.params.locationId !== q.locationId) {
-          // Switch to explore activity
-          next.activity = {
-            id: `act_explore_${next.tickIndex}`,
-            params: { type: 'explore', locationId: q.locationId },
-            startedAtMs: tickAtMs
-          };
-          events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
-          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
-            message: `You begin exploring ${content.locationsById[q.locationId]?.name || 'the area'}...`
-          }));
+        if (next.currentLocationId === q.locationId) {
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You are exploring the area for your quest...` }));
+          progressExploreQuests(next, events, tickAtMs, content);
+        } else {
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You need to be at ${content?.locationsById[q.locationId]?.name || q.locationId} to explore.` }));
         }
-        // Progress is tracked via progressExploreQuests which runs every tick
         return { state: next, events };
       }
 
-      // For dynamic_gather quests, switch to appropriate gathering activity
+      // For dynamic_gather quests, perform gathering
       if (q.templateId.startsWith('dynamic_gather_')) {
         const itemId = q.templateId.replace('dynamic_gather_', '');
-        const itemName = content.itemsById[itemId]?.name || itemId;
         const loc = content.locationsById[q.locationId];
 
-        // Determine which gathering activity to use based on which table has the item
-        let gatherType: 'mine' | 'woodcut' | 'forage' | null = null;
+        let gatherResult: StepResult | null = null;
         if (loc) {
           if (loc.miningTable?.entries.some(e => e.itemId === itemId)) {
-            gatherType = 'mine';
+            gatherResult = performMineTick(next, q.locationId, tickAtMs, content);
           } else if (loc.woodcuttingTable?.entries.some(e => e.itemId === itemId)) {
-            gatherType = 'woodcut';
+            gatherResult = performWoodcutTick(next, q.locationId, tickAtMs, content);
           } else if (loc.foragingTable?.entries.some(e => e.itemId === itemId)) {
-            gatherType = 'forage';
+            gatherResult = performForageTick(next, q.locationId, tickAtMs, content);
           }
         }
 
-        if (gatherType) {
-          // Switch to the appropriate gathering activity
-          next.activity = {
-            id: `act_${gatherType}_${next.tickIndex}`,
-            params: { type: gatherType, locationId: q.locationId },
-            startedAtMs: tickAtMs
-          };
-          events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
-          const activityName = gatherType === 'mine' ? 'mining' : gatherType === 'woodcut' ? 'woodcutting' : 'foraging';
-          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
-            message: `You begin ${activityName} for ${itemName}...`
-          }));
+        if (gatherResult) {
+          return gatherResult;
         } else {
           events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
-            message: `You search for ${itemName}, but it's not available at this location.`
+            message: `You search for quest items, but they aren't here.`
           }));
+          return { state: next, events };
         }
-        // Progress is tracked via bumpQuestProgressFromLoot
-        return { state: next, events };
+      }
+
+      // For dynamic_craft quests, perform crafting
+      if (q.templateId.startsWith('dynamic_craft_')) {
+        const recipeId = q.templateId.replace('dynamic_craft_', '');
+        return performCraftTick(next, recipeId, tickAtMs, content);
       }
 
       // For dynamic_travel, progress is tracked via checkTravelQuests (instant when at location)
       // For dynamic_deliver, progress is tracked via checkDeliverQuests
-      // For dynamic_craft, progress is tracked via bumpQuestProgressFromCraft
       return { state: next, events };
     }
 
@@ -893,6 +730,150 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   }
 
 
+  return { state: next, events };
+}
+
+function performWoodcutTick(state: EngineState, locationId: string, tickAtMs: number, content?: ContentIndex): StepResult {
+  const next = state;
+  const events: GameEvent[] = [];
+
+  if (!content) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+    return { state: next, events };
+  }
+  const loc = content.locationsById[locationId];
+  if (!loc) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${locationId}` }));
+    return { state: next, events };
+  }
+  if (!loc.woodcuttingTable) {
+    events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no trees here.` }));
+  } else {
+    const loot = rollLoot(loc.woodcuttingTable, `wc:${next.saveId}:${next.tickIndex}`);
+    if (loot.length) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop some wood.` }));
+      for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+      events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+      if (gainSkillXp(next, 'woodcutting', 1, events, tickAtMs) && content) recalculateStats(next, content);
+      gainXp(next, 1, events, tickAtMs);
+      bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+    } else {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop, but get no good wood.` }));
+    }
+  }
+  return { state: next, events };
+}
+
+function performMineTick(state: EngineState, locationId: string, tickAtMs: number, content?: ContentIndex): StepResult {
+  const next = state;
+  const events: GameEvent[] = [];
+
+  if (!content) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+    return { state: next, events };
+  }
+  const loc = content.locationsById[locationId];
+  if (!loc) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${locationId}` }));
+    return { state: next, events };
+  }
+  if (!loc.miningTable) {
+    events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There are no ore veins here.` }));
+  } else {
+    const loot = rollLoot(loc.miningTable, `mine:${next.saveId}:${next.tickIndex}`);
+    if (loot.length) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe.` }));
+      for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+      events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+      if (gainSkillXp(next, 'mining', 1, events, tickAtMs) && content) recalculateStats(next, content);
+      gainXp(next, 1, events, tickAtMs);
+      bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+    } else {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe but find nothing.` }));
+    }
+  }
+  return { state: next, events };
+}
+
+function performForageTick(state: EngineState, locationId: string, tickAtMs: number, content?: ContentIndex): StepResult {
+  const next = state;
+  const events: GameEvent[] = [];
+
+  if (!content) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content' }));
+    return { state: next, events };
+  }
+  const loc = content.locationsById[locationId];
+  if (!loc) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'LOC_MISSING', message: `No loc ${locationId}` }));
+    return { state: next, events };
+  }
+  if (!loc.foragingTable) {
+    events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `There is nothing to forage here.` }));
+  } else {
+    const loot = rollLoot(loc.foragingTable, `forage:${next.saveId}:${next.tickIndex}`);
+    if (loot.length) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You scour the area.` }));
+      for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
+      events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
+      if (gainSkillXp(next, 'foraging', 1, events, tickAtMs) && content) recalculateStats(next, content);
+      gainXp(next, 1, events, tickAtMs);
+      bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
+    } else {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You find nothing of interest.` }));
+    }
+  }
+  return { state: next, events };
+}
+
+function performCraftTick(state: EngineState, recipeId: string, tickAtMs: number, content?: ContentIndex): StepResult {
+  const next = state;
+  const events: GameEvent[] = [];
+
+  if (!content) {
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index provided' }));
+    return { state: next, events };
+  }
+  const recipe = content.recipesById[recipeId];
+  if (!recipe) {
+    next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'RECIPE_MISSING', message: `Unknown recipe ${recipeId}` }));
+    return { state: next, events };
+  }
+
+  if (!recipe.inputs.every((i) => hasItem(next.inventory, i.itemId, i.qty))) {
+    next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
+    return { state: next, events };
+  }
+
+  const skillId = recipe.skill || 'crafting';
+  const skill = next.player.skills[skillId];
+  const skillLevel = skill ? skill.level : 1;
+
+  if (recipe.requiredSkillLevel && skillLevel < recipe.requiredSkillLevel) {
+    next.activity = { id: `act_idle_${next.tickIndex}`, params: { type: 'idle' }, startedAtMs: tickAtMs };
+    events.push(ev(next, tickAtMs, 'ERROR', { code: 'LEVEL_TOO_LOW', message: `Need ${recipe.skill} Lv.${recipe.requiredSkillLevel}` }));
+    return { state: next, events };
+  }
+
+  // XP
+  const xpGain = Math.max(10, (recipe.requiredSkillLevel || 1) * 10);
+  gainXp(next, 5, events, tickAtMs);
+  if (skillId && skill && gainSkillXp(next, skillId, xpGain, events, tickAtMs) && content) recalculateStats(next, content);
+
+  const saveChance = Math.min(0.25, skillLevel * 0.005);
+  const materialsSaved = hashFloat(`save:${next.saveId}:${next.tickIndex}`) < saveChance;
+
+  if (!materialsSaved) {
+    for (const i of recipe.inputs) removeItem(next.inventory, i.itemId, i.qty);
+  } else {
+    events.push(ev(next, tickAtMs, 'SKILL_PROCS', { skillId, effect: 'material_save' } as any));
+  }
+
+  for (const o of recipe.outputs) addItem(next.inventory, o.itemId, o.qty);
+  events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: recipe.outputs.map((o) => ({ itemId: o.itemId, qty: o.qty })) }));
+
+  bumpQuestProgressFromCraft(next, recipeId, events, tickAtMs, content);
   return { state: next, events };
 }
 
@@ -1127,6 +1108,19 @@ function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: Ite
 function bumpQuestProgressFromCraft(state: EngineState, recipeId: string, events: GameEvent[], atMs: number, content: ContentIndex) {
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
+
+    // Handle dynamic_craft_ quests (from adventures)
+    if (q.templateId.startsWith('dynamic_craft_')) {
+      const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
+      if (targetRecipeId === recipeId) {
+        q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
+        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
+        checkQuestCompletion(state, q.id, content, events, atMs);
+      }
+      continue;
+    }
+
+    // Handle template-based quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'craft' && tmpl.targetRecipeId === recipeId) {
@@ -1723,6 +1717,15 @@ export function syncDerivedPlayerStats(state: EngineState) {
   state.player.xp = totalXp;
   state.player.level = totalLevel;
   state.player.combatLevel = combatLevel;
+
+  // Consolidate inventory (merge duplicate stacks)
+  if (state.inventory.length > 0) {
+    const merged: Record<string, number> = {};
+    for (const stack of state.inventory) {
+      merged[stack.itemId] = (merged[stack.itemId] || 0) + stack.qty;
+    }
+    state.inventory = Object.entries(merged).map(([itemId, qty]) => ({ itemId, qty }));
+  }
 }
 
 export function recalculateStats(state: EngineState, content: ContentIndex) {

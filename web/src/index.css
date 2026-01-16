@@ -247,29 +247,49 @@ button.primary {
 
 .inventory-item {
   aspect-ratio: 1;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid #333;
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-align: center;
-  padding: 4px;
-  cursor: help;
+  padding: 6px 4px;
+  cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+  /* Anchor for absolute elements like 'E' */
+  overflow: hidden;
+}
+
+.inventory-item .name {
+  color: var(--text-main);
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 .inventory-item:hover {
+  background: rgba(255, 215, 0, 0.1);
   border-color: var(--color-gold);
-  background: rgba(255, 215, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .inventory-item .qty {
   font-weight: bold;
   color: var(--color-gold);
-  margin-top: 4px;
+  margin-top: 2px;
+  font-size: 0.7rem;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* --- Event Log --- */

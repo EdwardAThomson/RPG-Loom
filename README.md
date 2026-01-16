@@ -6,8 +6,13 @@ The core game runs fully **without AI**. When enabled, AI generates unique adven
 
 ## YouTube Videos
 
+**Dev Log:**
+
 * [RPG Loom - Project Start](https://www.youtube.com/watch?v=In-FWxJHEmI)
 * [Automated Game Development](https://youtu.be/bPcV4SZ55VE)
+
+**Overview:**
+* [Overview](https://youtu.be/zLZlTV3oJJM)
 
 
 ![Screenshot](Screenshot_20260114.png)

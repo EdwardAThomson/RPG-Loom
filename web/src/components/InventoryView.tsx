@@ -32,24 +32,36 @@ export function InventoryView({ state, dispatch, content }: Props) {
                         <div
                             key={item.itemId}
                             className="inventory-item"
-                            title={item.itemId}
+                            title={getName(item.itemId)} // Better title for hover
                             onClick={() => setSelectedStack(item)}
-                            style={{ cursor: 'pointer' }}
                         >
-                            <div style={{ marginBottom: 4 }}>
+                            <div style={{ fontSize: '1.2rem', marginBottom: '2px' }}>
                                 {/* Basic icon mapping */}
                                 {content?.itemsById?.[item.itemId]?.type === 'weapon' ? '⚔️' :
                                     content?.itemsById?.[item.itemId]?.type === 'armor' ? '🛡️' :
                                         content?.itemsById?.[item.itemId]?.type === 'consumable' ? '🧪' : '📦'}
                             </div>
-                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', fontSize: '0.7rem' }}>
+                            <div className="name">
                                 {getName(item.itemId)}
                             </div>
                             <div className="qty">x{item.qty}</div>
 
-                            {/* Equipped Indicator */}
+                            {/* Equipped Indicator Badge */}
                             {Object.values(state.equipment).includes(item.itemId) && (
-                                <div style={{ position: 'absolute', top: 2, right: 2, color: 'var(--color-gold)', fontSize: '0.6rem' }}>E</div>
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    right: 0,
+                                    background: 'var(--color-gold)',
+                                    color: '#000',
+                                    fontSize: '0.55rem',
+                                    fontWeight: 'bold',
+                                    padding: '1px 4px',
+                                    borderRadius: '0 0 0 4px',
+                                    boxShadow: '-1px 1px 4px rgba(0,0,0,0.5)'
+                                }}>
+                                    EQP
+                                </div>
                             )}
                         </div>
                     ))}
