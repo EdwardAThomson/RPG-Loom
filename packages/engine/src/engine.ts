@@ -361,20 +361,8 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       };
       next.quests.push(quest);
 
-      // Spawn first sub-quest based on step 1 template
-      if (content) {
-        const firstSubQuest = spawnAdventureSubQuest(next, quest, 0, content, cmd.atMs);
-        if (firstSubQuest) {
-          next.quests.push(firstSubQuest);
-          events.push(
-            ev(next, cmd.atMs, 'QUEST_ACCEPTED', {
-              questId: firstSubQuest.id,
-              templateId: firstSubQuest.templateId,
-              locationId: firstSubQuest.locationId
-            })
-          );
-        }
-      }
+      // Don't spawn sub-quest yet - wait until user starts the adventure activity
+      // This gives them time to review the adventure steps before committing
 
       events.push(
         ev(next, cmd.atMs, 'QUEST_ACCEPTED', {
@@ -467,6 +455,34 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
 
   const a = next.activity.params;
 
+  // Auto-spawn missing sub-quests for adventures (fixes old saves)
+  if (a.type === 'adventure' && content) {
+    const adventureParams = a as { type: 'adventure'; questId: string };
+    const adventureQuest = next.quests.find(q => q.id === adventureParams.questId);
+    if (adventureQuest && adventureQuest.adventureSteps) {
+      const activeStepIndex = adventureQuest.adventureSteps.findIndex(
+        step => step.status === 'active' && !step.subQuestId
+      );
+
+      if (activeStepIndex !== -1) {
+        const subQuest = spawnAdventureSubQuest(next, adventureQuest, activeStepIndex, content, tickAtMs);
+        if (subQuest) {
+          next.quests.push(subQuest);
+          events.push(
+            ev(next, tickAtMs, 'QUEST_ACCEPTED', {
+              questId: subQuest.id,
+              templateId: subQuest.templateId,
+              locationId: subQuest.locationId
+            })
+          );
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+            message: `New objective: ${adventureQuest.adventureSteps[activeStepIndex].narrative.description}`
+          }));
+        }
+      }
+    }
+  }
+
   // Regen Logic
   const maxHp = next.player.baseStats.hpMax;
   if (next.player.baseStats.hp < maxHp) {
@@ -516,7 +532,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // Debatable: emit GOLD_CHANGED every tick? It might be spammy, but it's correct.
     events.push(ev(next, tickAtMs, 'GOLD_CHANGED', { amount: -1, newTotal: next.player.gold }));
 
-    if (gainSkillXp(next, a.skillId, 1) && content) recalculateStats(next, content);
+    if (gainSkillXp(next, a.skillId, 1, events, tickAtMs) && content) recalculateStats(next, content);
     gainXp(next, 1, events, tickAtMs);
     return { state: next, events };
   }
@@ -544,7 +560,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        if (gainSkillXp(next, 'woodcutting', 1) && content) recalculateStats(next, content);
+        if (gainSkillXp(next, 'woodcutting', 1, events, tickAtMs) && content) recalculateStats(next, content);
         gainXp(next, 1, events, tickAtMs);
         bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
       } else {
@@ -578,7 +594,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        if (gainSkillXp(next, 'mining', 1) && content) recalculateStats(next, content);
+        if (gainSkillXp(next, 'mining', 1, events, tickAtMs) && content) recalculateStats(next, content);
 
         gainXp(next, 1, events, tickAtMs);
         bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
@@ -613,7 +629,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
         events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
 
         // XP
-        if (gainSkillXp(next, 'foraging', 1) && content) recalculateStats(next, content);
+        if (gainSkillXp(next, 'foraging', 1, events, tickAtMs) && content) recalculateStats(next, content);
 
         gainXp(next, 1, events, tickAtMs);
         bumpQuestProgressFromLoot(next, loot, events, tickAtMs, content);
@@ -666,7 +682,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
             for (const it of loot) it.qty *= 2;
             events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: "Critical gathering success! (x2)" }));
           }
-          if (gainSkillXp(next, skillId, 1) && content) recalculateStats(next, content);
+          if (gainSkillXp(next, skillId, 1, events, tickAtMs) && content) recalculateStats(next, content);
         }
 
         for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
@@ -739,7 +755,7 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // 10 XP base + scaled?
     const xpGain = Math.max(10, (recipe.requiredSkillLevel || 1) * 10);
     gainXp(next, 5, events, tickAtMs); // Player XP
-    if (skillId && skill && gainSkillXp(next, skillId, xpGain) && content) recalculateStats(next, content);
+    if (skillId && skill && gainSkillXp(next, skillId, xpGain, events, tickAtMs) && content) recalculateStats(next, content);
 
     bumpQuestProgressFromCraft(next, a.recipeId, events, tickAtMs, content);
     return { state: next, events };
@@ -757,6 +773,81 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     }
     const q = next.quests.find((x) => x.id === a.questId);
     if (!q || q.status !== 'active') return { state: next, events };
+
+    // Dynamic sub-quests (from adventures) are handled by the adventure system
+    // They track progress through kills/loot/etc, not through template objectives
+    if (q.templateId.startsWith('dynamic_')) {
+      // For dynamic_kill quests, run combat
+      if (q.templateId.startsWith('dynamic_kill_')) {
+        const enemyId = q.templateId.replace('dynamic_kill_', '');
+        return resolveEncounterTick(next, tickAtMs, q.locationId, content, enemyId);
+      }
+
+      // For dynamic_explore quests, need to be in explore activity
+      if (q.templateId === 'dynamic_explore') {
+        // Check if already exploring at the right location
+        if (next.activity.params.type !== 'explore' ||
+          !('locationId' in next.activity.params) ||
+          next.activity.params.locationId !== q.locationId) {
+          // Switch to explore activity
+          next.activity = {
+            id: `act_explore_${next.tickIndex}`,
+            params: { type: 'explore', locationId: q.locationId },
+            startedAtMs: tickAtMs
+          };
+          events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+            message: `You begin exploring ${content.locationsById[q.locationId]?.name || 'the area'}...`
+          }));
+        }
+        // Progress is tracked via progressExploreQuests which runs every tick
+        return { state: next, events };
+      }
+
+      // For dynamic_gather quests, switch to appropriate gathering activity
+      if (q.templateId.startsWith('dynamic_gather_')) {
+        const itemId = q.templateId.replace('dynamic_gather_', '');
+        const itemName = content.itemsById[itemId]?.name || itemId;
+        const loc = content.locationsById[q.locationId];
+
+        // Determine which gathering activity to use based on which table has the item
+        let gatherType: 'mine' | 'woodcut' | 'forage' | null = null;
+        if (loc) {
+          if (loc.miningTable?.entries.some(e => e.itemId === itemId)) {
+            gatherType = 'mine';
+          } else if (loc.woodcuttingTable?.entries.some(e => e.itemId === itemId)) {
+            gatherType = 'woodcut';
+          } else if (loc.foragingTable?.entries.some(e => e.itemId === itemId)) {
+            gatherType = 'forage';
+          }
+        }
+
+        if (gatherType) {
+          // Switch to the appropriate gathering activity
+          next.activity = {
+            id: `act_${gatherType}_${next.tickIndex}`,
+            params: { type: gatherType, locationId: q.locationId },
+            startedAtMs: tickAtMs
+          };
+          events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
+          const activityName = gatherType === 'mine' ? 'mining' : gatherType === 'woodcut' ? 'woodcutting' : 'foraging';
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+            message: `You begin ${activityName} for ${itemName}...`
+          }));
+        } else {
+          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+            message: `You search for ${itemName}, but it's not available at this location.`
+          }));
+        }
+        // Progress is tracked via bumpQuestProgressFromLoot
+        return { state: next, events };
+      }
+
+      // For dynamic_travel, progress is tracked via checkTravelQuests (instant when at location)
+      // For dynamic_deliver, progress is tracked via checkDeliverQuests
+      // For dynamic_craft, progress is tracked via bumpQuestProgressFromCraft
+      return { state: next, events };
+    }
 
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) {
@@ -877,7 +968,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     next.activeEncounter.enemyHp -= dmgToEnemy;
 
     // Gain Offense XP
-    if (gainSkillXp(next, offensiveSkill, 1) && content) recalculateStats(next, content);
+    if (gainSkillXp(next, offensiveSkill, 1, events, tickAtMs) && content) recalculateStats(next, content);
 
     if (next.activeEncounter.enemyHp <= 0) {
       // WIN
@@ -917,7 +1008,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     next.player.baseStats.hp = Math.max(0, next.player.baseStats.hp - mitigatedDmg);
 
     // Gain Defense XP
-    if (dmgToPlayer > 0 && gainSkillXp(next, 'defense', 1) && content) recalculateStats(next, content);
+    if (dmgToPlayer > 0 && gainSkillXp(next, 'defense', 1, events, tickAtMs) && content) recalculateStats(next, content);
 
     // Death Check
     if (next.player.baseStats.hp <= 0) {
@@ -979,6 +1070,19 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 function bumpQuestProgressFromKill(state: EngineState, killedEnemyId: string, events: GameEvent[], atMs: number, content: ContentIndex) {
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
+
+    // Handle dynamic_kill quests (from adventures)
+    if (q.templateId.startsWith('dynamic_kill_')) {
+      const targetEnemyId = q.templateId.replace('dynamic_kill_', '');
+      if (targetEnemyId === killedEnemyId) {
+        q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
+        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
+        checkQuestCompletion(state, q.id, content, events, atMs);
+      }
+      continue;
+    }
+
+    // Handle template-based quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'kill' && tmpl.targetEnemyId === killedEnemyId) {
@@ -993,6 +1097,20 @@ function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: Ite
   // console.log(`[Engine] bumpQuestProgressFromLoot called with ${loot.length} items`);
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
+
+    // Handle dynamic gather quests (e.g., dynamic_gather_frost_stone)
+    if (q.templateId.startsWith('dynamic_gather_')) {
+      const targetItemId = q.templateId.replace('dynamic_gather_', '');
+      const gained = loot.filter((x) => x.itemId === targetItemId).reduce((s, x) => s + x.qty, 0);
+      if (gained > 0) {
+        q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
+        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained, current: q.progress.current, required: q.progress.required }));
+        checkQuestCompletion(state, q.id, content, events, atMs);
+      }
+      continue;
+    }
+
+    // Handle template-based gather quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'gather' && tmpl.targetItemId) {
@@ -1183,6 +1301,12 @@ function spawnAdventureSubQuest(
   const step = adventureQuest.adventureSteps![stepIndex];
   const template = step.template;
 
+  // Handle old adventure steps that don't have templates
+  if (!template) {
+    console.warn(`[Engine] Adventure step ${stepIndex} missing template, cannot spawn sub-quest`);
+    return null;
+  }
+
   // Determine location for the sub-quest
   let locationId: string;
   if (template.type === 'travel' || template.type === 'explore' || template.type === 'deliver') {
@@ -1305,18 +1429,26 @@ function activateNextAdventureStep(
   atMs: number
 ): void {
   const adventure = state.quests.find(q => q.id === adventureQuestId);
-  if (!adventure || !adventure.adventureSteps) return;
+  if (!adventure || !adventure.adventureSteps) {
+    console.warn('[Engine] activateNextAdventureStep: adventure not found or no steps');
+    return;
+  }
 
   // Find next locked step
   const nextStepIndex = adventure.adventureSteps.findIndex(s => s.status === 'locked');
-  if (nextStepIndex === -1) return; // No more steps
+  if (nextStepIndex === -1) {
+    console.log('[Engine] activateNextAdventureStep: no more locked steps');
+    return; // No more steps
+  }
 
   const nextStep = adventure.adventureSteps[nextStepIndex];
+  console.log(`[Engine] Activating adventure step ${nextStepIndex + 1}:`, nextStep.narrative.description);
   nextStep.status = 'active';
 
   // Spawn sub-quest for this step
   const subQuest = spawnAdventureSubQuest(state, adventure, nextStepIndex, content, atMs);
   if (subQuest) {
+    console.log('[Engine] Spawned sub-quest:', subQuest.id, subQuest.templateId);
     state.quests.push(subQuest);
     events.push(ev(state, atMs, 'QUEST_ACCEPTED', {
       questId: subQuest.id,
@@ -1326,6 +1458,8 @@ function activateNextAdventureStep(
     events.push(ev(state, atMs, 'FLAVOR_TEXT', {
       message: `New objective: ${nextStep.narrative.description}`
     }));
+  } else {
+    console.error('[Engine] Failed to spawn sub-quest for step', nextStepIndex);
   }
 }
 
@@ -1447,7 +1581,7 @@ function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: n
   // If we have 10 skills at Level 10, Total Level is 100.
 }
 
-export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number): boolean {
+export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number, events?: GameEvent[], atMs?: number): boolean {
   let s = state.player.skills[skillId];
   if (!s) {
     // Lazy migration: Initialize missing skill on first use
@@ -1455,6 +1589,17 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
     state.player.skills[skillId] = s;
   }
   s.xp += amount;
+
+  // Emit skill XP gain event if events array provided
+  if (events && atMs !== undefined) {
+    events.push(ev(state, atMs, 'SKILL_XP_GAINED', {
+      skillId,
+      amount,
+      newXp: s.xp,
+      level: s.level
+    } as any));
+  }
+
   let leveledUp = false;
 
   // Exponential XP Curve (Total XP model)
@@ -1646,30 +1791,35 @@ export function getAvailableQuests(state: EngineState, content: ContentIndex): Q
     return available;
   }
 
-  for (const template of Object.values(content.questTemplatesById)) {
+  for (const [templateId, tmpl] of Object.entries(content.questTemplatesById)) {
+    // Skip dynamic quest templates (these are sub-quests, not standalone quests)
+    if (templateId.startsWith('dynamic_')) {
+      continue;
+    }
+
     // Skip if already active
-    if (state.quests.some(q => q.templateId === template.id && q.status === 'active')) {
+    if (state.quests.some(q => q.templateId === templateId && q.status === 'active')) {
       continue;
     }
 
     // Check location
-    if (!template.locationPool.includes(state.currentLocationId)) {
+    if (!tmpl.locationPool.includes(state.currentLocationId)) {
       continue;
     }
 
     // Check replenishment rules
-    if (template.replenishment) {
-      if (template.replenishment.type === 'daily') {
+    if (tmpl.replenishment) {
+      if (tmpl.replenishment.type === 'daily') {
         // Check cooldown using template ID
-        const availability = state.questAvailability[template.id];
+        const availability = state.questAvailability[templateId];
         if (availability?.availableAfterMs && now < availability.availableAfterMs) {
           continue; // Still on cooldown
         }
-      } else if (template.replenishment.type === 'chain' && template.replenishment.chainId) {
+      } else if (tmpl.replenishment.type === 'chain' && tmpl.replenishment.chainId) {
         // Check chain progress using chainId
-        const chainId = template.replenishment.chainId;
+        const chainId = tmpl.replenishment.chainId;
         const chainAvailability = state.questAvailability[chainId];
-        const chainStep = template.replenishment.chainStep || 1;
+        const chainStep = tmpl.replenishment.chainStep || 1;
         const chainProgress = chainAvailability?.chainProgress || 0;
 
         // Check if previous step is complete
@@ -1684,14 +1834,13 @@ export function getAvailableQuests(state: EngineState, content: ContentIndex): Q
       }
     } else {
       // One-time quest - check if completed
-      if (state.quests.some(q => q.templateId === template.id && q.status === 'completed')) {
+      if (state.quests.some(q => q.templateId === templateId && q.status === 'completed')) {
         continue;
       }
     }
 
-    available.push(template);
+    available.push(tmpl);
   }
 
   return available;
 }
-

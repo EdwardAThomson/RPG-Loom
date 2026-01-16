@@ -483,6 +483,7 @@ export type GameEvent =
   | BaseEvent<'ENCOUNTER_RESOLVED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number; outcome: 'win' | 'loss' | 'escape' }>
   | BaseEvent<'LOOT_GAINED', { items: Array<{ itemId: ItemId; qty: number }> }>
   | BaseEvent<'XP_GAINED', { amount: number; newTotal: number }>
+  | BaseEvent<'SKILL_XP_GAINED', { skillId: SkillId; amount: number; newXp: number; level: number }>
   | BaseEvent<'GOLD_CHANGED', { amount: number; newTotal: number }>
   | BaseEvent<'LEVEL_UP', { newLevel: number }>
   | BaseEvent<'SKILL_PROCS', { skillId: SkillId; effect: string; value?: number }>

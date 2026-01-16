@@ -16,6 +16,23 @@ type DisplayEvent = GameEvent | {
 // Helper to format event summary parts
 function formatEvent(ev: any, content: any) {
     if (ev.type === 'XP_GAINED') return `+${ev.payload.amount} XP`;
+    if (ev.type === 'SKILL_XP_GAINED') {
+        // Map internal skill IDs to display names
+        const skillNames: Record<string, string> = {
+            blacksmithing: 'Smithing',
+            woodworking: 'Woodworking',
+            leatherworking: 'Leatherworking',
+            swordsmanship: 'Swordsmanship',
+            marksmanship: 'Marksmanship',
+            arcana: 'Arcana',
+            defense: 'Defense',
+            mining: 'Mining',
+            woodcutting: 'Woodcutting',
+            foraging: 'Foraging'
+        };
+        const skillName = skillNames[ev.payload.skillId] || ev.payload.skillId;
+        return `+${ev.payload.amount} ${skillName} XP`;
+    }
     if (ev.type === 'GOLD_CHANGED') return `+${ev.payload.amount} Gold`;
     if (ev.type === 'LOOT_GAINED') {
         const itemNames = ev.payload.items.map((i: any) => {
@@ -64,8 +81,8 @@ export function EventView({ events, content }: Props) {
 
                             // Check if mergeable
                             if (last.atMs === ev.atMs &&
-                                (ev.type === 'XP_GAINED' || ev.type === 'GOLD_CHANGED' || ev.type === 'LOOT_GAINED' || ev.type === 'QUEST_PROGRESS') &&
-                                (last.type === 'XP_GAINED' || last.type === 'GOLD_CHANGED' || last.type === 'LOOT_GAINED' || last.type === 'QUEST_PROGRESS' || last.type === 'ENCOUNTER_RESOLVED' || last.type === 'SUMMARY')) {
+                                (ev.type === 'XP_GAINED' || ev.type === 'SKILL_XP_GAINED' || ev.type === 'GOLD_CHANGED' || ev.type === 'LOOT_GAINED' || ev.type === 'QUEST_PROGRESS') &&
+                                (last.type === 'XP_GAINED' || last.type === 'SKILL_XP_GAINED' || last.type === 'GOLD_CHANGED' || last.type === 'LOOT_GAINED' || last.type === 'QUEST_PROGRESS' || last.type === 'ENCOUNTER_RESOLVED' || last.type === 'SUMMARY')) {
 
                                 if (last.type !== 'SUMMARY') {
                                     // Upgrade valid previous event to SUMMARY

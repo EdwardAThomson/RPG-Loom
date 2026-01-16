@@ -16,7 +16,42 @@ export function QuestView({ state, content, dispatch }: Props) {
     const [generatingAdventure, setGeneratingAdventure] = useState(false);
     const [adventureError, setAdventureError] = useState<string | null>(null);
 
-    const activeQuests = state.quests.filter(q => q.status === 'active');
+    // Filter out sub-quests that belong to inactive adventures
+    const activeQuests = state.quests.filter(q => {
+        if (q.status !== 'active') return false;
+
+        // If this is a sub-quest (dynamic_* but NOT dynamic_adventure), only show it if:
+        // 1. Its parent adventure step is active (so user can start it), OR
+        // 2. The sub-quest itself is the active quest activity (so it stays visible while working)
+        if (q.templateId.startsWith('dynamic_') && q.templateId !== 'dynamic_adventure') {
+            // Find the parent adventure quest
+            const parentAdventure = state.quests.find(parent =>
+                parent.adventureSteps?.some(step => step.subQuestId === q.id)
+            );
+
+            if (parentAdventure && parentAdventure.adventureSteps) {
+                // Find the step this sub-quest belongs to
+                const parentStep = parentAdventure.adventureSteps.find(step => step.subQuestId === q.id);
+
+                // Show if the parent step is active (not locked, not completed)
+                if (parentStep && parentStep.status === 'active') {
+                    return true;
+                }
+
+                // Also show if this sub-quest is currently being worked on
+                const isActiveQuestActivity = state.activity.params.type === 'quest' &&
+                    'questId' in state.activity.params &&
+                    state.activity.params.questId === q.id;
+                if (isActiveQuestActivity) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return true;
+    });
     const completedQuests = state.quests.filter(q => q.status === 'completed');
 
     // Get available quests using new filtering logic
@@ -264,13 +299,87 @@ export function QuestView({ state, content, dispatch }: Props) {
                 ) : (
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         {activeQuests.map(q => {
-                            const tmpl = content?.questTemplatesById?.[q.templateId];
-                            const questName = tmpl?.name || q.templateId.replace('qt_', '').replace(/_/g, ' ').toUpperCase();
+                            // Dynamic sub-quests don't have templates in questTemplatesById
+                            const tmpl = q.templateId.startsWith('dynamic_') && q.templateId !== 'dynamic_adventure'
+                                ? null
+                                : content?.questTemplatesById?.[q.templateId];
+                            const questName = tmpl?.name || q.aiNarrative?.title || q.templateId.replace('qt_', '').replace(/_/g, ' ').toUpperCase();
                             const isAdventure = q.templateId === 'dynamic_adventure';
-                            const isQuestActivity = (
-                                (state.activity.params.type === 'quest' && 'questId' in state.activity.params && state.activity.params.questId === q.id) ||
-                                (state.activity.params.type === 'adventure' && 'questId' in state.activity.params && state.activity.params.questId === q.id)
-                            );
+
+                            // Check if this quest or any of its sub-quests are active
+                            let isQuestActivity = false;
+                            if (isAdventure) {
+                                // For adventures, check if the adventure itself OR any of its sub-quests are active
+                                isQuestActivity = state.activity.params.type === 'adventure' &&
+                                    'questId' in state.activity.params &&
+                                    state.activity.params.questId === q.id;
+
+                                // Also check if any sub-quest is the active quest activity or related activity
+                                if (!isQuestActivity && q.adventureSteps) {
+                                    const activeSubQuestId = q.adventureSteps.find(step => {
+                                        if (!step.subQuestId) return false;
+
+                                        // Check if this sub-quest is the active quest activity
+                                        if (state.activity.params.type === 'quest' &&
+                                            'questId' in state.activity.params &&
+                                            state.activity.params.questId === step.subQuestId) {
+                                            return true;
+                                        }
+
+                                        // Check if this is a gather/explore quest with matching activity
+                                        const subQuest = state.quests.find(sq => sq.id === step.subQuestId);
+                                        if (subQuest) {
+                                            // For gather quests, check if we're in a gathering activity at the quest location
+                                            if (subQuest.templateId.startsWith('dynamic_gather_') &&
+                                                (state.activity.params.type === 'mine' ||
+                                                    state.activity.params.type === 'woodcut' ||
+                                                    state.activity.params.type === 'forage') &&
+                                                'locationId' in state.activity.params &&
+                                                state.activity.params.locationId === subQuest.locationId) {
+                                                return true;
+                                            }
+                                            // For explore quests, check if we're exploring at the quest location
+                                            if (subQuest.templateId === 'dynamic_explore' &&
+                                                state.activity.params.type === 'explore' &&
+                                                'locationId' in state.activity.params &&
+                                                state.activity.params.locationId === subQuest.locationId) {
+                                                return true;
+                                            }
+                                        }
+                                        return false;
+                                    });
+                                    isQuestActivity = !!activeSubQuestId;
+                                }
+                            } else {
+                                // For regular quests (including sub-quests), check if this quest is active
+                                // First check for direct quest activity
+                                isQuestActivity = state.activity.params.type === 'quest' &&
+                                    'questId' in state.activity.params &&
+                                    state.activity.params.questId === q.id;
+
+                                // For dynamic gather quests, also check if we're in the corresponding gathering activity
+                                if (!isQuestActivity && q.templateId.startsWith('dynamic_gather_')) {
+                                    isQuestActivity = (state.activity.params.type === 'mine' ||
+                                        state.activity.params.type === 'woodcut' ||
+                                        state.activity.params.type === 'forage') &&
+                                        'locationId' in state.activity.params &&
+                                        state.activity.params.locationId === q.locationId;
+                                }
+
+                                // For dynamic explore quests, check if we're exploring at the quest location
+                                if (!isQuestActivity && q.templateId === 'dynamic_explore') {
+                                    isQuestActivity = state.activity.params.type === 'explore' &&
+                                        'locationId' in state.activity.params &&
+                                        state.activity.params.locationId === q.locationId;
+                                }
+
+                                // For dynamic kill quests, check if we're in combat (hunt activity)
+                                if (!isQuestActivity && q.templateId.startsWith('dynamic_kill_')) {
+                                    isQuestActivity = state.activity.params.type === 'hunt' &&
+                                        'locationId' in state.activity.params &&
+                                        state.activity.params.locationId === q.locationId;
+                                }
+                            }
 
                             return (
                                 <div

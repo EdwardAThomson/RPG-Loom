@@ -5,6 +5,23 @@ import content from '@rpg-loom/content';
 
 // Simple tick rate for now (1000ms = 1 tick/sec)
 // Later we can go faster if needed, but 1s is good for idle pacing.
+
+// Migration: Ensure all skills exist in player state
+function ensureAllSkills(state: EngineState) {
+    const requiredSkills = [
+        'blacksmithing', 'woodworking', 'leatherworking',
+        'swordsmanship', 'marksmanship', 'arcana', 'defense',
+        'mining', 'woodcutting', 'foraging'
+    ] as const;
+
+    for (const skillId of requiredSkills) {
+        if (!state.player.skills[skillId]) {
+            state.player.skills[skillId] = { id: skillId, level: 1, xp: 0 };
+            console.log(`[Migration] Added missing skill: ${skillId}`);
+        }
+    }
+}
+
 export function useGameEngine() {
     // and only update the specialized React state for rendering.
     const stateRef = useRef<EngineState | null>(null);
@@ -34,6 +51,10 @@ export function useGameEngine() {
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     // TODO: Runtime validation/migration could go here
+
+                    // Ensure all skills exist (migration for old saves)
+                    ensureAllSkills(parsed);
+
                     stateRef.current = parsed;
                     console.log('Loaded save game');
                 }
