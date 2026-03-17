@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAISettings, saveAISettings } from '../services/aiSettings';
+import { gatewayFetch, isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 
 interface Props {
     exportSave: () => string;
@@ -18,6 +19,7 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
     const [aiProvider, setAiProvider] = useState('gemini-cli');
     const [aiModel, setAiModel] = useState('gemini-3-flash-preview');
     const [availableProviders, setAvailableProviders] = useState<any>(null);
+    const [gatewayUp, setGatewayUp] = useState<boolean | null>(isGatewayAvailable());
 
     // Load AI settings from localStorage
     useEffect(() => {
@@ -25,11 +27,15 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
         setAiProvider(settings.provider);
         setAiModel(settings.model);
 
+        const unsub = onGatewayStatusChange(setGatewayUp);
+
         // Fetch available providers
-        fetch('http://localhost:8787/api/llm/providers')
+        gatewayFetch('/api/llm/providers')
             .then(res => res.json())
             .then(data => setAvailableProviders(data.providers))
-            .catch(err => console.error('Failed to fetch providers:', err));
+            .catch(() => { /* gateway unavailable — handled by gatewayFetch */ });
+
+        return unsub;
     }, []);
 
     const handleProviderChange = (provider: string) => {
@@ -113,6 +119,20 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
                         <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
                             Configure the AI provider and model for quest enhancement and adventure generation.
                         </p>
+
+                        {gatewayUp === false && (
+                            <div style={{
+                                padding: '0.75rem',
+                                background: 'rgba(255, 160, 0, 0.1)',
+                                border: '1px solid #ffa000',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                color: '#ffcc80',
+                                marginBottom: '1rem'
+                            }}>
+                                AI gateway is not reachable. AI features are disabled but the game will continue to run normally.
+                            </div>
+                        )}
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {/* Provider Selection */}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getAISettings } from '../services/aiSettings';
+import { gatewayFetch } from '../services/gateway';
 
 interface Props {
     onClose: () => void;
@@ -20,15 +21,14 @@ export function AIDebugModal({ onClose }: Props) {
     React.useEffect(() => {
         // Fetch available providers
         addLog('Fetching available providers...');
-        fetch('http://localhost:8787/api/llm/providers')
+        gatewayFetch('/api/llm/providers')
             .then(res => res.json())
             .then(data => {
                 setProviders(data.providers);
                 addLog(`✓ Loaded ${Object.keys(data.providers).length} providers`);
             })
             .catch(err => {
-                console.error('Failed to fetch providers:', err);
-                addLog(`✗ Failed to fetch providers: ${err.message}`);
+                addLog(`✗ Gateway unavailable: ${err.message}`);
             });
     }, []);
 
@@ -48,7 +48,7 @@ export function AIDebugModal({ onClose }: Props) {
 
         try {
             addLog('Sending request to gateway...');
-            const response = await fetch('http://localhost:8787/api/llm/generate', {
+            const response = await gatewayFetch('/api/llm/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

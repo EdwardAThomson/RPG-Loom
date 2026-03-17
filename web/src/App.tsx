@@ -1,6 +1,7 @@
 import { useGameEngine } from './hooks/useGameEngine';
 import { useState, useRef, useEffect } from 'react';
 import './index.css';
+import { probeGateway } from './services/gateway';
 
 // Components
 import { Navigation, TabId } from './components/Navigation';
@@ -53,6 +54,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
+
+  // Probe gateway on startup (fire-and-forget, non-blocking)
+  useEffect(() => { probeGateway(); }, []);
 
   // XP Rate (Last 60s)
   const [xpRate, setXpRate] = useState(0);

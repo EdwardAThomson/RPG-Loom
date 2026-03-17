@@ -6,8 +6,7 @@
 
 import type { ContentIndex, LocationId, AdventureStepTemplate } from '@rpg-loom/shared';
 import { getAISettings } from './aiSettings';
-
-const API_URL = 'http://localhost:8787';
+import { gatewayFetch, isGatewayAvailable } from './gateway';
 
 export interface AdventureQuestSpec {
     title: string;
@@ -36,10 +35,14 @@ export async function generateAdventureQuest(
     playerLevel: number,
     content: ContentIndex
 ): Promise<AdventureQuestSpec> {
+    if (isGatewayAvailable() === false) {
+        throw new Error('AI gateway is not available');
+    }
+
     const settings = getAISettings();
     const prompt = buildAdventurePrompt(currentLocationId, playerLevel, content);
 
-    const response = await fetch(`${API_URL}/api/llm/generate`, {
+    const response = await gatewayFetch('/api/llm/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OG Image Export Helper</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: sans-serif;
+    }
+    .label {
+      color: #888;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .og-frame {
+      width: 1200px;
+      height: 630px;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .og-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="label">1200 &times; 630 &mdash; screenshot or export the black area below</div>
+    <div class="og-frame">
+      <img src="../rpg_loom_banner_black.png" alt="RPG Loom banner" />
+    </div>
+  </div>
+</body>
+</html>

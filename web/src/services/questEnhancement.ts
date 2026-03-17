@@ -6,8 +6,7 @@
 
 import type { QuestInstanceState, QuestTemplateDef, ContentIndex } from '@rpg-loom/shared';
 import { getAISettings } from './aiSettings';
-
-const API_URL = 'http://localhost:8787';
+import { gatewayFetch, isGatewayAvailable } from './gateway';
 
 export interface QuestNarrative {
     title?: string;
@@ -23,10 +22,14 @@ export async function enhanceQuest(
     template: QuestTemplateDef,
     content: ContentIndex
 ): Promise<QuestNarrative> {
+    if (isGatewayAvailable() === false) {
+        throw new Error('AI gateway is not available');
+    }
+
     const settings = getAISettings();
     const prompt = buildQuestEnhancementPrompt(quest, template, content);
 
-    const response = await fetch(`${API_URL}/api/llm/generate`, {
+    const response = await gatewayFetch('/api/llm/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
