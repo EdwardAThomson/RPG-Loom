@@ -110,6 +110,12 @@ npm run dev:web
 
 Open the web app at: `http://localhost:5173`
 
+For deployed metadata previews, set `VITE_SITE_URL` to your public site URL and, if the app is hosted under a subpath, set `VITE_BASE_PATH` before building. Example:
+
+```bash
+VITE_SITE_URL="https://example.com" VITE_BASE_PATH="/rpg-loom/" npm run build:web
+```
+
 ## AI Configuration
 
 ### Using Gemini CLI (Recommended)
@@ -173,5 +179,4 @@ Then configure the provider in Settings → AI Settings.
 ## License
 
 MIT
-
 
