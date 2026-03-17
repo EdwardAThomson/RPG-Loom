@@ -9,10 +9,11 @@
     "web"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "scripts": {
     "build": "npm -ws run build",
+    "build:web": "npm -w @rpg-loom/shared run build && npm -w @rpg-loom/engine -w @rpg-loom/content run build && npm -w @rpg-loom/ui run build && npm -w web run build",
     "typecheck": "npm -ws run typecheck",
     "lint": "npm -ws run lint",
     "test": "npm -ws run test",
