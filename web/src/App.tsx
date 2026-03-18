@@ -116,6 +116,7 @@ function AppContent() {
   const { player } = state;
 
   return (
+    <>
     <div className="container">
       <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -195,7 +196,12 @@ function AppContent() {
 
         <EventView events={events} content={content} />
       </main>
+
     </div>
+    <footer style={{ textAlign: 'center', padding: '1rem 0', color: '#666', fontSize: '0.8rem', borderTop: '1px solid #333', marginTop: '1rem' }}>
+      &copy; 2026 Edward Thomson (<a href="https://octonion.io/" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>Octonion Software</a>)
+    </footer>
+    </>
   );
 }
 

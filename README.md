@@ -180,3 +180,7 @@ Then configure the provider in Settings → AI Settings.
 
 MIT
 
+---
+
+&copy; 2026 Edward Thomson ([Octonion Software](https://octonion.io/))
+
