@@ -12,7 +12,7 @@ import { CharacterView } from './components/CharacterView';
 import { CraftingView } from './components/CraftingView';
 import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
-import { DebugView } from './components/DebugView';
+// import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
 import { AIDebugModal } from './components/AIDebugModal';
 import React from 'react';
@@ -178,7 +178,7 @@ function AppContent() {
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'quests' && <QuestView state={state} content={content} dispatch={dispatch} />}
-          {activeTab === 'debug' && <DebugView
+          {/* {activeTab === 'debug' && <DebugView
             state={state}
             content={content}
             dispatch={dispatch}
@@ -189,7 +189,7 @@ function AppContent() {
                 dispatch({ type: 'RESET_SKILLS', atMs: Date.now() });
               }
             }}
-          />}
+          />} */}
           {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}
         </div>
 
