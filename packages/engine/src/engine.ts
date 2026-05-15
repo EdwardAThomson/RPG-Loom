@@ -46,6 +46,10 @@ export interface StepResult {
 
 const DEFAULT_CONFIG: EngineConfig = { tickMs: 1000 };
 
+// Hard cap on a single simulateOffline call so reopening after a week
+// doesn't run hours of ticks in the browser.
+export const MAX_OFFLINE_MS = 24 * 60 * 60 * 1000;
+
 const STARTING_INTRINSIC_STATS = {
   hp: 25,
   hpMax: 25,
@@ -438,9 +442,11 @@ export function step(state: EngineState, nowMs: number, content?: ContentIndex, 
 }
 
 export function simulateOffline(state: EngineState, fromMs: number, toMs: number, content?: ContentIndex, config: Partial<EngineConfig> = {}): StepResult {
-  // Identical to step(), but explicit bounds.
+  // Identical to step(), but explicit bounds. Capped at MAX_OFFLINE_MS to
+  // bound work for very long absences.
   const clampedFrom = Math.max(fromMs, state.lastTickAtMs);
-  const clampedTo = Math.max(toMs, clampedFrom);
+  const requestedTo = Math.max(toMs, clampedFrom);
+  const clampedTo = Math.min(requestedTo, clampedFrom + MAX_OFFLINE_MS);
   return step({ ...state, lastTickAtMs: clampedFrom }, clampedTo, content, config);
 }
 

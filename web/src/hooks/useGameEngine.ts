@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import type { EngineState, PlayerCommand, ContentIndex } from '@rpg-loom/shared';
-import { createNewState, step, applyCommand } from '@rpg-loom/engine';
+import type { EngineState, PlayerCommand, ContentIndex, OfflineSummary } from '@rpg-loom/shared';
+import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, MAX_OFFLINE_MS } from '@rpg-loom/engine';
 import content from '@rpg-loom/content';
 
 // Simple tick rate for now (1000ms = 1 tick/sec)
 // Later we can go faster if needed, but 1s is good for idle pacing.
+
+// Show the offline summary modal if the player has been away longer than this.
+const OFFLINE_SUMMARY_THRESHOLD_MS = 60_000;
 
 // Migration: Ensure all skills exist in player state
 function ensureAllSkills(state: EngineState) {
@@ -30,6 +33,7 @@ export function useGameEngine() {
     const [uiState, setUiState] = useState<EngineState | null>(null);
     const [events, setEvents] = useState<any[]>([]);
     const [tickRate, setTickRate] = useState(1000);
+    const [pendingOfflineSummary, setPendingOfflineSummary] = useState<OfflineSummary | null>(null);
 
     const SAVE_KEY = 'rpg_loom_save_v1';
 
@@ -73,6 +77,25 @@ export function useGameEngine() {
                     startLocationId: 'loc_forest'
                 });
                 console.log('Created new game');
+            } else {
+                // Loaded an existing save: if a meaningful amount of time
+                // has passed since the last tick, run the offline catch-up
+                // and surface a summary modal.
+                const now = Date.now();
+                const elapsed = now - stateRef.current.lastTickAtMs;
+                if (elapsed > OFFLINE_SUMMARY_THRESHOLD_MS) {
+                    const cappedAtMs = elapsed > MAX_OFFLINE_MS ? MAX_OFFLINE_MS : undefined;
+                    const res = simulateOffline(stateRef.current, stateRef.current.lastTickAtMs, now, content as any);
+                    stateRef.current = res.state;
+                    saveState(res.state);
+                    if (res.events.length > 0) {
+                        setEvents(prev => [...prev.slice(-50), ...res.events]);
+                    }
+                    setPendingOfflineSummary(summarizeEvents(res.events, {
+                        durationMs: Math.min(elapsed, MAX_OFFLINE_MS),
+                        cappedAtMs
+                    }));
+                }
             }
 
             setUiState(stateRef.current);
@@ -140,5 +163,19 @@ export function useGameEngine() {
         return btoa(JSON.stringify(stateRef.current));
     };
 
-    return { state: uiState, events, dispatch, content: content as unknown as ContentIndex, hardReset, importSave, exportSave, tickRate, setTickRate };
+    const dismissOfflineSummary = () => setPendingOfflineSummary(null);
+
+    return {
+        state: uiState,
+        events,
+        dispatch,
+        content: content as unknown as ContentIndex,
+        hardReset,
+        importSave,
+        exportSave,
+        tickRate,
+        setTickRate,
+        pendingOfflineSummary,
+        dismissOfflineSummary
+    };
 }

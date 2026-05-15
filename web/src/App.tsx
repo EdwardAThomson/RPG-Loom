@@ -15,6 +15,7 @@ import { EventView } from './components/EventView';
 // import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
 import { AIDebugModal } from './components/AIDebugModal';
+import { OfflineSummaryModal } from './components/OfflineSummaryModal';
 import React from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -50,7 +51,7 @@ function App() {
 }
 
 function AppContent() {
-  const { state, events, dispatch, content, exportSave, importSave, hardReset, tickRate, setTickRate } = useGameEngine();
+  const { state, events, dispatch, content, exportSave, importSave, hardReset, tickRate, setTickRate, pendingOfflineSummary, dismissOfflineSummary } = useGameEngine();
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
@@ -168,6 +169,14 @@ function AppContent() {
       }
 
       {showAIDebug && <AIDebugModal onClose={() => setShowAIDebug(false)} />}
+
+      {pendingOfflineSummary && (
+        <OfflineSummaryModal
+          summary={pendingOfflineSummary}
+          content={content}
+          onClose={dismissOfflineSummary}
+        />
+      )}
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
