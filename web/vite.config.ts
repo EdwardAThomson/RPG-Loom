@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        '@rpg-loom/engine': path.resolve(__dirname, '../packages/engine/src/engine.ts'),
+        '@rpg-loom/engine': path.resolve(__dirname, '../packages/engine/src/index.ts'),
         '@rpg-loom/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
         '@rpg-loom/content': path.resolve(__dirname, '../packages/content/dist/index.js'),
         '@rpg-loom/sdk': path.resolve(__dirname, '../sdk/src/index.ts'),

@@ -500,6 +500,19 @@ export interface BaseEvent<TType extends string, TPayload> {
   payload: TPayload;
 }
 
+// ---- Offline catch-up summary ----
+export interface OfflineSummary {
+  durationMs: number;
+  ticksProcessed: number;
+  cappedAtMs?: number;
+  kills: Record<EnemyId, number>;
+  loot: Record<ItemId, number>;
+  xpGained: number;
+  goldDelta: number;
+  questsCompleted: number;
+  levelUps: number;
+}
+
 // ---- Narrative tasks & outputs (gateway <-> web) ----
 export type NarrativeTaskType = 'quest_flavor' | 'npc_dialogue' | 'rumor_feed' | 'journal_entry' | 'bestiary_entry';
 

@@ -219,11 +219,45 @@
 
 ---
 
-## Milestone D — Optional AI Narrative (Gemini) with Strict Guardrails
+## Milestone D — Content Expansion + Balance Pass
+
+**Goal:** Longer-term play (days/weeks), variety, and meaningful builds.
+
+### D1. More zones + a mid-boss arc
+
+* **Deliverable:** 10–12 locations + 3 bosses with deterministic phases
+* **Acceptance:**
+
+  * Clear tier progression and gating (level/rep/items)
+
+### D2. Build depth
+
+* **Deliverable:** item tags + synergies + status effects (poison/bleed/stun)
+* **Acceptance:**
+
+  * At least 3 viable archetypes (melee tank / ranged crit / arcana control)
+
+### D3. Reputation + faction progression
+
+* **Deliverable:** faction rep gates quests/shops/locations
+* **Acceptance:**
+
+  * Rep becomes a meaningful long-term axis, not just a number
+
+### D4. Balance tooling
+
+* **Deliverable:** scripted simulations for expected rates by tier (headless)
+* **Acceptance:**
+
+  * You can run “1k simulated players” style sweeps for tuning
+
+---
+
+## Milestone E — Optional AI Narrative (Gemini) with Strict Guardrails
 
 **Goal:** Narrative adds life, never breaks the game, and is optional.
 
-### D1. FactsBundle builder
+### E1. FactsBundle builder
 
 * **Deliverable:** Convert recent `GameEvent[]` into a `NarrativeFactsBundle`
 * **Acceptance:**
@@ -231,7 +265,7 @@
   * Bundle contains only factual resolved outcomes
   * Bundle hash stable across runs
 
-### D2. Prompt templates (JSON-only outputs)
+### E2. Prompt templates (JSON-only outputs)
 
 * **Deliverable:** Templates for:
 
@@ -240,19 +274,19 @@
 
   * Prompts include strict instructions: no new IDs, length budgets, JSON only
 
-### D3. Gemini backend in gateway
+### E3. Gateway backend (Gemini + multi-provider)
 
-* **Deliverable:** `gemini-cli` backend:
+* **Deliverable:** Multi-provider backend:
 
   * runs tasks
   * streams output to SSE
   * timeouts/cancellation
 * **Acceptance:**
 
-  * If Gemini is missing, backend falls back to mock with clear status
+  * If a provider is missing, backend falls back to mock with clear status
   * Gateway never crashes from LLM output
 
-### D4. Narrative output validator
+### E4. Narrative output validator
 
 * **Deliverable:** Validate returned JSON:
 
@@ -263,14 +297,14 @@
 
   * Invalid output is rejected and replaced with a safe fallback block
 
-### D5. Narrative store per save slot
+### E5. Narrative store per save slot
 
 * **Deliverable:** Persist `NarrativeBlock[]` alongside the save
 * **Acceptance:**
 
   * Reloading a save restores journal + quest flavor
 
-### D6. UI integration
+### E6. UI integration
 
 * **Deliverable:** Render narrative blocks in:
 
@@ -280,40 +314,6 @@
 * **Acceptance:**
 
   * If AI is off, UI still works and displays deterministic logs only
-
----
-
-## Milestone E — Content Expansion + Balance Pass
-
-**Goal:** Longer-term play (days/weeks), variety, and meaningful builds.
-
-### E1. More zones + a mid-boss arc
-
-* **Deliverable:** 10–12 locations + 3 bosses with deterministic phases
-* **Acceptance:**
-
-  * Clear tier progression and gating (level/rep/items)
-
-### E2. Build depth
-
-* **Deliverable:** item tags + synergies + status effects (poison/bleed/stun)
-* **Acceptance:**
-
-  * At least 3 viable archetypes (melee tank / ranged crit / arcana control)
-
-### E3. Reputation + faction progression
-
-* **Deliverable:** faction rep gates quests/shops/locations
-* **Acceptance:**
-
-  * Rep becomes a meaningful long-term axis, not just a number
-
-### E4. Balance tooling
-
-* **Deliverable:** scripted simulations for expected rates by tier (headless)
-* **Acceptance:**
-
-  * You can run “1k simulated players” style sweeps for tuning
 
 ---
 
@@ -353,5 +353,8 @@
 2. **B1–B7** (core loop + sinks)
 3. **C1–C5** (clarity makes testing/balance easier)
 4. **B8–B9** (content + instrumentation)
-5. **D1–D6** (Gemini narrative as polish)
+5. **D1–D4** (content + balance depth)
+6. **E1–E6** (AI narrative as polish)
+
+Status note: A–D are complete; E is the current work (see `docs/plan.md` and `docs/roadmap_next.md` for the active near-term breakdown).
 
