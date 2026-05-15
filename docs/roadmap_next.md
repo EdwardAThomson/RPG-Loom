@@ -1,12 +1,25 @@
-# Roadmap: Next Three Features
+# Roadmap: Near-term plan
 
-Captured 2026-05-14. This is a **near-term plan layered on `docs/plan.md`**, not a replacement for it. The three features here all fit inside or alongside Milestone E (AI Narrative); they're chosen to make the existing systems feel finished before adding new content.
+Captured 2026-05-14. This is a **near-term plan layered on `docs/plan.md`**, not a replacement for it. The phases here all fit inside or alongside Milestone E (AI Narrative) and an early F1; they're chosen to make the existing systems feel finished before adding new content.
 
 If this conflicts with `docs/plan.md`, plan.md wins — update this doc or close the gap.
 
 ---
 
-## Why these three
+## Ship order (TL;DR)
+
+1. **Phase 1** — Offline catch-up summary (1–2 days)
+2. **Phase 4a** — Save versioning + migration (1 day, unblocks Phase 3)
+3. **Phase 2** — Next-goal widget (2–3 days)
+4. **Phase 4b–4d** — Cloud saves end-to-end (~1 week)
+5. **Phase 3a–3c** — Recurring NPCs (~1–2 weeks)
+6. **Phase 4e** — Narrative store (2 days, closes Milestone E5)
+
+Total: ~6 weeks. See "Sequencing" near the bottom for the dependency diagram and rationale.
+
+---
+
+## Why these phases
 
 A code read on 2026-05-14 (see `docs/known_gaps.md`) flagged that the engine, content, and AI plumbing are largely done, but several systems that would multiply their value haven't shipped:
 
