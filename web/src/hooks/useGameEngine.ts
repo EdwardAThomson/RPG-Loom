@@ -89,7 +89,7 @@ export function useGameEngine() {
                     stateRef.current = res.state;
                     saveState(res.state);
                     if (res.events.length > 0) {
-                        setEvents(prev => [...prev.slice(-50), ...res.events]);
+                        setEvents(prev => [...prev.slice(-50), ...res.events.slice(-15)]);
                     }
                     setPendingOfflineSummary(summarizeEvents(res.events, {
                         durationMs: Math.min(elapsed, MAX_OFFLINE_MS),
