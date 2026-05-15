@@ -1,29 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import type { EngineState, PlayerCommand, ContentIndex, OfflineSummary } from '@rpg-loom/shared';
-import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, MAX_OFFLINE_MS } from '@rpg-loom/engine';
-import content from '@rpg-loom/content';
+import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, migrateState, FutureSaveError, MAX_OFFLINE_MS } from '@rpg-loom/engine';
+import content, { CONTENT_VERSION } from '@rpg-loom/content';
 
 // Simple tick rate for now (1000ms = 1 tick/sec)
 // Later we can go faster if needed, but 1s is good for idle pacing.
 
 // Show the offline summary modal if the player has been away longer than this.
 const OFFLINE_SUMMARY_THRESHOLD_MS = 60_000;
-
-// Migration: Ensure all skills exist in player state
-function ensureAllSkills(state: EngineState) {
-    const requiredSkills = [
-        'blacksmithing', 'woodworking', 'leatherworking',
-        'swordsmanship', 'marksmanship', 'arcana', 'defense',
-        'mining', 'woodcutting', 'foraging'
-    ] as const;
-
-    for (const skillId of requiredSkills) {
-        if (!state.player.skills[skillId]) {
-            state.player.skills[skillId] = { id: skillId, level: 1, xp: 0 };
-            console.log(`[Migration] Added missing skill: ${skillId}`);
-        }
-    }
-}
 
 export function useGameEngine() {
     // and only update the specialized React state for rendering.
@@ -54,15 +38,17 @@ export function useGameEngine() {
                 const saved = localStorage.getItem(SAVE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    // TODO: Runtime validation/migration could go here
-
-                    // Ensure all skills exist (migration for old saves)
-                    ensureAllSkills(parsed);
-
-                    stateRef.current = parsed;
+                    stateRef.current = migrateState(parsed, CONTENT_VERSION);
                     console.log('Loaded save game');
                 }
             } catch (e) {
+                if (e instanceof FutureSaveError) {
+                    alert(`Cannot load save: ${e.message}`);
+                    // Don't fall back to a new game silently — refuse the load
+                    // so the player sees the message and chooses to update or
+                    // import a fresh save.
+                    return;
+                }
                 console.warn('Failed to load save', e);
             }
 
@@ -74,7 +60,8 @@ export function useGameEngine() {
                     playerId: 'p1',
                     playerName: 'Wanderer',
                     nowMs: now,
-                    startLocationId: 'loc_forest'
+                    startLocationId: 'loc_forest',
+                    contentVersion: CONTENT_VERSION
                 });
                 console.log('Created new game');
             } else {
@@ -149,10 +136,15 @@ export function useGameEngine() {
             // Basic duck typing check
             if (!parsed.inventory || !parsed.player) throw new Error("Invalid save structure");
 
-            stateRef.current = parsed;
-            saveState(parsed);
+            const migrated = migrateState(parsed, CONTENT_VERSION);
+            stateRef.current = migrated;
+            saveState(migrated);
             window.location.reload(); // Reload to ensure clean hook state
         } catch (e) {
+            if (e instanceof FutureSaveError) {
+                alert(`Import failed: ${e.message}`);
+                return;
+            }
             console.error("Import failed", e);
             alert("Import failed: Invalid save string");
         }
