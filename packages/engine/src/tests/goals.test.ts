@@ -182,6 +182,37 @@ describe('getNextGoals', () => {
     expect(goals).toEqual([]);
   });
 
+  it('collapses multiple recipes at the same skill milestone into one goal', () => {
+    const state = freshState();
+    const content: ContentIndex = {
+      ...CONTENT,
+      recipesById: {
+        ...CONTENT.recipesById,
+        recipe_iron_axe: {
+          id: 'recipe_iron_axe', name: 'Iron Axe', skill: 'blacksmithing', requiredSkillLevel: 5,
+          inputs: [], outputs: []
+        }
+      } as any
+    };
+    const goals = getNextGoals(state, content, 10);
+
+    // Neither sibling should appear as its own recipe goal.
+    const ironGoal = goals.find(g => g.actionHint?.recipeId === 'recipe_iron');
+    const axeGoal = goals.find(g => g.actionHint?.recipeId === 'recipe_iron_axe');
+    expect(ironGoal).toBeUndefined();
+    expect(axeGoal).toBeUndefined();
+
+    // One milestone-framed goal stands in for both.
+    const milestone = goals.find(g => g.id === 'skill_milestone:blacksmithing:5');
+    expect(milestone).toBeDefined();
+    expect(milestone!.category).toBe('skill');
+    expect(milestone!.label).toContain('blacksmithing 5');
+    expect(milestone!.label).toContain('2 recipes');
+    expect(milestone!.progress).toEqual({ current: 1, required: 5 });
+    expect(milestone!.actionHint?.tab).toBe('crafting');
+    expect(milestone!.actionHint?.recipeId).toBeUndefined();
+  });
+
   it('does not include the current location as a goal', () => {
     const state = freshState();
     state.currentLocationId = 'loc_quarry';

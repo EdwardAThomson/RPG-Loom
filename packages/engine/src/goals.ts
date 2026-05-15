@@ -43,7 +43,17 @@ export function getNextGoals(state: EngineState, content: ContentIndex, limit = 
     });
   }
 
-  // (b) Recipes within skill lookahead
+  // (b) Recipes within skill lookahead. Group by (skill, requiredLevel)
+  // so siblings at the same gate (e.g. obsidian armor + shield both at
+  // blacksmithing 30) collapse into one milestone goal instead of N
+  // near-duplicate rows.
+  type RecipeBucket = {
+    skill: string;
+    requiredLevel: number;
+    currentLevel: number;
+    recipes: { id: string; name: string }[];
+  };
+  const recipeBuckets = new Map<string, RecipeBucket>();
   for (const recipe of Object.values(content.recipesById)) {
     if (!recipe.requiredSkillLevel || !recipe.skill) continue;
     const skillState = state.player.skills[recipe.skill];
@@ -51,14 +61,36 @@ export function getNextGoals(state: EngineState, content: ContentIndex, limit = 
     const requiredLevel = recipe.requiredSkillLevel;
     if (currentLevel >= requiredLevel) continue;
     if (requiredLevel - currentLevel > RECIPE_SKILL_LOOKAHEAD) continue;
-    candidates.push({
-      id: `recipe:${recipe.id}`,
-      label: `Unlock ${recipe.name} (${recipe.skill} ${currentLevel}/${requiredLevel})`,
-      category: 'recipe',
-      progress: { current: currentLevel, required: requiredLevel },
-      actionHint: { tab: 'crafting', recipeId: recipe.id },
-      _rank: currentLevel / requiredLevel
-    });
+    const key = `${recipe.skill}:${requiredLevel}`;
+    let bucket = recipeBuckets.get(key);
+    if (!bucket) {
+      bucket = { skill: recipe.skill, requiredLevel, currentLevel, recipes: [] };
+      recipeBuckets.set(key, bucket);
+    }
+    bucket.recipes.push({ id: recipe.id, name: recipe.name });
+  }
+  for (const bucket of recipeBuckets.values()) {
+    const rank = bucket.currentLevel / bucket.requiredLevel;
+    if (bucket.recipes.length === 1) {
+      const only = bucket.recipes[0];
+      candidates.push({
+        id: `recipe:${only.id}`,
+        label: `Unlock ${only.name} (${bucket.skill} ${bucket.currentLevel}/${bucket.requiredLevel})`,
+        category: 'recipe',
+        progress: { current: bucket.currentLevel, required: bucket.requiredLevel },
+        actionHint: { tab: 'crafting', recipeId: only.id },
+        _rank: rank
+      });
+    } else {
+      candidates.push({
+        id: `skill_milestone:${bucket.skill}:${bucket.requiredLevel}`,
+        label: `Reach ${bucket.skill} ${bucket.requiredLevel} (unlocks ${bucket.recipes.length} recipes)`,
+        category: 'skill',
+        progress: { current: bucket.currentLevel, required: bucket.requiredLevel },
+        actionHint: { tab: 'crafting' },
+        _rank: rank
+      });
+    }
   }
 
   // (c) Locations the player can't reach yet, gated by a near-future
