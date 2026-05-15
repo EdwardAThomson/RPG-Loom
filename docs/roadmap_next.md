@@ -20,6 +20,8 @@ Phase 1 and 2 are pure additive work. Phase 3 forces (and benefits from) finishi
 
 ## Phase 1 — Offline catch-up summary
 
+**Advances:** `plan.md` Milestone A4 (offline simulation) — the engine function is done; this surfaces it in the UI. No new milestone required.
+
 **Goal:** Returning after >60s away, the player sees a modal: "While you were gone: 142 kills, +1,820 XP, 4 items, 1 quest complete."
 
 **Size:** 1–2 days.
@@ -52,6 +54,8 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 
 ## Phase 2 — Next-goal widget
 
+**Advances:** Cross-milestone UI polish. Realizes `plan.md`'s "there's always an obvious next goal" guidance (Milestone D acceptance criterion) — the engine and content support it, the UI doesn't deliver it yet.
+
 **Goal:** A persistent 1–3-item panel showing the closest achievable progress markers. Click → jump to relevant tab.
 
 **Size:** 2–3 days.
@@ -80,6 +84,8 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 ---
 
 ## Phase 3 — Recurring NPCs
+
+**Advances:** `plan.md` Milestone E2 (prompt templates for `npc_dialogue`), E4 (forces the no-invented-IDs validator), E6 (NPC dialogue panels in the UI). Not a numbered E sub-task but the feature that makes E land as a coherent product.
 
 **Goal:** A roster of ~10 persistent NPCs across the world. They give quests, remember prior interactions, and have AI-flavored personalities cached per save. The game starts feeling like "a guild," not a vending machine.
 
@@ -129,6 +135,8 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 ---
 
 ## Phase 4 — Cloud persistence (Postgres-backed saves)
+
+**Advances:** `plan.md` Milestone F1 (Accounts + cloud saves), pulled forward from future. Phase 4e additionally closes `plan.md` Milestone E5 (Narrative Store). Phase 4a (versioning) closes the longstanding A6/save-versioning aspiration that's flagged in `known_gaps.md` §2.
 
 **Goal:** Move authoritative save storage from `localStorage` to a Postgres-backed cloud store, with auth, multi-device sync, and a foundation for narrative storage. Lays the groundwork for `plan.md` Milestone F1 ("Accounts + cloud saves") without committing to server-authoritative simulation.
 

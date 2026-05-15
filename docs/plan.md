@@ -1,5 +1,18 @@
 # RPG Loom Plan
 
+This is the **strategic roadmap** — milestones A through G. For the **active near-term breakdown** (file-level work, sequencing, dependencies), see `docs/roadmap_next.md`. For the catalog of docs-vs-code deltas surfaced during the most recent code read, see `docs/known_gaps.md`.
+
+## Currently in flight
+
+Milestone E (AI Narrative) is the current work. The concrete tasks are split across the phases in `docs/roadmap_next.md`:
+
+- `roadmap_next.md` Phase 1 — Offline catch-up summary (UI polish on top of completed A4)
+- `roadmap_next.md` Phase 2 — Next-goal widget (UI polish; cross-milestone)
+- `roadmap_next.md` Phase 3 — Recurring NPCs (depends on E4 + save versioning)
+- `roadmap_next.md` Phase 4 — **Pulls Milestone F1 forward** (Postgres-backed cloud saves), and closes E5 (Narrative Store) in 4e
+
+When the docs and the code disagree on what's shipped, treat the code as authoritative and update the relevant doc.
+
 ## 0) Guiding decisions
 
 * **Deterministic engine is the game.** It must be fun and complete without AI.
@@ -106,16 +119,18 @@ Acceptance criteria:
 
 ---
 
-## Milestone E — AI Narrative (Optional Plugin)
+## Milestone E — AI Narrative (Optional Plugin) [IN PROGRESS]
 
 **Goal:** Add narrative without risking core gameplay.
 
-* **E1. FactsBundle Builder**: Engine events → Facts packet for LLM.
-* **E2. Prompt Templates**: Strict JSON-only instructions (Quest flavor, NPC, Rumors).
-* **E3. Gateway Backend**: Gemini CLI support + Mock fallback + SSE streaming.
-* **E4. Output Validator**: Schema + ID check + Length budget.
-* **E5. Narrative Store**: Persist blocks per save slot.
-* **E6. UI Integration**: Narratives display in Journal/Quest/NPC panels.
+Status reflects the 2026-05-14 code read; see `docs/known_gaps.md` §4 for detail.
+
+* **E1. FactsBundle Builder** [partial] — Engine events → Facts packet for LLM. Currently the gateway accepts `facts: Record<string, any>`; there's no canonical `FactsBundle` builder in `@rpg-loom/shared`.
+* **E2. Prompt Templates** [partial] — Strict JSON-only instructions (Quest flavor, NPC, Rumors). Prompts exist and say "no invented IDs," but the validator doesn't enforce that yet (see E4).
+* **E3. Gateway Backend** [✅] — Gemini CLI/cloud + OpenAI + Claude (cloud + CLI) + Codex CLI + Mock fallback + SSE streaming. Done in Phase 1–3 of the LLM integration (see `docs/PHASE*.md`).
+* **E4. Output Validator** [partial] — Schema validation ships (`NarrativeBlockSchema`). **No ID check, no length budget.** Highest-value remaining task. Prerequisite for `roadmap_next.md` Phase 3c.
+* **E5. Narrative Store** [not started] — Persist blocks per save slot. Scheduled as `roadmap_next.md` Phase 4e, riding on the Postgres backend.
+* **E6. UI Integration** [partial] — Quest enhancement renders inline; no Journal tab, no separate NPC dialogue UI yet (latter is `roadmap_next.md` Phase 3b).
 
 ---
 
@@ -125,10 +140,10 @@ Acceptance criteria:
 
 Order:
 
-1. Accounts + cloud saves (server stores snapshots)
-2. Leaderboards (weekly/monthly)
-3. Guilds + world events contributions
-4. Market/trading (optional; big design implications)
+1. **Accounts + cloud saves** (server stores snapshots) — **being pulled forward** as `roadmap_next.md` Phase 4. Postgres-backed, auth-provider agnostic, dumb-store (client stays authoritative for simulation).
+2. Leaderboards (weekly/monthly).
+3. Guilds + world events contributions.
+4. Market/trading (optional; big design implications).
 
 Acceptance criteria:
 
