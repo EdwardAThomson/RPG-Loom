@@ -13,19 +13,7 @@ The "engine is pure, deterministic, no IO, no wall-clock" rules are repeated in 
 - **`getAvailableQuests` reads `Date.now()`.** `packages/engine/src/engine.ts:1786` — uses `Date.now()` to check daily-quest cooldowns. It should take `nowMs` as an argument like `step` / `simulateOffline` do. Callers (UI quest board) already have a clock; pass it in.
 - **No engine-internal validation of `EngineState`.** `applyCommand` / `step` accept whatever is handed in. The doc says "engine must not throw uncaught — surface failures as `ERROR` events with state intact." That holds for known command paths, but malformed loaded state (e.g. missing `questAvailability`) is patched up by ad-hoc lazy migrations (`ensureQuestAvailability`, `ensureIntrinsicStats`, `ensureAllSkills`) rather than a single validate-on-load step.
 
-## 2) Save/version compatibility is aspirational
-
-Documented (architecture.md §8, plan.md A6): saves include `engineVersion` and `contentVersion`; load is versioned with migrations.
-
-Actual:
-
-- `EngineState.version` is a literal `1` (`packages/shared/src/types.ts:298`). There is no `contentVersion`.
-- `web/src/hooks/useGameEngine.ts` base64-encodes the full state to `localStorage` on every tick. On load, `importSave` does a duck-type check on `inventory`/`player` and nothing else.
-- Migrations are ad-hoc one-liners scattered through the engine (`ensure*` helpers).
-
-Fix shape: stamp `engineVersion` + `contentVersion` on save, add a `migrate(state)` step before the engine touches a loaded save, and bump versions whenever `EngineState`/content schemas change shape.
-
-## 3) `packages/shared/src/schemas.ts` drifts from `types.ts`
+## 2) `packages/shared/src/schemas.ts` drifts from `types.ts`
 
 The zod schemas were a milestone A1 deliverable; they've since fallen out of sync with the type definitions. `runtime` doesn't actually use these schemas to validate `EngineState`, so the drift is invisible until someone wires them up — but anyone treating them as the contract will be wrong.
 
@@ -33,7 +21,7 @@ Concrete mismatches:
 
 | Schema | Says | Type says |
 |---|---|---|
-| `EngineStateSchema.version` | `z.string()` | literal `1` |
+| `EngineStateSchema.version` | `z.string()` | type has `engineVersion: number` + `contentVersion: string` (no `version` field anymore) |
 | `EngineStateSchema` | `locationId` + `flags` at top level | `currentLocationId` at top level, `flags` inside `player` |
 | `ActivityPlanSchema` | `{ activityId, type, locationId, params }` | `ActivityPlan { id, params, startedAtMs, durationTicks? }` |
 | `ActivityTypeSchema` | `idle, quest, hunt, gather, craft, train, trade, explore` | adds `recovery, mine, woodcut, forage, adventure` |
@@ -43,7 +31,7 @@ Concrete mismatches:
 
 Decide: either delete `schemas.ts`, or treat it as canonical and regenerate types from it.
 
-## 4) Milestone E (AI Narrative) is partially shipped
+## 3) Milestone E (AI Narrative) is partially shipped
 
 `docs/plan.md` Milestone E is the current work. Sub-tasks E1–E6 line up directly with the gaps below — they're not unknown; they're partially-done.
 
@@ -54,7 +42,7 @@ Decide: either delete `schemas.ts`, or treat it as canonical and regenerate type
 - **E5 ("Narrative Store: Persist blocks per save slot") — not implemented.** Narratives live in `QuestInstanceState.aiNarrative` for quest enhancements, but there's no separate store keyed by save slot.
 - **Fallback content IDs.** `parseAdventureSpec` falls back to `loc_forest`, `enemy_rat`, `loc_haven` on parse failure. These exist in the content pack today; if any get renamed or removed, the fallback breaks silently. Either pin them as test fixtures or build the fallback from the live content index.
 
-## 5) Cross-component inconsistencies
+## 4) Cross-component inconsistencies
 
 Small but real footguns:
 
@@ -63,7 +51,7 @@ Small but real footguns:
 - **`bestiary_entry` is half-defined.** Present in `NarrativeTaskType` (`packages/shared/src/types.ts:504`); missing from `NarrativeTaskTypeSchema` (`schemas.ts`) and from `CreateTaskReqSchema` (`gateway/src/server.ts:29`). Either implement it or drop it from the type.
 - **React 18 vs React 19.** `web/` is on React 18.3 (`web/package.json`); `packages/ui/` is on React 19.2. Don't copy components between them without checking compat.
 
-## 6) Adventure-quest fragility
+## 5) Adventure-quest fragility
 
 The `dynamic_*` template-id convention threads through several files; mismatches between them are silent failures.
 
@@ -74,11 +62,11 @@ The `dynamic_*` template-id convention threads through several files; mismatches
   
   These two sides are not linked by a shared registry. A new step type that's added to one and not the other will fail silently.
 
-## 7) Doc staleness
+## 6) Doc staleness
 
 - `docs/dev_log.md` — last entry 2026-01-14. Adventure quest generation and quest replenishment are the most recent items; nothing since.
 - `docs/PHASE2_TEST_RESULTS.md`, `docs/PHASE3_COMPLETE.md`, `docs/TESTING_PHASE1.md` — artifacts of the LLM-provider integration. Historically useful, but referring to them as current is misleading.
-- `docs/architecture.md` and `docs/tech_stack.md` describe **intent**, not the shipped state. The "AI rules" and "Save/version compatibility" sections in particular are aspirational (see §2 and §4 above).
+- `docs/architecture.md` and `docs/tech_stack.md` describe **intent**, not the shipped state. The "AI rules" section in particular is still aspirational (see §3 above).
 
 ---
 

@@ -50,6 +50,25 @@ const DEFAULT_CONFIG: EngineConfig = { tickMs: 1000 };
 // doesn't run hours of ticks in the browser.
 export const MAX_OFFLINE_MS = 24 * 60 * 60 * 1000;
 
+// Bump when the shape of EngineState changes. migrateState handles
+// upgrades from lower values; higher values cause a refused load.
+export const CURRENT_ENGINE_VERSION = 1;
+
+// Canonical list of skills. Owned by the engine so migrations and
+// createNewState stay in sync.
+export const ALL_SKILL_IDS: SkillId[] = [
+  'blacksmithing',
+  'woodworking',
+  'leatherworking',
+  'swordsmanship',
+  'marksmanship',
+  'arcana',
+  'defense',
+  'mining',
+  'woodcutting',
+  'foraging'
+];
+
 const STARTING_INTRINSIC_STATS = {
   hp: 25,
   hpMax: 25,
@@ -68,9 +87,13 @@ export function createNewState(params: {
   playerName: string;
   nowMs: number;
   startLocationId: string;
+  // Production callers should pass the live `CONTENT_VERSION` from
+  // @rpg-loom/content. Tests and scripts can omit it.
+  contentVersion?: string;
 }): EngineState {
   const state: EngineState = {
-    version: 1,
+    engineVersion: CURRENT_ENGINE_VERSION,
+    contentVersion: params.contentVersion ?? 'unknown',
     saveId: params.saveId,
     createdAtMs: params.nowMs,
     updatedAtMs: params.nowMs,
@@ -1701,6 +1724,75 @@ function ensureQuestAvailability(state: EngineState) {
   if (!state.questAvailability) {
     state.questAvailability = {};
   }
+}
+
+function ensureAllSkills(state: EngineState) {
+  if (!state.player.skills) {
+    state.player.skills = {} as EngineState['player']['skills'];
+  }
+  for (const skillId of ALL_SKILL_IDS) {
+    if (!state.player.skills[skillId]) {
+      state.player.skills[skillId] = { id: skillId, level: 1, xp: 0 };
+    }
+  }
+}
+
+export class FutureSaveError extends Error {
+  readonly saveVersion: number;
+  readonly currentVersion: number;
+  constructor(saveVersion: number, currentVersion: number) {
+    super(`Save was made with engine v${saveVersion}, but this build only supports v${currentVersion}. Update the client.`);
+    this.name = 'FutureSaveError';
+    this.saveVersion = saveVersion;
+    this.currentVersion = currentVersion;
+  }
+}
+
+/**
+ * Bring a loaded save up to the current engine + content shape.
+ *
+ * - Accepts `any` because the input is untrusted JSON.
+ * - Throws `FutureSaveError` if the save's engineVersion is higher than
+ *   this build supports (don't silently truncate state from the future).
+ * - Older saves: re-stamps `engineVersion`/`contentVersion` and runs the
+ *   per-shape fixups (skills, intrinsic stats, questAvailability).
+ *
+ * Returns the same object reference, mutated in place — callers that
+ * need an unaliased copy should clone first.
+ */
+export function migrateState(raw: any, currentContentVersion: string): EngineState {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('migrateState: input is not an object');
+  }
+
+  // Resolve incoming engine version. Earliest saves used `version: 1`.
+  const incoming: number =
+    typeof raw.engineVersion === 'number' ? raw.engineVersion :
+    typeof raw.version === 'number' ? raw.version :
+    1;
+
+  if (incoming > CURRENT_ENGINE_VERSION) {
+    throw new FutureSaveError(incoming, CURRENT_ENGINE_VERSION);
+  }
+
+  // Per-version migrations would go here as `if (incoming < N) { ... }`
+  // steps. Today there's only one version, so the migration is purely
+  // shape-fixup + re-stamp.
+
+  // Drop the old field name if present.
+  if ('version' in raw) {
+    delete raw.version;
+  }
+
+  raw.engineVersion = CURRENT_ENGINE_VERSION;
+  raw.contentVersion = currentContentVersion;
+
+  const state = raw as EngineState;
+  ensureAllSkills(state);
+  ensureIntrinsicStats(state);
+  ensureQuestAvailability(state);
+
+  return state;
 }
 
 export function syncDerivedPlayerStats(state: EngineState) {

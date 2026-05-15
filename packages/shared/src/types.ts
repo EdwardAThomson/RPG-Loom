@@ -295,7 +295,14 @@ export interface EngineMetrics {
 }
 
 export interface EngineState {
-  version: 1;
+  // Bumped when the shape of EngineState changes. Loading a save with
+  // engineVersion > the engine's current version is refused; lower
+  // values are migrated forward.
+  engineVersion: number;
+  // Tag of the content pack the save was last opened with. Used to
+  // detect content-schema changes that need a re-stamp / lazy fixup.
+  contentVersion: string;
+
   saveId: SaveId;
   createdAtMs: number;
   updatedAtMs: number;

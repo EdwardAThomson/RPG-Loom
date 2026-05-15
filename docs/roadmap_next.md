@@ -8,9 +8,9 @@ If this conflicts with `docs/plan.md`, plan.md wins — update this doc or close
 
 ## Ship order (TL;DR)
 
-1. **Phase 1** — Offline catch-up summary (1–2 days)
-2. **Phase 4a** — Save versioning + migration (1 day, unblocks Phase 3)
-3. **Phase 2** — Next-goal widget (2–3 days)
+1. ~~**Phase 1** — Offline catch-up summary (1–2 days)~~ ✅ shipped
+2. ~~**Phase 4a** — Save versioning + migration (1 day, unblocks Phase 3)~~ ✅ shipped
+3. **Phase 2** — Next-goal widget (2–3 days) — **next**
 4. **Phase 4b–4d** — Cloud saves end-to-end (~1 week)
 5. **Phase 3a–3c** — Recurring NPCs (~1–2 weeks)
 6. **Phase 4e** — Narrative store (2 days, closes Milestone E5)
@@ -27,7 +27,7 @@ A code read on 2026-05-14 (see `docs/known_gaps.md`) flagged that the engine, co
 2. **Next-goal widget** — `docs/plan.md` says "there's always an obvious next goal"; the UI doesn't deliver that today.
 3. **Recurring NPCs** — `NpcDef` and `npc_dialogue` exist as types but no NPCs are in content and no NPC UI exists. Closing this loop is what makes the AI investment feel structural rather than decorative.
 
-Phase 1 and 2 are pure additive work. Phase 3 forces (and benefits from) finishing Milestone E's ID-validator and the save-versioning fix from `known_gaps.md` §2.
+Phase 1 and 2 are pure additive work. Phase 3 forces (and benefits from) finishing Milestone E's ID-validator; the save-versioning prerequisite is satisfied by Phase 4a (already shipped).
 
 ---
 
@@ -110,7 +110,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 |---|---|
 | `packages/content/data/npcs.json` | New file. Hand-author 10–12 NPCs: `{ id, name, role, locationId, personaCardId, prompts: { greeting, questIntro, ... } }`. Roles already in `types.ts`: `quartermaster, scout_captain, apothecary, scholar, emissary, generic`. |
 | `packages/content/data/index.ts` | Load `npcs.json`; add to `ContentIndex.npcsById`. |
-| `packages/shared/src/types.ts` | Add `npcsById: Record<NpcId, NpcDef>` to `ContentIndex`. Add `npcState: Record<NpcId, { firstMetAtMs?, lastInteractionMs?, affinity: number, generatedFlavor?: { description, dialogueLines } }>` to `EngineState`. Bump `EngineState.version` to `2`. **Prerequisite:** Phase 4a (save versioning + migration) must land first — see `known_gaps.md` §2. If Phase 4 hasn't started yet, do the versioning groundwork as part of 3a instead. |
+| `packages/shared/src/types.ts` | Add `npcsById: Record<NpcId, NpcDef>` to `ContentIndex`. Add `npcState: Record<NpcId, { firstMetAtMs?, lastInteractionMs?, affinity: number, generatedFlavor?: { description, dialogueLines } }>` to `EngineState`. Bump `CURRENT_ENGINE_VERSION` to `2` and add an `incoming < 2` branch in `migrateState` that fills `npcState` with `{}`. (Phase 4a already shipped the versioning + migration infrastructure.) |
 | `packages/engine/src/engine.ts` | New commands: `TALK_TO_NPC { npcId, atMs }` (records interaction, +1 affinity) and `ACCEPT_QUEST_FROM_NPC { npcId, templateId, atMs }` (links quest to NPC). Migration helper: `ensureNpcState(state)`. |
 | `packages/engine/src/engine.ts` | Modify `getAvailableQuests` to filter quest templates by NPC location + relationship (some templates need affinity ≥ N). Also a good moment to fix `getAvailableQuests`'s `Date.now()` violation from `known_gaps.md` §1. |
 
@@ -129,7 +129,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 |---|---|
 | `web/src/services/npcDialogue.ts` | New service. On first interaction with an NPC, build a `NarrativeTask { type: 'npc_dialogue', references: { npcId, locationId }, facts: { npc: npcDef, recentEvents, affinity } }`. Cache result in `EngineState.npcState[npcId].generatedFlavor`. Reuse the cached output on subsequent visits so the NPC stays "the same person." |
 | `gateway/src/server.ts` | Already accepts `npc_dialogue` task type — no change needed beyond the validation fix below. |
-| `gateway/src/server.ts` | **Prerequisite:** wire up the no-invented-IDs validator from `docs/known_gaps.md` §4 (Milestone E4). NPCs can't reliably reference items/locations until this lands. |
+| `gateway/src/server.ts` | **Prerequisite:** wire up the no-invented-IDs validator from `docs/known_gaps.md` §3 (Milestone E4). NPCs can't reliably reference items/locations until this lands. |
 | `web/src/services/adventureQuestGeneration.ts` | Tweak adventure prompts to optionally tie an adventure to a specific NPC ("{NPC name} asks you to..."), pulling from `npcsById`. |
 
 ### Acceptance
@@ -149,7 +149,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 
 ## Phase 4 — Cloud persistence (Postgres-backed saves)
 
-**Advances:** `plan.md` Milestone F1 (Accounts + cloud saves), pulled forward from future. Phase 4e additionally closes `plan.md` Milestone E5 (Narrative Store). Phase 4a (versioning) closes the longstanding A6/save-versioning aspiration that's flagged in `known_gaps.md` §2.
+**Advances:** `plan.md` Milestone F1 (Accounts + cloud saves), pulled forward from future. Phase 4e additionally closes `plan.md` Milestone E5 (Narrative Store). Phase 4a (versioning) closed the longstanding A6/save-versioning aspiration (previously `known_gaps.md` §2; removed once shipped).
 
 **Goal:** Move authoritative save storage from `localStorage` to a Postgres-backed cloud store, with auth, multi-device sync, and a foundation for narrative storage. Lays the groundwork for `plan.md` Milestone F1 ("Accounts + cloud saves") without committing to server-authoritative simulation.
 
@@ -213,7 +213,7 @@ DELETE /api/saves/:slot
 
 `PUT` does the conflict check: if `body.generation < db.generation`, return 409 with the server's version. Client decides whether to overwrite or keep local.
 
-### 4a — Versioning + migration (~1 day, prerequisite for everything)
+### 4a — Versioning + migration (~1 day, prerequisite for everything) ✅ shipped
 
 | File | Change |
 |---|---|
@@ -222,7 +222,7 @@ DELETE /api/saves/:slot
 | `packages/content/data/index.ts` | Compute or hardcode a `CONTENT_VERSION` tag and export it. |
 | `web/src/hooks/useGameEngine.ts` | Call `migrateState` on every load — both localStorage and (later) cloud. Refuse loads with `engineVersion > current`. |
 
-Closes `known_gaps.md` §2.
+Closed `known_gaps.md` §2 (entry removed from that doc once shipped).
 
 ### 4b — Schema + read-only API (~2 days)
 
@@ -309,7 +309,7 @@ Phases 1, 2, and 4 are independent of each other and can be parallelized. Phase 
 Order I'd actually ship in:
 
 1. **Phase 1** (offline summary) — small, satisfying, no dependencies.
-2. **Phase 4a** (versioning) — prerequisite for everything that follows. Closes `known_gaps.md` §2.
+2. **Phase 4a** (versioning) — prerequisite for everything that follows. Closed `known_gaps.md` §2 (entry removed from that doc once shipped).
 3. **Phase 2** (next-goal widget) — independent; ships whenever convenient.
 4. **Phase 4b–4d** (Postgres + auth + client sync) — multi-device saves working end-to-end.
 5. **Phase 3a–3c** (NPCs) — requires versioned saves, benefits from cloud sync (NPCs are per-save state that's annoying to lose).
@@ -324,7 +324,7 @@ Don't parallelize 3a/3b/3c or 4b/4c/4d — within each phase the sub-phases shar
 This plan opportunistically closes several of the gaps catalogued in `docs/known_gaps.md`:
 
 - **§1 `getAvailableQuests` reads `Date.now()`** — Phase 3a modifies that function; fix the wall-clock read at the same time.
-- **§2 Save/version compatibility** — Phase 4a is the dedicated fix (real `engineVersion` + `contentVersion` + `migrateState`). Phase 3a depends on it.
-- **§4 Milestone E partial shipping** — Phase 3c requires the no-invented-IDs validator (E4) to land first. Phase 4e closes E5 ("Narrative Store").
+- ~~**§2 Save/version compatibility**~~ — closed by Phase 4a (`engineVersion` + `contentVersion` + `migrateState` + `FutureSaveError`). Entry removed from `known_gaps.md`.
+- **§3 Milestone E partial shipping** (was §4 before §2 was removed) — Phase 3c requires the no-invented-IDs validator (E4) to land first. Phase 4e closes E5 ("Narrative Store").
 
 Promote each to a GitHub issue at the point it gets worked, and remove the entry from `known_gaps.md` when done.
