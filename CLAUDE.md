@@ -125,7 +125,7 @@ When adding a new objective/step type, update **both** `bumpQuestProgressFrom*` 
 
 - `docs/plan.md` — active roadmap. Milestones A–D are marked complete; **Milestone E (AI Narrative)** is the current/upcoming work; F–G (online, co-op) are future.
 - `docs/milestone_checklist.md` — finer-grained acceptance criteria for the same milestones.
-- `docs/roadmap_next.md` — near-term plan layered on `plan.md`: offline-catch-up summary, next-goal widget, recurring NPCs (in that order).
+- `docs/roadmap_next.md` — near-term plan layered on `plan.md`: offline-catch-up summary, next-goal widget, recurring NPCs, and Postgres-backed cloud saves (auth-provider agnostic).
 - `docs/known_gaps.md` — catalog of docs-vs-code deltas (engine invariant violations, partially-shipped Milestone E validation, schema drift, etc.). Read this before trusting the system-level docs as ground truth.
 - `docs/architecture.md`, `docs/spec.md`, `docs/design.md`, `docs/tech_stack.md` — system-level docs. They describe **intended** invariants; some are aspirational (see "AI rules" and "Save/version compatibility" above, and `docs/known_gaps.md`).
 - `docs/dev_log.md` — chronological feature log; last entry 2026-01-14, so trailing reality.
