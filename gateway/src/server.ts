@@ -10,10 +10,12 @@ import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
 import { generateUnified } from './llm/generator.js';
 import { AVAILABLE_PROVIDERS } from './llm/providers.js';
 
-// Cloud saves (Phase 4b: read-only API. Phase 4c: auth + write/delete)
+// Cloud saves (Phase 4b: read-only API. Phase 4c: auth + write/delete.
+// Phase 4e: narrative store)
 import { isDbConfigured } from './persistence/db.js';
 import { listSaves, getSave, upsertSave, deleteSave, SaveConflictError } from './persistence/saves.js';
 import { findOrCreateUser } from './persistence/users.js';
+import { saveNarrativeBlock, listNarrativeBlocks } from './persistence/narrative.js';
 import { selectAuthProvider, type AuthProvider } from './auth/index.js';
 
 interface AuthenticatedUser {
@@ -321,6 +323,86 @@ app.delete('/api/saves/:slot', requireDb, requireAuth, async (req: AuthedRequest
     res.json({ ok: true });
   } catch (err: any) {
     console.error('[saves] deleteSave failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
+// --- Narrative store (Phase 4e) ---------------------------------------
+// Per-save journal/narrative blocks. Closes Milestone E5. Keep this
+// generic — the gateway has no opinion on what gets stored beyond the
+// NarrativeBlock shape, so future features (auto-summary on quest
+// complete, NPC dialogue cache, rumor feed) can all write here.
+
+const PostNarrativeReqSchema = z.object({
+  type: z.string().min(1).max(64),
+  refs: z.record(z.string(), z.string()).optional(),
+  block: z.record(z.string(), z.any())
+});
+
+const NarrativeQuerySchema = z.object({
+  order: z.enum(['asc', 'desc']).optional(),
+  limit: z.coerce.number().int().positive().max(500).optional(),
+  type: z.string().optional() // comma-separated list, e.g. "journal_entry,rumor_feed"
+});
+
+/** Resolve `:slot` to the user's save row, or send 404. */
+async function resolveSaveSlot(req: AuthedRequest, res: express.Response, slot: number) {
+  const save = await getSave(req.user!.id, slot);
+  if (!save) {
+    res.status(404).json({ error: 'save_not_found' });
+    return null;
+  }
+  return save;
+}
+
+app.post('/api/saves/:slot/narrative', requireDb, requireAuth, async (req: AuthedRequest, res) => {
+  const slot = Number.parseInt(req.params.slot, 10);
+  if (!Number.isFinite(slot) || slot < 0) {
+    return res.status(400).json({ error: 'bad_slot' });
+  }
+  const parsed = PostNarrativeReqSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'bad_request', issues: parsed.error.flatten() });
+  }
+  try {
+    const save = await resolveSaveSlot(req, res, slot);
+    if (!save) return;
+    const stored = await saveNarrativeBlock({
+      saveId: save.id,
+      type: parsed.data.type,
+      refs: parsed.data.refs,
+      block: parsed.data.block
+    });
+    res.json({ entry: stored });
+  } catch (err: any) {
+    console.error('[narrative] save failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
+app.get('/api/saves/:slot/narrative', requireDb, requireAuth, async (req: AuthedRequest, res) => {
+  const slot = Number.parseInt(req.params.slot, 10);
+  if (!Number.isFinite(slot) || slot < 0) {
+    return res.status(400).json({ error: 'bad_slot' });
+  }
+  const parsedQuery = NarrativeQuerySchema.safeParse(req.query);
+  if (!parsedQuery.success) {
+    return res.status(400).json({ error: 'bad_request', issues: parsedQuery.error.flatten() });
+  }
+  try {
+    const save = await resolveSaveSlot(req, res, slot);
+    if (!save) return;
+    const types = parsedQuery.data.type
+      ? parsedQuery.data.type.split(',').map(s => s.trim()).filter(Boolean)
+      : undefined;
+    const entries = await listNarrativeBlocks(save.id, {
+      order: parsedQuery.data.order,
+      limit: parsedQuery.data.limit,
+      types
+    });
+    res.json({ entries });
+  } catch (err: any) {
+    console.error('[narrative] list failed', err);
     res.status(500).json({ error: 'internal', message: err.message });
   }
 });

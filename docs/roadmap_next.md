@@ -13,7 +13,7 @@ If this conflicts with `docs/plan.md`, plan.md wins — update this doc or close
 3. **Phase 2** — Next-goal widget (2–3 days) — **next**
 4. **Phase 4b–4d** — Cloud saves end-to-end (~1 week)
 5. **Phase 3a–3c** — Recurring NPCs (~1–2 weeks)
-6. **Phase 4e** — Narrative store (2 days, closes Milestone E5)
+6. ~~**Phase 4e** — Narrative store (2 days, closes Milestone E5)~~ ✅ shipped
 
 Total: ~6 weeks. See "Sequencing" near the bottom for the dependency diagram and rationale.
 
@@ -257,7 +257,7 @@ Auth provider is chosen via `AUTH_PROVIDER=supabase|dev|...` env var.
 | `web/src/hooks/useGameEngine.ts` | On mount: try cloud → fall back to localStorage. Periodic push (every N ticks or after major events like quest completion). localStorage remains the offline cache so the game still works gateway-offline. |
 | `web/src/components/SettingsModal.tsx` | Sign-in / sign-out controls. "Sync now" button. Conflict-resolution prompt when 409 returned. |
 
-### 4e — Narrative store (~2 days)
+### 4e — Narrative store (~2 days) ✅ shipped
 
 | File | Change |
 |---|---|

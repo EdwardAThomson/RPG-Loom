@@ -20,6 +20,8 @@ import { AIDebugModal } from './components/AIDebugModal';
 import { OfflineSummaryModal } from './components/OfflineSummaryModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
 import { NextGoalsPanel } from './components/NextGoalsPanel';
+import { JournalView } from './components/JournalView';
+import { useJournalAutoWrite } from './hooks/useJournalAutoWrite';
 import React from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -67,6 +69,10 @@ function AppContent() {
 
   // Re-hydrate auth state from localStorage (fire-and-forget, sync).
   useEffect(() => { initAuth(); }, []);
+
+  // Auto-write journal entries on quest completions (no-op when
+  // signed-out or gateway unreachable).
+  useJournalAutoWrite(events, content);
 
   // Compute "next goals" once per state change. Cheap (O(quests +
   // recipes + locations)) but memoizing dodges the recomputation on
@@ -220,6 +226,7 @@ function AppContent() {
           {activeTab === 'crafting' && <CraftingView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'quests' && <QuestView state={state} content={content} dispatch={dispatch} />}
+          {activeTab === 'journal' && <JournalView />}
           {/* {activeTab === 'debug' && <DebugView
             state={state}
             content={content}

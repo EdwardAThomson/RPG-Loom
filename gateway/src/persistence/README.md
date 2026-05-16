@@ -1,6 +1,6 @@
 # Cloud saves — local setup
 
-Phase 4b shipped the Postgres schema and read-only API. Phase 4c added the auth abstraction, `findOrCreateUser`, and the write/delete endpoints. The web client still uses `localStorage`; Phase 4d will wire client sync on top of this.
+Phase 4b shipped the Postgres schema and read-only API. Phase 4c added the auth abstraction, `findOrCreateUser`, and the write/delete endpoints. Phase 4d wired the web client up to push/pull saves. Phase 4e added the per-save narrative store and `JournalView`.
 
 ## When you need this
 
@@ -72,9 +72,21 @@ curl -s -X PUT -H "Authorization: Bearer alice" -H "Content-Type: application/js
 # Delete a slot.
 curl -s -X DELETE -H "Authorization: Bearer alice" \
   http://localhost:8787/api/saves/0 | jq
+
+# Narrative store: write and list entries (Phase 4e).
+curl -s -X POST -H "Authorization: Bearer alice" -H "Content-Type: application/json" \
+  -d '{"type":"journal_entry","block":{"title":"A short tale","lines":["I won."]}}' \
+  http://localhost:8787/api/saves/0/narrative | jq
+
+curl -s -H "Authorization: Bearer alice" \
+  http://localhost:8787/api/saves/0/narrative | jq
+
+# Filter by type (comma-separated):
+curl -s -H "Authorization: Bearer alice" \
+  'http://localhost:8787/api/saves/0/narrative?type=journal_entry,rumor_feed&limit=20' | jq
 ```
 
-A request without `Authorization` returns 401. Different users' saves are isolated by `user_id` server-side; one user reading another's slot gets a 404.
+A request without `Authorization` returns 401. Different users' saves are isolated by `user_id` server-side; one user reading another's slot gets a 404. Narrative blocks cascade-delete when their parent save is deleted.
 
 ## Running the tests
 
@@ -83,7 +95,7 @@ DATABASE_URL=postgres://rpg:rpg@localhost:5432/rpg_loom \
   npm -w @rpg-loom/gateway run test
 ```
 
-24 tests: 10 auth-provider unit tests run unconditionally; the 14 persistence integration tests skip silently if `DATABASE_URL` is unset.
+31 tests: 10 auth-provider unit tests run unconditionally; the 21 persistence integration tests (saves + users + narrative) skip silently if `DATABASE_URL` is unset.
 
 ## Migrations
 
