@@ -2,6 +2,7 @@ import { useGameEngine } from './hooks/useGameEngine';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import './index.css';
 import { probeGateway } from './services/gateway';
+import { initAuth } from './services/auth';
 import { getNextGoals } from '@rpg-loom/engine';
 
 // Components
@@ -17,6 +18,7 @@ import { EventView } from './components/EventView';
 import { SettingsModal } from './components/SettingsModal';
 import { AIDebugModal } from './components/AIDebugModal';
 import { OfflineSummaryModal } from './components/OfflineSummaryModal';
+import { ConflictResolutionModal } from './components/ConflictResolutionModal';
 import { NextGoalsPanel } from './components/NextGoalsPanel';
 import React from 'react';
 
@@ -53,10 +55,18 @@ function App() {
 }
 
 function AppContent() {
-  const { state, events, dispatch, content, exportSave, importSave, hardReset, tickRate, setTickRate, pendingOfflineSummary, dismissOfflineSummary } = useGameEngine();
+  const {
+    state, events, dispatch, content, exportSave, importSave, hardReset,
+    tickRate, setTickRate, pendingOfflineSummary, dismissOfflineSummary,
+    cloudStatus, pendingConflict, syncNow,
+    resolveConflictKeepLocal, resolveConflictUseServer
+  } = useGameEngine();
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
+
+  // Re-hydrate auth state from localStorage (fire-and-forget, sync).
+  useEffect(() => { initAuth(); }, []);
 
   // Compute "next goals" once per state change. Cheap (O(quests +
   // recipes + locations)) but memoizing dodges the recomputation on
@@ -175,6 +185,8 @@ function AppContent() {
         importSave={importSave}
         hardReset={hardReset}
         onClose={() => setShowSettings(false)}
+        cloudStatus={cloudStatus}
+        onSyncNow={syncNow}
       />
       }
 
@@ -185,6 +197,14 @@ function AppContent() {
           summary={pendingOfflineSummary}
           content={content}
           onClose={dismissOfflineSummary}
+        />
+      )}
+
+      {pendingConflict && (
+        <ConflictResolutionModal
+          conflict={pendingConflict}
+          onKeepLocal={resolveConflictKeepLocal}
+          onUseServer={resolveConflictUseServer}
         />
       )}
 
