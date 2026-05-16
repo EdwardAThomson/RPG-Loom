@@ -1,10 +1,10 @@
 # Cloud saves — local setup
 
-Phase 4b ships the Postgres schema and read-only API for cloud saves. There is no auth yet (Phase 4c) and no write API (Phase 4c) — every request resolves to a single dev user.
+Phase 4b shipped the Postgres schema and read-only API. Phase 4c added the auth abstraction, `findOrCreateUser`, and the write/delete endpoints. The web client still uses `localStorage`; Phase 4d will wire client sync on top of this.
 
 ## When you need this
 
-You don't, unless you're working on cloud-saves features. The gateway is usable without `DATABASE_URL` — AI/narrative endpoints continue to work and `/api/saves/*` return `503 cloud_saves_unavailable`. The web client continues to use `localStorage` until Phase 4d wires it up.
+You don't, unless you're working on cloud-saves features. The gateway is usable without `DATABASE_URL` — AI/narrative endpoints continue to work and `/api/saves/*` return `503 cloud_saves_unavailable`. Same when `AUTH_PROVIDER` is unset.
 
 ## Local Postgres in 60 seconds
 
@@ -20,19 +20,15 @@ sudo -u postgres createdb -O rpg rpg_loom
 # Apply the schema.
 PGPASSWORD=rpg psql -h localhost -U rpg -d rpg_loom \
   -f gateway/src/persistence/schema.sql
-
-# Seed a dev user with the UUID the gateway expects.
-PGPASSWORD=rpg psql -h localhost -U rpg -d rpg_loom -c "
-  insert into users (id, external_id, display_name)
-  values ('00000000-0000-0000-0000-000000000001', 'dev:1', 'Dev User')
-  on conflict (id) do nothing;
-"
 ```
+
+No need to seed a user any more — Phase 4c's `findOrCreateUser` provisions on first auth.
 
 ## Running the gateway with cloud saves
 
 ```bash
 DATABASE_URL=postgres://rpg:rpg@localhost:5432/rpg_loom \
+  AUTH_PROVIDER=dev \
   npm run dev:gateway
 ```
 
@@ -40,45 +36,54 @@ You should see:
 
 ```
 [gateway] listening on http://localhost:8787
+[gateway] auth provider: dev
 ```
 
-(Without `DATABASE_URL` you instead get the `/api/saves endpoints will return 503` warning.)
+Without `DATABASE_URL` or `AUTH_PROVIDER`, `/api/saves/*` returns 503; the AI endpoints still work.
 
-Test the endpoints:
+### Auth providers
+
+- `AUTH_PROVIDER=dev` — accepts any non-empty bearer token. The token text becomes the external id (`dev:alice` for `Authorization: Bearer alice`). Useful for local testing.
+- `AUTH_PROVIDER=supabase` — verifies HS256 JWTs against `SUPABASE_JWT_SECRET`. Get this from your Supabase project's API settings.
+- `AUTH_PROVIDER=none` — disables save endpoints entirely (they return 503).
+- Unset — implicitly `dev` if `DATABASE_URL` is set, otherwise `none`.
+
+### Exercising the API
 
 ```bash
-curl http://localhost:8787/api/saves              # → { "saves": [] }
-curl http://localhost:8787/api/saves/1            # → { "error": "not_found" } (404)
+# Register / log in. Returns { user: { id, externalId, displayName } }.
+curl -s -X POST -H "Authorization: Bearer alice" \
+  http://localhost:8787/api/auth/exchange | jq
+
+# List slots (empty for a new user).
+curl -s -H "Authorization: Bearer alice" \
+  http://localhost:8787/api/saves | jq
+
+# Write a save.
+curl -s -X PUT -H "Authorization: Bearer alice" -H "Content-Type: application/json" \
+  -d '{"engineVersion":1,"contentVersion":"2026-05-15","state":{"player":{"name":"Alice"}}}' \
+  http://localhost:8787/api/saves/0 | jq
+
+# Re-write with the wrong expectedGeneration → 409 with the current row.
+curl -s -X PUT -H "Authorization: Bearer alice" -H "Content-Type: application/json" \
+  -d '{"engineVersion":1,"contentVersion":"2026-05-15","state":{},"expectedGeneration":99}' \
+  http://localhost:8787/api/saves/0 | jq
+
+# Delete a slot.
+curl -s -X DELETE -H "Authorization: Bearer alice" \
+  http://localhost:8787/api/saves/0 | jq
 ```
 
-If you also seed a save row:
+A request without `Authorization` returns 401. Different users' saves are isolated by `user_id` server-side; one user reading another's slot gets a 404.
 
-```bash
-PGPASSWORD=rpg psql -h localhost -U rpg -d rpg_loom -c "
-  insert into saves (id, user_id, slot, engine_version, content_version, state, generation)
-  values (gen_random_uuid(), '00000000-0000-0000-0000-000000000001', 1,
-          1, '2026-05-15', '{\"player\":{\"name\":\"Hero\"}}'::jsonb, 1);
-"
-```
-
-…then `GET /api/saves/1` returns the full row including the parsed `state` blob.
-
-## Running the integration tests
+## Running the tests
 
 ```bash
 DATABASE_URL=postgres://rpg:rpg@localhost:5432/rpg_loom \
   npm -w @rpg-loom/gateway run test
 ```
 
-Tests skip silently if `DATABASE_URL` is unset — CI environments without a Postgres won't fail.
-
-## Overriding the dev user
-
-```bash
-DATABASE_URL=... DEV_USER_ID=<some-uuid> npm run dev:gateway
-```
-
-Useful if you want multiple test identities in one database. Phase 4c replaces this with real auth.
+24 tests: 10 auth-provider unit tests run unconditionally; the 14 persistence integration tests skip silently if `DATABASE_URL` is unset.
 
 ## Migrations
 

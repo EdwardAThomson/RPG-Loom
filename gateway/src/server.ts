@@ -10,9 +10,22 @@ import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
 import { generateUnified } from './llm/generator.js';
 import { AVAILABLE_PROVIDERS } from './llm/providers.js';
 
-// Cloud saves (Phase 4b: read-only API + dev user)
+// Cloud saves (Phase 4b: read-only API. Phase 4c: auth + write/delete)
 import { isDbConfigured } from './persistence/db.js';
-import { listSaves, getSave } from './persistence/saves.js';
+import { listSaves, getSave, upsertSave, deleteSave, SaveConflictError } from './persistence/saves.js';
+import { findOrCreateUser } from './persistence/users.js';
+import { selectAuthProvider, type AuthProvider } from './auth/index.js';
+
+interface AuthenticatedUser {
+  id: string;
+  externalId: string;
+  displayName: string | null;
+}
+
+// Express's Request type is augmented per-handler via a generic; for
+// readability we cast through this helper rather than declaring a
+// module augmentation.
+type AuthedRequest = express.Request & { user?: AuthenticatedUser };
 
 // --- In-memory task store (MVP) ---
 type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
@@ -171,11 +184,8 @@ app.get('/api/llm/providers', (_req, res) => {
   res.json({ providers: AVAILABLE_PROVIDERS });
 });
 
-// --- Cloud saves (Phase 4b: read-only) -------------------------------
-// Auth comes in 4c. For now, all `/api/saves/*` requests resolve to a
-// single dev user whose UUID lives in DEV_USER_ID (default below). Run
-// the schema.sql first and seed at least one user row matching this id.
-const DEV_USER_ID = process.env.DEV_USER_ID ?? '00000000-0000-0000-0000-000000000001';
+// --- Cloud saves (Phase 4b read-only + Phase 4c auth + write/delete) ---
+const authProvider: AuthProvider | null = selectAuthProvider();
 
 function requireDb(_req: express.Request, res: express.Response, next: express.NextFunction) {
   if (!isDbConfigured()) {
@@ -187,9 +197,60 @@ function requireDb(_req: express.Request, res: express.Response, next: express.N
   next();
 }
 
-app.get('/api/saves', requireDb, async (_req, res) => {
+/**
+ * Verify the bearer token, resolve the internal user, attach to req.
+ * 401 on any failure mode. Use after `requireDb` — auth depends on
+ * being able to look users up.
+ */
+async function requireAuth(req: AuthedRequest, res: express.Response, next: express.NextFunction) {
+  if (!authProvider) {
+    return res.status(503).json({
+      error: 'auth_unavailable',
+      message: 'No AUTH_PROVIDER configured on the gateway.'
+    });
+  }
+
+  const header = req.header('authorization') ?? '';
+  const [scheme, token] = header.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) {
+    return res.status(401).json({ error: 'missing_token' });
+  }
+
+  let identity;
   try {
-    const rows = await listSaves(DEV_USER_ID);
+    identity = await authProvider.verifyToken(token);
+  } catch (err) {
+    console.error('[auth] verifyToken threw', err);
+    return res.status(401).json({ error: 'invalid_token' });
+  }
+  if (!identity) {
+    return res.status(401).json({ error: 'invalid_token' });
+  }
+
+  try {
+    const user = await findOrCreateUser(identity.externalId, identity.displayName);
+    req.user = {
+      id: user.id,
+      externalId: user.externalId,
+      displayName: user.displayName
+    };
+    next();
+  } catch (err: any) {
+    console.error('[auth] findOrCreateUser failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+}
+
+// POST /api/auth/exchange — verify the caller's external token and
+// ensure they have a row in `users`. Returns the canonical user info.
+// Clients can call this on sign-in to get their userId for display.
+app.post('/api/auth/exchange', requireDb, requireAuth, (req: AuthedRequest, res) => {
+  res.json({ user: req.user });
+});
+
+app.get('/api/saves', requireDb, requireAuth, async (req: AuthedRequest, res) => {
+  try {
+    const rows = await listSaves(req.user!.id);
     res.json({ saves: rows });
   } catch (err: any) {
     console.error('[saves] listSaves failed', err);
@@ -197,17 +258,69 @@ app.get('/api/saves', requireDb, async (_req, res) => {
   }
 });
 
-app.get('/api/saves/:slot', requireDb, async (req, res) => {
+app.get('/api/saves/:slot', requireDb, requireAuth, async (req: AuthedRequest, res) => {
   const slot = Number.parseInt(req.params.slot, 10);
   if (!Number.isFinite(slot) || slot < 0) {
     return res.status(400).json({ error: 'bad_slot' });
   }
   try {
-    const row = await getSave(DEV_USER_ID, slot);
+    const row = await getSave(req.user!.id, slot);
     if (!row) return res.status(404).json({ error: 'not_found' });
     res.json({ save: row });
   } catch (err: any) {
     console.error('[saves] getSave failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
+const PutSaveReqSchema = z.object({
+  engineVersion: z.number().int().nonnegative(),
+  contentVersion: z.string().min(1),
+  state: z.record(z.string(), z.any()),
+  // Omit on first write to a slot; include on subsequent writes so the
+  // server can reject stale overwrites with 409.
+  expectedGeneration: z.number().int().nonnegative().optional()
+});
+
+app.put('/api/saves/:slot', requireDb, requireAuth, express.json({ limit: '2mb' }), async (req: AuthedRequest, res) => {
+  const slot = Number.parseInt(req.params.slot, 10);
+  if (!Number.isFinite(slot) || slot < 0) {
+    return res.status(400).json({ error: 'bad_slot' });
+  }
+  const parsed = PutSaveReqSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'bad_request', issues: parsed.error.flatten() });
+  }
+  try {
+    const saved = await upsertSave({
+      userId: req.user!.id,
+      slot,
+      engineVersion: parsed.data.engineVersion,
+      contentVersion: parsed.data.contentVersion,
+      state: parsed.data.state,
+      expectedGeneration: parsed.data.expectedGeneration
+    });
+    res.json({ save: saved });
+  } catch (err: any) {
+    if (err instanceof SaveConflictError) {
+      return res.status(409).json({ error: 'conflict', current: err.current });
+    }
+    console.error('[saves] upsertSave failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
+app.delete('/api/saves/:slot', requireDb, requireAuth, async (req: AuthedRequest, res) => {
+  const slot = Number.parseInt(req.params.slot, 10);
+  if (!Number.isFinite(slot) || slot < 0) {
+    return res.status(400).json({ error: 'bad_slot' });
+  }
+  try {
+    const deleted = await deleteSave(req.user!.id, slot);
+    if (!deleted) return res.status(404).json({ error: 'not_found' });
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error('[saves] deleteSave failed', err);
     res.status(500).json({ error: 'internal', message: err.message });
   }
 });
@@ -217,6 +330,11 @@ app.listen(PORT, () => {
   console.log(`[gateway] listening on http://localhost:${PORT}`);
   if (!isDbConfigured()) {
     console.log('[gateway] DATABASE_URL not set — /api/saves endpoints will return 503');
+  }
+  if (!authProvider) {
+    console.log('[gateway] No AUTH_PROVIDER configured — /api/saves endpoints will return 503');
+  } else {
+    console.log(`[gateway] auth provider: ${process.env.AUTH_PROVIDER ?? 'dev (implicit)'}`);
   }
 });
 
