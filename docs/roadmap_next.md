@@ -248,7 +248,7 @@ Proves the gateway can talk to Postgres end-to-end.
 
 Auth provider is chosen via `AUTH_PROVIDER=supabase|dev|...` env var.
 
-### 4d — Client sync (~3 days)
+### 4d — Client sync (~3 days) ✅ shipped
 
 | File | Change |
 |---|---|

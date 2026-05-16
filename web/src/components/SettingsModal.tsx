@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { getAISettings, saveAISettings } from '../services/aiSettings';
 import { gatewayFetch, isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
+import { CloudSaveSection } from './CloudSaveSection';
+import type { CloudSyncStatus } from '../hooks/useGameEngine';
 
 interface Props {
     exportSave: () => string;
     importSave: (str: string) => void;
     hardReset: () => void;
     onClose: () => void;
+    cloudStatus: CloudSyncStatus;
+    onSyncNow: () => Promise<void>;
 }
 
-export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Props) {
+export function SettingsModal({ exportSave, importSave, hardReset, onClose, cloudStatus, onSyncNow }: Props) {
     const [importString, setImportString] = useState('');
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
     const [showResetModal, setShowResetModal] = useState(false);
@@ -112,6 +116,8 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose }: Pr
                         <h2 style={{ margin: 0 }}>System Settings</h2>
                         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
                     </div>
+
+                    <CloudSaveSection cloudStatus={cloudStatus} onSyncNow={onSyncNow} />
 
                     {/* AI Settings */}
                     <div style={{ marginBottom: '2rem' }}>
