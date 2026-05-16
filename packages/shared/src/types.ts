@@ -520,6 +520,37 @@ export interface OfflineSummary {
   levelUps: number;
 }
 
+// ---- Next-goal widget ----
+// A short list of things the player can productively work toward next.
+// Produced by the engine, consumed by the UI; never persisted.
+export type GoalCategory = 'quest' | 'recipe' | 'location' | 'skill' | 'reputation';
+
+export type GoalActionTab =
+  | 'activity'
+  | 'travel'
+  | 'inventory'
+  | 'crafting'
+  | 'character'
+  | 'quests';
+
+export interface Goal {
+  id: string;
+  label: string;
+  category: GoalCategory;
+  // Generic 2-number progress. For quests it's quest progress; for
+  // recipes it's currentSkillLevel/requiredSkillLevel; for locations
+  // it's the closest unmet gate (e.g. player.level / minLevel).
+  progress: { current: number; required: number };
+  // Optional hint for the UI to wire "go to..." buttons.
+  actionHint?: {
+    tab: GoalActionTab;
+    recipeId?: RecipeId;
+    locationId?: LocationId;
+    questId?: QuestInstanceId;
+    questTemplateId?: QuestTemplateId;
+  };
+}
+
 // ---- Narrative tasks & outputs (gateway <-> web) ----
 export type NarrativeTaskType = 'quest_flavor' | 'npc_dialogue' | 'rumor_feed' | 'journal_entry' | 'bestiary_entry';
 

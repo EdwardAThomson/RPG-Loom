@@ -1,7 +1,8 @@
 import { useGameEngine } from './hooks/useGameEngine';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import './index.css';
 import { probeGateway } from './services/gateway';
+import { getNextGoals } from '@rpg-loom/engine';
 
 // Components
 import { Navigation, TabId } from './components/Navigation';
@@ -16,6 +17,7 @@ import { EventView } from './components/EventView';
 import { SettingsModal } from './components/SettingsModal';
 import { AIDebugModal } from './components/AIDebugModal';
 import { OfflineSummaryModal } from './components/OfflineSummaryModal';
+import { NextGoalsPanel } from './components/NextGoalsPanel';
 import React from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -55,6 +57,14 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
+
+  // Compute "next goals" once per state change. Cheap (O(quests +
+  // recipes + locations)) but memoizing dodges the recomputation on
+  // unrelated re-renders (e.g. xpRate updates).
+  const nextGoals = useMemo(
+    () => (state ? getNextGoals(state, content, 3) : []),
+    [state, content]
+  );
 
   // Probe gateway on startup (fire-and-forget, non-blocking)
   useEffect(() => { probeGateway(); }, []);
@@ -179,6 +189,8 @@ function AppContent() {
       )}
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <NextGoalsPanel goals={nextGoals} onJumpTo={setActiveTab} />
 
       <main className="tab-layout">
         <div className="tab-content" style={{ minHeight: 0, overflowY: 'auto' }}>
