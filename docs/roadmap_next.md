@@ -236,7 +236,7 @@ Closed `known_gaps.md` §2 (entry removed from that doc once shipped).
 
 Proves the gateway can talk to Postgres end-to-end.
 
-### 4c — Auth abstraction + write API (~3 days)
+### 4c — Auth abstraction + write API (~3 days) ✅ shipped
 
 | File | Change |
 |---|---|
