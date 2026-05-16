@@ -17,6 +17,7 @@ import { listSaves, getSave, upsertSave, deleteSave, SaveConflictError } from '.
 import { findOrCreateUser } from './persistence/users.js';
 import { saveNarrativeBlock, listNarrativeBlocks } from './persistence/narrative.js';
 import { selectAuthProvider, type AuthProvider } from './auth/index.js';
+import { finalizeBlock } from './narrative/finalize.js';
 
 interface AuthenticatedUser {
   id: string;
@@ -597,17 +598,8 @@ function coerceNarrativeBlockFromText(text: string, task: NarrativeTaskDTO): Nar
   };
 }
 
-function finalizeBlock(obj: any, task: NarrativeTaskDTO): NarrativeBlockDTO {
-  return {
-    id: typeof obj.id === 'string' ? obj.id : uuidv4(),
-    type: task.type,
-    createdAtMs: typeof obj.createdAtMs === 'number' ? obj.createdAtMs : Date.now(),
-    references: task.references ?? {},
-    title: typeof obj.title === 'string' ? obj.title : undefined,
-    lines: Array.isArray(obj.lines) ? obj.lines.map(String).slice(0, 6) : [String(obj.lines ?? '')].filter(Boolean).slice(0, 6),
-    tags: Array.isArray(obj.tags) ? obj.tags.map(String).slice(0, 8) : ['gemini']
-  };
-}
+// finalizeBlock + length budget enforcement lives in ./narrative/finalize.ts
+// so it's testable without importing this entire server module.
 
 function safeJsonParse(s: string): any | null {
   try {

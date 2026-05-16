@@ -31,15 +31,11 @@ Concrete mismatches:
 
 Decide: either delete `schemas.ts`, or treat it as canonical and regenerate types from it.
 
-## 3) Milestone E (AI Narrative) is partially shipped
+## 3) Milestone E (AI Narrative) — remaining work
 
-`docs/plan.md` Milestone E is the current work. Sub-tasks E1–E6 line up directly with the gaps below — they're not unknown; they're partially-done.
+`docs/plan.md` Milestone E is largely shipped. The remaining gap:
 
-- **E4 ("Output Validator: Schema + ID check + Length budget") — ID check is missing.**
-  - **Gateway side:** `gateway/src/server.ts` validates only the *shape* of output (`NarrativeBlockSchema`). `finalizeBlock` substitutes `task.references` verbatim, so AI-supplied `references` are dropped — but free text in `lines` is never scanned for invented IDs.
-  - **Adventure spec side:** `web/src/services/adventureQuestGeneration.ts:parseAdventureSpec` does **not** verify `targetEnemyId` / `targetItemId` / `targetLocationId` / `targetRecipeId` against `content.*ById` before issuing the `GENERATE_ADVENTURE_QUEST` command. An AI-invented ID produces a sub-quest that spawns but never progresses (no match in `bumpQuestProgressFromKill/Loot/Craft`). This is the highest-impact gap on this list.
-  - **Length budgets:** `NarrativeConstraints` (`maxCharsPerLine`, `maxLines`, etc.) is defined in `types.ts` but never enforced in the gateway. `finalizeBlock` caps `lines.length` to 6 and `tags.length` to 8, and that's it.
-- **Fallback content IDs.** `parseAdventureSpec` falls back to `loc_forest`, `enemy_rat`, `loc_haven` on parse failure. These exist in the content pack today; if any get renamed or removed, the fallback breaks silently. Either pin them as test fixtures or build the fallback from the live content index.
+- **E4 free-text ID scanning is still missing.** `parseAdventureSpec` now validates step-template IDs against the content pack and `finalizeBlock` enforces line/title length budgets (closed in PR for branch `claude/e4-no-invented-ids`). What's still not implemented: the gateway's `finalizeBlock` does not scan free text in `lines` for invented IDs like `enemy_dragon` mentioned in prose. Lower impact than the structured-ID case (free-text mentions don't drive engine logic) but worth a follow-up that imports the content pack into the gateway and substitutes/strips unknown ID tokens.
 
 ## 4) Cross-component inconsistencies
 

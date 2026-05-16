@@ -60,7 +60,7 @@ export async function generateAdventureQuest(
     }
 
     const { text } = await response.json();
-    return parseAdventureSpec(text, playerLevel);
+    return parseAdventureSpec(text, playerLevel, content);
 }
 
 /**
@@ -178,72 +178,189 @@ IMPORTANT: Return ONLY valid JSON (no markdown, no code blocks). Ensure all IDs 
 }
 
 /**
- * Parse AI response into adventure spec
+ * Validate a step's template against the content pack. Returns the
+ * normalised template if every referenced ID exists, or null if any
+ * required ID is missing — closes the highest-impact gap in
+ * `docs/known_gaps.md` §3 ("E4 — no invented IDs"), where an AI-invented
+ * id would produce a sub-quest the engine can never progress.
  */
-function parseAdventureSpec(text: string, playerLevel: number): AdventureQuestSpec {
+function validateStepTemplate(template: any, content: ContentIndex): AdventureStepTemplate | null {
+    if (!template || typeof template !== 'object') return null;
+    switch (template.type) {
+        case 'kill': {
+            const enemyId = String(template.targetEnemyId ?? '');
+            const qty = Number(template.qty);
+            if (!enemyId || !content.enemiesById[enemyId]) return null;
+            if (!Number.isFinite(qty) || qty < 1) return null;
+            return { type: 'kill', targetEnemyId: enemyId, qty: Math.floor(qty) };
+        }
+        case 'gather': {
+            const itemId = String(template.targetItemId ?? '');
+            const qty = Number(template.qty);
+            if (!itemId || !content.itemsById[itemId]) return null;
+            if (!Number.isFinite(qty) || qty < 1) return null;
+            return { type: 'gather', targetItemId: itemId, qty: Math.floor(qty) };
+        }
+        case 'travel': {
+            const locationId = String(template.targetLocationId ?? '');
+            if (!locationId || !content.locationsById[locationId]) return null;
+            return { type: 'travel', targetLocationId: locationId };
+        }
+        case 'explore': {
+            const locationId = String(template.targetLocationId ?? '');
+            const durationMs = Number(template.durationMs ?? 30000);
+            if (!locationId || !content.locationsById[locationId]) return null;
+            if (!Number.isFinite(durationMs) || durationMs < 1000) return null;
+            return { type: 'explore', targetLocationId: locationId, durationMs: Math.floor(durationMs) };
+        }
+        case 'craft': {
+            const recipeId = String(template.targetRecipeId ?? '');
+            const qty = Number(template.qty);
+            if (!recipeId || !content.recipesById[recipeId]) return null;
+            if (!Number.isFinite(qty) || qty < 1) return null;
+            return { type: 'craft', targetRecipeId: recipeId, qty: Math.floor(qty) };
+        }
+        case 'deliver': {
+            const itemId = String(template.targetItemId ?? '');
+            const locationId = String(template.targetLocationId ?? '');
+            const qty = Number(template.qty);
+            if (!itemId || !content.itemsById[itemId]) return null;
+            if (!locationId || !content.locationsById[locationId]) return null;
+            if (!Number.isFinite(qty) || qty < 1) return null;
+            return { type: 'deliver', targetItemId: itemId, targetLocationId: locationId, qty: Math.floor(qty) };
+        }
+        default:
+            return null;
+    }
+}
+
+/**
+ * Build a 2–3 step adventure from whatever the content pack actually
+ * contains, so the fallback path doesn't depend on hardcoded IDs that
+ * might be renamed/removed (the other half of `known_gaps.md` §3).
+ *
+ * Conservative — prefers low-level enemies and locations without
+ * requirements gates so the fallback works for a fresh save.
+ */
+function buildSafeFallback(content: ContentIndex, playerLevel: number): AdventureQuestSpec {
+    const locations = Object.values(content.locationsById);
+    const enemies = Object.values(content.enemiesById);
+
+    // Prefer ungated locations; if none, take any location.
+    const safeLocations = locations.filter(l => !l.requirements);
+    const exploreLocation = safeLocations[0] ?? locations[0];
+    // Prefer a different location for the "return" step so the player travels.
+    const returnLocation = (safeLocations.find(l => l.id !== exploreLocation?.id) ?? safeLocations[0] ?? locations[0]);
+    // Pick the lowest-level enemy available.
+    const targetEnemy = [...enemies].sort((a, b) => (a.levelMin ?? 1) - (b.levelMin ?? 1))[0];
+
+    const steps: AdventureQuestSpec['steps'] = [];
+    if (exploreLocation) {
+        steps.push({
+            stepNumber: steps.length + 1,
+            template: { type: 'explore', targetLocationId: exploreLocation.id, durationMs: 30000 },
+            narrative: { description: `Explore ${exploreLocation.name}` }
+        });
+    }
+    if (targetEnemy) {
+        steps.push({
+            stepNumber: steps.length + 1,
+            template: { type: 'kill', targetEnemyId: targetEnemy.id, qty: 3 },
+            narrative: { description: `Face the challenge ahead` }
+        });
+    }
+    if (returnLocation && returnLocation.id !== exploreLocation?.id) {
+        steps.push({
+            stepNumber: steps.length + 1,
+            template: { type: 'travel', targetLocationId: returnLocation.id },
+            narrative: { description: `Return to ${returnLocation.name}` }
+        });
+    }
+
+    const levelMultiplier = Math.max(1, playerLevel / 10);
+    return {
+        title: 'A Simple Quest',
+        description: 'Sometimes the simplest quests are the most rewarding.',
+        steps,
+        difficulty: 2,
+        rewards: {
+            xp: Math.floor(200 * levelMultiplier),
+            gold: Math.floor(100 * levelMultiplier)
+        }
+    };
+}
+
+/**
+ * Parse AI response into adventure spec. Drops steps that reference
+ * IDs not present in the content pack; if every step is invalid (or
+ * the JSON itself fails to parse), returns a fallback built from
+ * content rather than hardcoded IDs.
+ *
+ * Exported for unit tests; production code goes through
+ * `generateAdventureQuest`.
+ */
+export function parseAdventureSpec(text: string, playerLevel: number, content: ContentIndex): AdventureQuestSpec {
+    const levelMultiplier = Math.max(1, playerLevel / 10);
+    let parsed: any;
     try {
-        // Remove markdown code blocks if present
         let cleaned = text.trim();
         cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
-
-        const parsed = JSON.parse(cleaned);
-
-        // Validate and normalize steps
-        const steps = (parsed.steps || []).map((s: any, idx: number) => ({
-            stepNumber: s.stepNumber || idx + 1,
-            template: s.template || { type: 'explore', targetLocationId: 'loc_forest', durationMs: 30000 },
-            narrative: {
-                description: s.narrative?.description || s.description || 'Continue the adventure',
-                context: s.narrative?.context
-            }
-        }));
-
-        // Scale rewards based on player level
-        const baseXp = parsed.rewards?.xp || 300;
-        const baseGold = parsed.rewards?.gold || 150;
-        const levelMultiplier = Math.max(1, playerLevel / 10);
-
-        return {
-            title: parsed.title || 'Mysterious Adventure',
-            description: parsed.description || 'An adventure awaits...',
-            steps,
-            difficulty: parsed.difficulty || 3,
-            rewards: {
-                xp: Math.floor(baseXp * levelMultiplier),
-                gold: Math.floor(baseGold * levelMultiplier),
-                items: parsed.rewards?.items || []
-            }
-        };
+        parsed = JSON.parse(cleaned);
     } catch (error) {
         console.error('Failed to parse adventure spec:', error);
         console.error('Raw text:', text);
-
-        // Fallback adventure with template-based steps
-        return {
-            title: 'A Simple Quest',
-            description: 'Sometimes the simplest quests are the most rewarding.',
-            steps: [
-                {
-                    stepNumber: 1,
-                    template: { type: 'explore', targetLocationId: 'loc_forest', durationMs: 30000 },
-                    narrative: { description: 'Explore the area and gather your courage' }
-                },
-                {
-                    stepNumber: 2,
-                    template: { type: 'kill', targetEnemyId: 'enemy_rat', qty: 3 },
-                    narrative: { description: 'Face the challenge ahead' }
-                },
-                {
-                    stepNumber: 3,
-                    template: { type: 'travel', targetLocationId: 'loc_haven' },
-                    narrative: { description: 'Return victorious' }
-                }
-            ],
-            difficulty: 2,
-            rewards: {
-                xp: 200 * Math.max(1, playerLevel / 10),
-                gold: 100 * Math.max(1, playerLevel / 10)
-            }
-        };
+        return buildSafeFallback(content, playerLevel);
     }
+
+    const rawSteps: any[] = Array.isArray(parsed?.steps) ? parsed.steps : [];
+    const validSteps: AdventureQuestSpec['steps'] = [];
+    let droppedCount = 0;
+    for (let idx = 0; idx < rawSteps.length; idx++) {
+        const s = rawSteps[idx];
+        const validatedTemplate = validateStepTemplate(s?.template, content);
+        if (!validatedTemplate) {
+            droppedCount++;
+            console.warn('[adventureQuest] dropped step with invalid IDs:', s?.template);
+            continue;
+        }
+        validSteps.push({
+            stepNumber: validSteps.length + 1,
+            template: validatedTemplate,
+            narrative: {
+                description: s?.narrative?.description || s?.description || 'Continue the adventure',
+                context: s?.narrative?.context
+            }
+        });
+    }
+
+    if (validSteps.length === 0) {
+        if (droppedCount > 0) {
+            console.warn(`[adventureQuest] all ${droppedCount} step(s) had invalid IDs; falling back`);
+        }
+        return buildSafeFallback(content, playerLevel);
+    }
+
+    const baseXp = typeof parsed?.rewards?.xp === 'number' ? parsed.rewards.xp : 300;
+    const baseGold = typeof parsed?.rewards?.gold === 'number' ? parsed.rewards.gold : 150;
+    const difficulty = (parsed?.difficulty >= 1 && parsed?.difficulty <= 5) ? parsed.difficulty : 3;
+
+    // Reward items reference itemIds — validate too. AI-invented item
+    // rewards would silently never appear in the player's inventory.
+    const rawItems = Array.isArray(parsed?.rewards?.items) ? parsed.rewards.items : [];
+    const validItems = rawItems.filter((it: any) =>
+        it && typeof it.itemId === 'string' && content.itemsById[it.itemId] &&
+        typeof it.qty === 'number' && it.qty > 0
+    ).map((it: any) => ({ itemId: it.itemId, qty: Math.floor(it.qty) }));
+
+    return {
+        title: typeof parsed?.title === 'string' ? parsed.title : 'Mysterious Adventure',
+        description: typeof parsed?.description === 'string' ? parsed.description : 'An adventure awaits...',
+        steps: validSteps,
+        difficulty: difficulty as 1 | 2 | 3 | 4 | 5,
+        rewards: {
+            xp: Math.floor(baseXp * levelMultiplier),
+            gold: Math.floor(baseGold * levelMultiplier),
+            items: validItems
+        }
+    };
 }
