@@ -104,7 +104,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 
 **Size:** 1–2 weeks, split into three sub-phases.
 
-### 3a — NPC content + engine state (~3 days)
+### 3a — NPC content + engine state (~3 days) ✅ shipped
 
 | File | Change |
 |---|---|

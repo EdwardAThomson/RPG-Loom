@@ -54,8 +54,9 @@ export function QuestView({ state, content, dispatch }: Props) {
     });
     const completedQuests = state.quests.filter(q => q.status === 'completed');
 
-    // Get available quests using new filtering logic
-    const availableQuests = content ? getAvailableQuests(state, content) : [];
+    // Get available quests using new filtering logic. Pass `Date.now()`
+    // from the UI rather than letting the engine read the wall clock.
+    const availableQuests = content ? getAvailableQuests(state, content, Date.now()) : [];
 
     // Sort by difficulty
     availableQuests.sort((a, b) => a.difficulty - b.difficulty);

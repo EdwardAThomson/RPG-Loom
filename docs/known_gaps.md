@@ -10,8 +10,7 @@ When you've decided whether a gap is intentional or a real bug, either fix it, f
 
 The "engine is pure, deterministic, no IO, no wall-clock" rules are repeated in `docs/architecture.md`, `docs/tech_stack.md`, and the README. Today's code mostly holds the line, with these exceptions:
 
-- **`getAvailableQuests` reads `Date.now()`.** `packages/engine/src/engine.ts:1786` — uses `Date.now()` to check daily-quest cooldowns. It should take `nowMs` as an argument like `step` / `simulateOffline` do. Callers (UI quest board) already have a clock; pass it in.
-- **No engine-internal validation of `EngineState`.** `applyCommand` / `step` accept whatever is handed in. The doc says "engine must not throw uncaught — surface failures as `ERROR` events with state intact." That holds for known command paths, but malformed loaded state (e.g. missing `questAvailability`) is patched up by ad-hoc lazy migrations (`ensureQuestAvailability`, `ensureIntrinsicStats`, `ensureAllSkills`) rather than a single validate-on-load step.
+- **No engine-internal shape validation of `EngineState`.** `migrateState` (Phase 4a) is the single validate-on-load step in spirit, but it only patches missing fields — it doesn't reject malformed shapes (e.g. `quests` arriving as a non-array would still propagate into the engine). A zod-based load-time validator at the `migrateState` boundary would close this. The `ensure*` helpers it calls are now centralized rather than scattered, so the remaining work is type-level only.
 
 ## 2) `packages/shared/src/schemas.ts` drifts from `types.ts`
 
