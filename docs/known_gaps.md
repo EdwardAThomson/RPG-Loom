@@ -39,7 +39,6 @@ Decide: either delete `schemas.ts`, or treat it as canonical and regenerate type
   - **Gateway side:** `gateway/src/server.ts` validates only the *shape* of output (`NarrativeBlockSchema`). `finalizeBlock` substitutes `task.references` verbatim, so AI-supplied `references` are dropped — but free text in `lines` is never scanned for invented IDs.
   - **Adventure spec side:** `web/src/services/adventureQuestGeneration.ts:parseAdventureSpec` does **not** verify `targetEnemyId` / `targetItemId` / `targetLocationId` / `targetRecipeId` against `content.*ById` before issuing the `GENERATE_ADVENTURE_QUEST` command. An AI-invented ID produces a sub-quest that spawns but never progresses (no match in `bumpQuestProgressFromKill/Loot/Craft`). This is the highest-impact gap on this list.
   - **Length budgets:** `NarrativeConstraints` (`maxCharsPerLine`, `maxLines`, etc.) is defined in `types.ts` but never enforced in the gateway. `finalizeBlock` caps `lines.length` to 6 and `tags.length` to 8, and that's it.
-- **E5 ("Narrative Store: Persist blocks per save slot") — not implemented.** Narratives live in `QuestInstanceState.aiNarrative` for quest enhancements, but there's no separate store keyed by save slot.
 - **Fallback content IDs.** `parseAdventureSpec` falls back to `loc_forest`, `enemy_rat`, `loc_haven` on parse failure. These exist in the content pack today; if any get renamed or removed, the fallback breaks silently. Either pin them as test fixtures or build the fallback from the live content index.
 
 ## 4) Cross-component inconsistencies
