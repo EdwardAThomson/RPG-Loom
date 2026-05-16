@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo \"(gateway) lint: add eslint later\"",
-    "test": "echo \"(gateway) test: add later\""
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -17,14 +17,17 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "openai": "^6.16.0",
+    "pg": "^8.20.0",
     "uuid": "^9.0.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/pg": "^8.20.0",
     "@types/uuid": "^9.0.0",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.6"
   }
 }
