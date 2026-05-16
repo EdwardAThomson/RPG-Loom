@@ -224,7 +224,7 @@ DELETE /api/saves/:slot
 
 Closed `known_gaps.md` §2 (entry removed from that doc once shipped).
 
-### 4b — Schema + read-only API (~2 days)
+### 4b — Schema + read-only API (~2 days) ✅ shipped
 
 | File | Change |
 |---|---|

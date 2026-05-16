@@ -10,6 +10,10 @@ import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
 import { generateUnified } from './llm/generator.js';
 import { AVAILABLE_PROVIDERS } from './llm/providers.js';
 
+// Cloud saves (Phase 4b: read-only API + dev user)
+import { isDbConfigured } from './persistence/db.js';
+import { listSaves, getSave } from './persistence/saves.js';
+
 // --- In-memory task store (MVP) ---
 type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
 
@@ -167,9 +171,53 @@ app.get('/api/llm/providers', (_req, res) => {
   res.json({ providers: AVAILABLE_PROVIDERS });
 });
 
+// --- Cloud saves (Phase 4b: read-only) -------------------------------
+// Auth comes in 4c. For now, all `/api/saves/*` requests resolve to a
+// single dev user whose UUID lives in DEV_USER_ID (default below). Run
+// the schema.sql first and seed at least one user row matching this id.
+const DEV_USER_ID = process.env.DEV_USER_ID ?? '00000000-0000-0000-0000-000000000001';
+
+function requireDb(_req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (!isDbConfigured()) {
+    return res.status(503).json({
+      error: 'cloud_saves_unavailable',
+      message: 'DATABASE_URL is not set on the gateway.'
+    });
+  }
+  next();
+}
+
+app.get('/api/saves', requireDb, async (_req, res) => {
+  try {
+    const rows = await listSaves(DEV_USER_ID);
+    res.json({ saves: rows });
+  } catch (err: any) {
+    console.error('[saves] listSaves failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
+app.get('/api/saves/:slot', requireDb, async (req, res) => {
+  const slot = Number.parseInt(req.params.slot, 10);
+  if (!Number.isFinite(slot) || slot < 0) {
+    return res.status(400).json({ error: 'bad_slot' });
+  }
+  try {
+    const row = await getSave(DEV_USER_ID, slot);
+    if (!row) return res.status(404).json({ error: 'not_found' });
+    res.json({ save: row });
+  } catch (err: any) {
+    console.error('[saves] getSave failed', err);
+    res.status(500).json({ error: 'internal', message: err.message });
+  }
+});
+
 const PORT = Number(process.env.PORT ?? 8787);
 app.listen(PORT, () => {
   console.log(`[gateway] listening on http://localhost:${PORT}`);
+  if (!isDbConfigured()) {
+    console.log('[gateway] DATABASE_URL not set — /api/saves endpoints will return 503');
+  }
 });
 
 // --- Helper: Get API key for provider ---
