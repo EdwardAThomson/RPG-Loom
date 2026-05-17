@@ -41,7 +41,11 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@rpg-loom/engine': path.resolve(__dirname, '../packages/engine/src/index.ts'),
         '@rpg-loom/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
-        '@rpg-loom/content': path.resolve(__dirname, '../packages/content/dist/index.js'),
+        // Source-aliased like engine/shared so adding a new content
+        // JSON (e.g. npcs.json) doesn't silently 404 in the UI when
+        // someone forgets to rebuild `packages/content/dist`. Vite
+        // handles `.json` imports natively.
+        '@rpg-loom/content': path.resolve(__dirname, '../packages/content/data/index.ts'),
         '@rpg-loom/sdk': path.resolve(__dirname, '../sdk/src/index.ts'),
       },
     },
