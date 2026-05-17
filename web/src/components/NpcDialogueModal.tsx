@@ -140,13 +140,15 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                                 color: generating ? '#888' : '#c084fc',
                                 cursor: generating ? 'wait' : 'pointer'
                             }}
-                            title={flavor ? 'Re-roll their voice' : 'Generate AI dialogue for this NPC'}
+                            title={flavor
+                                ? 'Re-roll their bearing and dialogue (text only — no audio).'
+                                : 'Generate AI-written bearing and dialogue lines for this NPC (text only).'}
                         >
                             {generating
-                                ? '✨ Generating…'
+                                ? '✨ Imagining…'
                                 : flavor
                                     ? '✨ Re-imagine them'
-                                    : '✨ Generate their voice'}
+                                    : '✨ Imagine them'}
                         </button>
                         {generationError && (
                             <p style={{ color: '#d44', fontSize: '0.8rem', marginTop: '0.4rem', marginBottom: 0 }}>
