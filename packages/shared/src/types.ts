@@ -63,6 +63,7 @@ export interface ContentIndex {
   locationsById: Record<string, LocationDef>;
   questTemplatesById: Record<string, QuestTemplateDef>;
   recipesById: Record<string, RecipeDef>;
+  npcsById: Record<string, NpcDef>;
 }
 
 export interface ItemDef {
@@ -167,6 +168,36 @@ export interface NpcDef {
   role: 'quartermaster' | 'scout_captain' | 'apothecary' | 'scholar' | 'emissary' | 'generic';
   locationId: LocationId;
   personaCardId?: string; // narrative-only
+  /**
+   * Authored fallback prompts. Used both as seed context for AI flavor
+   * generation in Phase 3c and as the text actually shown when AI is
+   * disabled — the game must be fully playable without the gateway.
+   */
+  prompts?: {
+    greeting?: string;
+    questIntro?: string;
+    topic?: string;
+  };
+}
+
+export interface NpcStateEntry {
+  firstMetAtMs?: number;
+  lastInteractionMs?: number;
+  /**
+   * Affinity grows with each TALK_TO_NPC and successful quest from
+   * this NPC. Capped at AFFINITY_CAP in the engine.
+   */
+  affinity: number;
+  /**
+   * AI-generated flavor for this NPC, persisted so subsequent visits
+   * show the same dialogue rather than re-generating each time.
+   * Populated by Phase 3c; absent for now.
+   */
+  generatedFlavor?: {
+    description: string;
+    dialogueLines: string[];
+    generatedAtMs?: number;
+  };
 }
 
 export interface RecipeDef {
@@ -340,6 +371,10 @@ export interface EngineState {
     chainProgress?: number; // Current step in chain (for chain entries keyed by chainId)
   }>;
 
+  // Per-NPC interaction state. Backfilled by migrateState for saves
+  // from before Phase 3a (engineVersion < 2).
+  npcState: Record<NpcId, NpcStateEntry>;
+
   // metrics tracking
   metrics: EngineMetrics;
 }
@@ -449,6 +484,14 @@ export type PlayerCommand =
       };
     };
     atMs: number;
+  }
+  | {
+    // Phase 3a: record an interaction with an NPC. Increments their
+    // affinity (capped engine-side) and stamps first/last interaction
+    // timestamps. Reject silently if `npcId` is not in the content pack.
+    type: 'TALK_TO_NPC';
+    npcId: NpcId;
+    atMs: number;
   };
 
 // ---- Rewards / loot ----
@@ -498,6 +541,7 @@ export type GameEvent =
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
   | BaseEvent<'ERROR', { code: string; message: string }>
   | BaseEvent<'FLAVOR_TEXT', { message: string }>
+  | BaseEvent<'NPC_INTERACTED', { npcId: NpcId; affinity: number; firstMeet: boolean }>
   ;
 
 export interface BaseEvent<TType extends string, TPayload> {

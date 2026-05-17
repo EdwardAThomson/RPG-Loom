@@ -40,7 +40,8 @@ const CONTENT: ContentIndex = {
             inputs: [{ itemId: 'item_wood', qty: 2 }], outputs: [{ itemId: 'item_wood', qty: 1 }]
         }
     },
-    questTemplatesById: {}
+    questTemplatesById: {},
+    npcsById: {}
 };
 
 beforeEach(() => {

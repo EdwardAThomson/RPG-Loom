@@ -52,7 +52,14 @@ export const MAX_OFFLINE_MS = 24 * 60 * 60 * 1000;
 
 // Bump when the shape of EngineState changes. migrateState handles
 // upgrades from lower values; higher values cause a refused load.
-export const CURRENT_ENGINE_VERSION = 1;
+//   v1 — initial shape (Phase 4a versioning).
+//   v2 — adds `npcState` (Phase 3a recurring NPCs).
+export const CURRENT_ENGINE_VERSION = 2;
+
+// Affinity earned per TALK_TO_NPC. Capped so it can't trivialize NPC
+// gating once that's wired up in 3b/3c.
+const AFFINITY_PER_INTERACTION = 1;
+export const AFFINITY_CAP = 100;
 
 // Canonical list of skills. Owned by the engine so migrations and
 // createNewState stay in sync.
@@ -139,6 +146,7 @@ export function createNewState(params: {
     equipment: {},
     quests: [],
     questAvailability: {}, // Quest replenishment tracking
+    npcState: {}, // Per-NPC interaction tracking (Phase 3a)
     activity: {
       id: 'act_idle_0',
       params: { type: 'idle' },
@@ -398,6 +406,34 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
           locationId: cmd.locationId
         })
       );
+      break;
+    }
+
+    case 'TALK_TO_NPC': {
+      // Reject silently if content lookup fails — same shape as
+      // applyCommand's other "unknown id" branches.
+      if (!content || !content.npcsById[cmd.npcId]) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'NPC_MISSING',
+          message: `Unknown NPC ${cmd.npcId}`
+        }));
+        break;
+      }
+      ensureNpcState(next);
+      const existing = next.npcState[cmd.npcId];
+      const firstMeet = !existing || existing.firstMetAtMs === undefined;
+      const entry = existing ?? { affinity: 0 };
+      if (firstMeet) {
+        entry.firstMetAtMs = cmd.atMs;
+      }
+      entry.lastInteractionMs = cmd.atMs;
+      entry.affinity = Math.min(AFFINITY_CAP, (entry.affinity ?? 0) + AFFINITY_PER_INTERACTION);
+      next.npcState[cmd.npcId] = entry;
+      events.push(ev(next, cmd.atMs, 'NPC_INTERACTED', {
+        npcId: cmd.npcId,
+        affinity: entry.affinity,
+        firstMeet
+      }));
       break;
     }
 
@@ -1720,6 +1756,12 @@ function ensureIntrinsicStats(state: EngineState) {
   }
 }
 
+function ensureNpcState(state: EngineState) {
+  if (!state.npcState) {
+    state.npcState = {};
+  }
+}
+
 function ensureQuestAvailability(state: EngineState) {
   if (!state.questAvailability) {
     state.questAvailability = {};
@@ -1775,9 +1817,14 @@ export function migrateState(raw: any, currentContentVersion: string): EngineSta
     throw new FutureSaveError(incoming, CURRENT_ENGINE_VERSION);
   }
 
-  // Per-version migrations would go here as `if (incoming < N) { ... }`
-  // steps. Today there's only one version, so the migration is purely
-  // shape-fixup + re-stamp.
+  // Per-version migrations live here as `if (incoming < N) { ... }`
+  // steps. Each step brings a save from version (N-1) to version N.
+  if (incoming < 2) {
+    // v2 introduced npcState (Phase 3a). Old saves get an empty map.
+    if (!raw.npcState || typeof raw.npcState !== 'object') {
+      raw.npcState = {};
+    }
+  }
 
   // Drop the old field name if present.
   if ('version' in raw) {
@@ -1791,6 +1838,7 @@ export function migrateState(raw: any, currentContentVersion: string): EngineSta
   ensureAllSkills(state);
   ensureIntrinsicStats(state);
   ensureQuestAvailability(state);
+  ensureNpcState(state);
 
   return state;
 }
@@ -1878,10 +1926,24 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
 // ---- Quest Availability Helper ----
 
 /**
- * Get available quests for the current location, respecting replenishment rules
+ * Get available quests for the current location, respecting replenishment rules.
+ *
+ * `nowMs` is required and must be the same wall-clock the UI uses for
+ * cooldown checks — previously this read `Date.now()` directly, which
+ * violated the no-wall-clock-reads-in-engine invariant (`known_gaps.md`
+ * §1). For backward compatibility the parameter is optional and falls
+ * back to `Date.now()` with a console warning; new callers should pass
+ * it explicitly.
  */
-export function getAvailableQuests(state: EngineState, content: ContentIndex): QuestTemplateDef[] {
-  const now = Date.now();
+export function getAvailableQuests(state: EngineState, content: ContentIndex, nowMs?: number): QuestTemplateDef[] {
+  if (nowMs === undefined) {
+    // Legacy callers haven't been updated yet. Warn loudly so they
+    // surface in dev — the deterministic-engine rule is real.
+    // eslint-disable-next-line no-console
+    console.warn('[engine] getAvailableQuests called without nowMs; falling back to Date.now()');
+    nowMs = Date.now();
+  }
+  const now = nowMs;
   const available: QuestTemplateDef[] = [];
 
   // Ensure state is migrated for old saves

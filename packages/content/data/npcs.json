@@ -1,0 +1,134 @@
+[
+  {
+    "id": "npc_aldric",
+    "name": "Aldric the Quartermaster",
+    "role": "quartermaster",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Good to see another willing pair of hands. The stores are thin, and the road is long.",
+      "questIntro": "I'm short on supplies — if you can spare the time, I'd see you well-paid for the trouble.",
+      "topic": "He keeps the guild's storeroom and weighs every coin twice. Was a caravan guard before a bad winter cost him three fingers."
+    }
+  },
+  {
+    "id": "npc_mira",
+    "name": "Mira, Scout Captain",
+    "role": "scout_captain",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Eyes on the treeline. The forest hasn't been quiet since the harvest moon.",
+      "questIntro": "Something's been thinning the patrols. I need a blade willing to walk the bad mile.",
+      "topic": "Veteran ranger who runs the Haven scouts. Speaks little, watches everything. Carries a bow most archers can't draw."
+    }
+  },
+  {
+    "id": "npc_branna",
+    "name": "Branna the Apothecary",
+    "role": "apothecary",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Mind the jars, dear. Some of these will weep if you stare too long.",
+      "questIntro": "I've a recipe that calls for ingredients you won't find on a market stall. Up for a wander?",
+      "topic": "Herbalist and rumored hedge witch. Trades remedies for stories and occasionally the truth."
+    }
+  },
+  {
+    "id": "npc_vidar",
+    "name": "Vidar the Scholar",
+    "role": "scholar",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Ah — a willing reader? Or a willing climber? The library has need of both.",
+      "questIntro": "There are places marked on these maps that have no business existing. Walk one with me, even if only in proxy.",
+      "topic": "Catalogs ruins, ledgers, and bestiary entries. Believes the world is older than the histories admit."
+    }
+  },
+  {
+    "id": "npc_lyra",
+    "name": "Lyra the Emissary",
+    "role": "emissary",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Walk softly past this table. The wrong ears could undo a year of careful work.",
+      "questIntro": "A favor for a friend, paid in coin and quieter gratitudes. Are you discreet?",
+      "topic": "Speaks for several factions, owes loyalty to none. Treaties she's drafted have outlasted the kings who signed them."
+    }
+  },
+  {
+    "id": "npc_tovan",
+    "name": "Tovan, Master Smith",
+    "role": "generic",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Hot iron first, conversation second. Bench's free if you've got steady hands.",
+      "questIntro": "I need ore the merchants won't sell, of a kind that doesn't sing in the cart. You game?",
+      "topic": "Built the gates of Haven himself. Half the guild's swords carry his maker's mark; the other half wish they did."
+    }
+  },
+  {
+    "id": "npc_marrick",
+    "name": "Old Marrick",
+    "role": "generic",
+    "locationId": "loc_haven",
+    "prompts": {
+      "greeting": "Sit, sit. The fire knows you, even if I don't yet.",
+      "questIntro": "There's a thread I've been pulling on for forty years. I think I finally need a younger hand to follow it.",
+      "topic": "The Haven elder. Tells stories that turn out to be maps. Knows more than he lets on, and lets on more than is wise."
+    }
+  },
+  {
+    "id": "npc_eolyn",
+    "name": "Eolyn the Ranger",
+    "role": "scout_captain",
+    "locationId": "loc_forest",
+    "prompts": {
+      "greeting": "Step where I step. The forest forgives mistakes only twice.",
+      "questIntro": "Something's been moving against the grain in here. I want a second pair of eyes, and a sharper pair of teeth.",
+      "topic": "Lives among the boughs and won't say where she sleeps. Reads tracks the way scholars read books."
+    }
+  },
+  {
+    "id": "npc_brokk",
+    "name": "Brokk, Quarry-Boss",
+    "role": "quartermaster",
+    "locationId": "loc_quarry",
+    "prompts": {
+      "greeting": "Mind the loose stone. The Quarry takes a finger before it takes a friend.",
+      "questIntro": "The deep seams have gone strange. I need ore from a face most won't touch.",
+      "topic": "Runs the cutting crews. His grandfather opened these tunnels; his cousin closed half of them. He doesn't talk about which."
+    }
+  },
+  {
+    "id": "npc_vesna",
+    "name": "Vesna the Hermit",
+    "role": "apothecary",
+    "locationId": "loc_swamp",
+    "prompts": {
+      "greeting": "You waded all this way. I'd say I'm flattered, but the swamp does most of the inviting.",
+      "questIntro": "There's a bloom that only opens when the water is wrong. I'd fetch it myself, but my hip's been wrong for a decade.",
+      "topic": "Lives where the road ends. Trades cures no one else can make for favors that come due years later."
+    }
+  },
+  {
+    "id": "npc_kael",
+    "name": "Kael the Lost",
+    "role": "generic",
+    "locationId": "loc_catacombs",
+    "prompts": {
+      "greeting": "You hear it too, don't you. Down here, even the silence has a name.",
+      "questIntro": "I came down to find someone. I think I found her, but she's not… finished. I need a witness.",
+      "topic": "Wanderer who never quite leaves the catacombs. Speaks gently to no one in particular and waits for answers."
+    }
+  },
+  {
+    "id": "npc_daria",
+    "name": "Daria the Engineer",
+    "role": "scholar",
+    "locationId": "loc_clockwork",
+    "prompts": {
+      "greeting": "Mind the gears. They don't dislike you yet, but they're working on it.",
+      "questIntro": "The Enclave's old escapements are slipping. I need parts that the workshops in Haven simply don't make any more.",
+      "topic": "Inherited the Clockwork Enclave from a teacher who walked into one of its rooms and never came back out."
+    }
+  }
+]
