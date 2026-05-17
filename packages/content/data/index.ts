@@ -9,7 +9,7 @@ import npcs from './npcs.json';
 // Bump this whenever the shape of any content JSON changes in a way
 // that loaded saves might depend on (renamed IDs, removed entries, new
 // required fields). Saves carry their last-seen value as contentVersion.
-export const CONTENT_VERSION = '2026-05-15';
+export const CONTENT_VERSION = '2026-05-17';
 
 export const itemsById = Object.fromEntries(items.map(x => [x.id, x]));
 export const enemiesById = Object.fromEntries(enemies.map(x => [x.id, x]));

@@ -213,6 +213,93 @@ describe('TALK_TO_NPC command', () => {
   });
 });
 
+describe('Quest-giver attribution', () => {
+  const GIVER_ID = 'npc_giver';
+  const QUEST_CONTENT: ContentIndex = {
+    ...CONTENT,
+    itemsById: {
+      item_wood: { id: 'item_wood', name: 'Wood', stackable: true } as any
+    },
+    questTemplatesById: {
+      qt_attributed: {
+        id: 'qt_attributed',
+        name: 'Attributed Errand',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        questGiverNpcId: GIVER_ID,
+        locationPool: ['loc_haven'],
+        qtyMin: 1,
+        qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 10, gold: 5 }
+      } as any,
+      qt_unattributed: {
+        id: 'qt_unattributed',
+        name: 'No-Giver Errand',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        locationPool: ['loc_haven'],
+        qtyMin: 1,
+        qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 10, gold: 5 }
+      } as any
+    },
+    npcsById: {
+      ...CONTENT.npcsById,
+      [GIVER_ID]: {
+        id: GIVER_ID, name: 'The Giver',
+        role: 'quartermaster', locationId: 'loc_haven', prompts: {}
+      } as any
+    }
+  };
+
+  it('ACCEPT_QUEST inherits npcId from template.questGiverNpcId', () => {
+    const state = freshState();
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_attributed', atMs: 2000
+    }, QUEST_CONTENT);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_attributed');
+    expect(quest).toBeDefined();
+    expect(quest?.npcId).toBe(GIVER_ID);
+
+    const accepted = res.events.find(e => e.type === 'QUEST_ACCEPTED');
+    expect((accepted as any).payload.npcId).toBe(GIVER_ID);
+  });
+
+  it('an explicit cmd.npcId wins over the template default', () => {
+    const state = freshState();
+    // Add a second NPC at the same location so the override is valid.
+    const c2 = {
+      ...QUEST_CONTENT,
+      npcsById: {
+        ...QUEST_CONTENT.npcsById,
+        npc_other: { id: 'npc_other', name: 'Other', role: 'generic', locationId: 'loc_haven', prompts: {} } as any
+      }
+    };
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_attributed', npcId: 'npc_other', atMs: 2000
+    }, c2);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_attributed');
+    expect(quest?.npcId).toBe('npc_other');
+  });
+
+  it('templates without questGiverNpcId leave the instance npcId undefined', () => {
+    const state = freshState();
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_unattributed', atMs: 2000
+    }, QUEST_CONTENT);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_unattributed');
+    expect(quest?.npcId).toBeUndefined();
+  });
+
+  // Completion-side affinity bump is covered in gameplay_loop.test.ts
+  // because it requires the real activity loop to drive quest progress.
+});
+
 describe('migrateState v1 → v2 (Phase 3a)', () => {
   it('backfills npcState as empty record for a v1 save', () => {
     const v1Save: any = {

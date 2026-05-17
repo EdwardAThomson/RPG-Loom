@@ -59,6 +59,7 @@ export const CURRENT_ENGINE_VERSION = 2;
 // Affinity earned per TALK_TO_NPC. Capped so it can't trivialize NPC
 // gating once that's wired up in 3b/3c.
 const AFFINITY_PER_INTERACTION = 1;
+const AFFINITY_PER_QUEST_COMPLETED = 5;
 export const AFFINITY_CAP = 100;
 
 // Canonical list of skills. Owned by the engine so migrations and
@@ -200,13 +201,17 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       }
       const locationId = cmd.locationId ?? tmpl.locationPool[0];
       const required = randIntDet(`questqty:${next.saveId}:${cmd.templateId}:${next.tickIndex}`, tmpl.qtyMin, tmpl.qtyMax);
+      // If the caller didn't pin a giver, fall back to the template's
+      // authored quest-giver so the quest carries attribution all the way
+      // through to completion (affinity bump, "Given by X" UI label).
+      const npcId = cmd.npcId ?? tmpl.questGiverNpcId;
       const quest: QuestInstanceState = {
         id: `q_${cmd.templateId}_${next.tickIndex}`,
         templateId: cmd.templateId,
         status: 'active',
         progress: { current: 0, required },
         locationId,
-        npcId: cmd.npcId,
+        npcId,
         createdAtMs: cmd.atMs
       };
       next.quests.push(quest);
@@ -215,7 +220,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
           questId: quest.id,
           templateId: cmd.templateId,
           locationId,
-          npcId: cmd.npcId
+          npcId
         })
       );
       break;
@@ -1359,6 +1364,23 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   }
 
   events.push(ev(state, atMs, 'QUEST_COMPLETED', { questId: q.id, templateId: q.templateId, rewards }));
+
+  // Reward the quest-giver's affinity. The quest-giver is the source of
+  // social progression, not just the gold drop — handing in a job makes
+  // them think more highly of the player.
+  if (q.npcId && content.npcsById[q.npcId]) {
+    ensureNpcState(state);
+    const entry = state.npcState[q.npcId] ?? { affinity: 0 };
+    entry.affinity = Math.min(AFFINITY_CAP, (entry.affinity ?? 0) + AFFINITY_PER_QUEST_COMPLETED);
+    entry.lastInteractionMs = atMs;
+    if (!entry.firstMetAtMs) entry.firstMetAtMs = atMs;
+    state.npcState[q.npcId] = entry;
+    events.push(ev(state, atMs, 'NPC_INTERACTED', {
+      npcId: q.npcId,
+      affinity: entry.affinity,
+      firstMeet: false
+    }));
+  }
 
   // Handle quest replenishment
   if (tmpl.replenishment) {

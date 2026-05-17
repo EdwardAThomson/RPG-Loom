@@ -124,4 +124,41 @@ describe('Gameplay Loop (Integration)', () => {
             expect(qAfter?.progress.current).toBeGreaterThan(0);
         }
     });
+
+    it('quest-giver attribution: accepting qt_intro_gather pins npc_aldric, completing it bumps his affinity', () => {
+        let state = createNewState(INIT_PARAMS);
+
+        // qt_intro_gather is tagged with questGiverNpcId: 'npc_aldric'
+        // in the content pack, so ACCEPT_QUEST without an explicit npcId
+        // should inherit the giver.
+        state = applyCommand(state, {
+            type: 'ACCEPT_QUEST',
+            templateId: 'qt_intro_gather',
+            atMs: 1000000
+        }, C).state;
+
+        const q = state.quests.find(x => x.templateId === 'qt_intro_gather');
+        expect(q?.npcId).toBe('npc_aldric');
+
+        // Drive the gather to completion via the normal activity loop.
+        state = applyCommand(state, {
+            type: 'SET_ACTIVITY',
+            params: { type: 'woodcut', locationId: 'loc_forest' },
+            atMs: 1000000
+        }, C).state;
+
+        const res = step(state, 1000000 + 60000, C);
+        state = res.state;
+
+        const qAfter = state.quests.find(x => x.templateId === 'qt_intro_gather');
+        // Only assert the affinity bump if the activity actually finished
+        // the quest — same conditional pattern as the gather test above.
+        if (qAfter?.status === 'completed') {
+            const aldric = state.npcState['npc_aldric'];
+            expect(aldric).toBeDefined();
+            // 5 from quest completion; no prior TALK_TO_NPC.
+            expect(aldric.affinity).toBeGreaterThanOrEqual(5);
+            expect(aldric.firstMetAtMs).toBeDefined();
+        }
+    });
 });

@@ -223,6 +223,16 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     {tmpl.description || 'No description available.'}
                                 </div>
 
+                                {tmpl.questGiverNpcId && content?.npcsById?.[tmpl.questGiverNpcId] && (() => {
+                                    const giver = content.npcsById[tmpl.questGiverNpcId];
+                                    const giverLoc = content.locationsById?.[giver.locationId];
+                                    return (
+                                        <div style={{ fontSize: '0.8rem', color: '#8fbc8f', marginBottom: '0.5rem' }}>
+                                            From {giver.name}{giverLoc ? ` · ${giverLoc.name}` : ''}
+                                        </div>
+                                    );
+                                })()}
+
                                 <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
                                     <strong>Objective:</strong> {getObjectiveText(tmpl)}
                                 </div>
