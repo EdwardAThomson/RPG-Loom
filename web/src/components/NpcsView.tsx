@@ -127,13 +127,12 @@ function NpcRow({
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    <span style={{ color: known ? '#ddd' : '#999', fontWeight: 500 }}>
-                        {known ? npc.name : `??? (${roleLabel(npc.role)})`}
-                    </span>
+                    <span style={{ color: '#ddd', fontWeight: 500 }}>{npc.name}</span>
                     <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                        {known
-                            ? `${roleLabel(npc.role)}${showLocation && location ? ` · ${location.name}` : ''}${lastSeen ? ` · seen ${lastSeen}` : ''}`
-                            : (showLocation && location ? location.name : 'Not yet met')}
+                        {roleLabel(npc.role)}
+                        {showLocation && location ? ` · ${location.name}` : ''}
+                        {known && lastSeen ? ` · seen ${lastSeen}` : ''}
+                        {!known ? ' · not yet met' : ''}
                     </span>
                 </div>
                 {known && (

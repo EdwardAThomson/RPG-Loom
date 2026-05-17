@@ -419,6 +419,17 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         }));
         break;
       }
+      const npc = content.npcsById[cmd.npcId];
+      if (npc.locationId !== next.currentLocationId) {
+        // Talking to an NPC requires being at their location.
+        // The UI should already gate this; the engine enforces it so
+        // direct dispatches (debug console, replays) can't bypass.
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'NPC_NOT_HERE',
+          message: `${npc.name} is not at this location.`
+        }));
+        break;
+      }
       ensureNpcState(next);
       const existing = next.npcState[cmd.npcId];
       const firstMeet = !existing || existing.firstMetAtMs === undefined;

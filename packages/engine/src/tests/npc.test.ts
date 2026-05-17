@@ -119,6 +119,36 @@ describe('TALK_TO_NPC command', () => {
     expect(state.npcState[NPC_ID].affinity).toBe(2);
     expect(state.npcState['npc_other'].affinity).toBe(1);
   });
+
+  it('emits NPC_NOT_HERE and writes no state when NPC is at a different location', () => {
+    // Add a far-away location and an NPC who lives there.
+    const farContent: ContentIndex = {
+      ...CONTENT,
+      locationsById: {
+        ...CONTENT.locationsById,
+        loc_distant: {
+          id: 'loc_distant', name: 'Distant', description: '',
+          activities: [], encounterTable: { entries: [] }
+        } as any
+      },
+      npcsById: {
+        ...CONTENT.npcsById,
+        npc_far: {
+          id: 'npc_far', name: 'Faraway Friend',
+          role: 'generic', locationId: 'loc_distant', prompts: {}
+        } as any
+      }
+    };
+    const state = freshState(); // current location is loc_haven
+    const res = applyCommand(state, { type: 'TALK_TO_NPC', npcId: 'npc_far', atMs: 2000 }, farContent);
+
+    expect(res.state.npcState['npc_far']).toBeUndefined();
+    const err = res.events.find(e => e.type === 'ERROR');
+    expect(err).toBeDefined();
+    expect((err as any).payload.code).toBe('NPC_NOT_HERE');
+    // No NPC_INTERACTED should have fired.
+    expect(res.events.find(e => e.type === 'NPC_INTERACTED')).toBeUndefined();
+  });
 });
 
 describe('migrateState v1 → v2 (Phase 3a)', () => {
