@@ -1,7 +1,8 @@
-import { EngineState, PlayerCommand } from '@rpg-loom/shared';
+import { EngineState, NpcDef, PlayerCommand } from '@rpg-loom/shared';
 import { TacticsSelector } from './TacticsSelector';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { MarketView } from './MarketView';
+import { NpcDialogueModal } from './NpcDialogueModal';
 
 // We need a way to know location names, assuming content is passed or we map it.
 // Since we are creating a generic engine, ideally we use the content index.
@@ -18,9 +19,21 @@ interface Props {
 export function ActivityView({ state, dispatch, content }: Props) {
     const { activity, player } = state;
     const [isExpanded, setIsExpanded] = useState(false);
+    const [activeNpc, setActiveNpc] = useState<NpcDef | null>(null);
 
     const currentLocName = content?.locationsById?.[state.currentLocationId]?.name || state.currentLocationId;
     const isTown = content?.locationsById?.[state.currentLocationId]?.type === 'town';
+
+    // NPCs at this location — shown in a small "Folk here" panel so the
+    // player can talk without leaving the Activity tab. Engine enforces
+    // the location check too (TALK_TO_NPC errors otherwise), but the
+    // panel just won't surface anyone who isn't here.
+    const npcsHere: NpcDef[] = useMemo(() => {
+        const all = Object.values(content?.npcsById ?? {}) as NpcDef[];
+        return all
+            .filter(n => n.locationId === state.currentLocationId)
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [content?.npcsById, state.currentLocationId]);
 
     return (
         <>
@@ -287,6 +300,66 @@ export function ActivityView({ state, dispatch, content }: Props) {
                     Stop Activity
                 </button>
             </section>
+
+            {npcsHere.length > 0 && (
+                <section className="card" style={{ marginTop: '1rem' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Folk here
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {npcsHere.map(npc => {
+                            const entry = state.npcState?.[npc.id];
+                            const known = entry?.firstMetAtMs !== undefined;
+                            return (
+                                <div
+                                    key={npc.id}
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: '#181818',
+                                        border: '1px solid #2a2a2a',
+                                        borderRadius: 4,
+                                        padding: '0.5rem 0.75rem'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                                        <span style={{ color: '#ddd', fontWeight: 500 }}>{npc.name}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#888' }}>
+                                            {npc.role.replace(/_/g, ' ')}
+                                            {known ? ` · affinity ${entry?.affinity ?? 0}` : ' · not yet met'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveNpc(npc)}
+                                        style={{
+                                            padding: '0.4rem 0.9rem',
+                                            background: '#2a2a2a',
+                                            color: '#fff',
+                                            border: '1px solid #8fbc8f',
+                                            borderRadius: 4,
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {known ? 'Talk' : 'Greet'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {activeNpc && (
+                <NpcDialogueModal
+                    npc={activeNpc}
+                    state={state}
+                    content={content}
+                    dispatch={dispatch}
+                    onClose={() => setActiveNpc(null)}
+                />
+            )}
 
             {/* Fullscreen Expansion Modal - Rendered outside the card to avoid stacking context issues */}
             {isExpanded && content?.locationsById?.[state.currentLocationId]?.image && (

@@ -31,6 +31,10 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Pro
     const flavor = entry?.generatedFlavor;
     const affinity = entry?.affinity ?? 0;
     const haveMet = entry?.firstMetAtMs !== undefined;
+    // Talking requires being at the NPC's location. Engine enforces this
+    // too — this is just the UI mirror so the button reads "Travel to X"
+    // instead of producing a silent error.
+    const isHere = state.currentLocationId === npc.locationId;
 
     return (
         <div
@@ -94,7 +98,13 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Pro
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                     <button
                         onClick={greet}
-                        style={primaryBtn}
+                        disabled={!isHere}
+                        title={isHere ? undefined : `Travel to ${location?.name ?? npc.locationId} to speak with them.`}
+                        style={{
+                            ...primaryBtn,
+                            opacity: isHere ? 1 : 0.5,
+                            cursor: isHere ? 'pointer' : 'not-allowed'
+                        }}
                     >
                         {haveMet ? 'Talk again' : 'Greet'}
                     </button>
@@ -106,7 +116,13 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Pro
                     </button>
                 </div>
 
-                {justGreeted && (
+                {!isHere && (
+                    <p style={{ color: '#888', fontSize: '0.8rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                        You'd need to travel to {location?.name ?? npc.locationId} to speak with them.
+                    </p>
+                )}
+
+                {isHere && justGreeted && (
                     <p style={{ color: '#8fbc8f', fontSize: '0.8rem', marginTop: '0.5rem', marginBottom: 0 }}>
                         Affinity now {(entry?.affinity ?? 1)}.
                     </p>
