@@ -83,6 +83,29 @@ export function useJournalAutoWrite(events: GameEvent[], content: ContentIndex):
         }).catch(err => {
           console.warn('Journal auto-write failed', err);
         });
+      } else if (ev.type === 'NPC_INTERACTED') {
+        // Only the first meeting is journal-worthy. Repeat talks are
+        // routine and would spam the log.
+        const payload = ev.payload as { npcId: string; affinity: number; firstMeet: boolean };
+        if (!payload.firstMeet) continue;
+
+        const npc = content.npcsById?.[payload.npcId];
+        const npcName = npc?.name ?? payload.npcId;
+        const location = npc ? content.locationsById[npc.locationId] : undefined;
+        const locationSuffix = location ? ` at ${location.name}` : '';
+
+        void pushJournalEntry(CLOUD_SLOT, {
+          type: 'journal_entry',
+          refs: { npcId: payload.npcId },
+          block: {
+            id: ev.id,
+            title: `Met ${npcName}`,
+            lines: [`First meeting${locationSuffix}.`],
+            tags: ['npc', 'first-meet']
+          }
+        }).catch(err => {
+          console.warn('Journal auto-write failed', err);
+        });
       }
     }
     highWaterAtMsRef.current = newHighWater;

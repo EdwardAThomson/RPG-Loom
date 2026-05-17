@@ -21,6 +21,7 @@ import { OfflineSummaryModal } from './components/OfflineSummaryModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
 import { NextGoalsPanel } from './components/NextGoalsPanel';
 import { JournalView } from './components/JournalView';
+import { NpcsView } from './components/NpcsView';
 import { useJournalAutoWrite } from './hooks/useJournalAutoWrite';
 import React from 'react';
 
@@ -227,6 +228,7 @@ function AppContent() {
           {activeTab === 'character' && <CharacterView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'quests' && <QuestView state={state} content={content} dispatch={dispatch} />}
           {activeTab === 'journal' && <JournalView />}
+          {activeTab === 'npcs' && <NpcsView state={state} content={content} dispatch={dispatch} />}
           {/* {activeTab === 'debug' && <DebugView
             state={state}
             content={content}
