@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { ContentIndex, EngineState, NpcDef, PlayerCommand } from '@rpg-loom/shared';
+import type { ContentIndex, EngineState, GameEvent, NpcDef, PlayerCommand } from '@rpg-loom/shared';
 import { NpcDialogueModal } from './NpcDialogueModal';
 
 interface Props {
     state: EngineState;
     content: ContentIndex;
     dispatch: (cmd: PlayerCommand) => void;
+    events?: GameEvent[];
 }
 
 /**
@@ -15,7 +16,7 @@ interface Props {
  * player both sees who they can talk to right now and remembers who
  * they've met in other places. Click a row → opens the modal.
  */
-export function NpcsView({ state, content, dispatch }: Props) {
+export function NpcsView({ state, content, dispatch, events }: Props) {
     const [activeNpc, setActiveNpc] = useState<NpcDef | null>(null);
 
     const { hereNpcs, elsewhereNpcs } = useMemo(() => {
@@ -85,6 +86,7 @@ export function NpcsView({ state, content, dispatch }: Props) {
                     content={content}
                     dispatch={dispatch}
                     onClose={() => setActiveNpc(null)}
+                    recentEvents={events}
                 />
             )}
         </div>

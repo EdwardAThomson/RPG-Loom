@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { ContentIndex, EngineState, NpcDef, NpcStateEntry, PlayerCommand } from '@rpg-loom/shared';
+import { useEffect, useRef, useState } from 'react';
+import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand } from '@rpg-loom/shared';
+import { generateNpcDialogue } from '../services/npcDialogue';
+import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 
 interface Props {
     npc: NpcDef;
@@ -7,6 +9,8 @@ interface Props {
     content: ContentIndex;
     dispatch: (cmd: PlayerCommand) => void;
     onClose: () => void;
+    /** Optional: recent events to feed the AI. Defaults to []. */
+    recentEvents?: GameEvent[];
 }
 
 /**
@@ -17,13 +21,53 @@ interface Props {
  * affinity-bumping action so players don't accidentally grind affinity
  * by toggling the tab.
  */
-export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Props) {
+export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recentEvents = [] }: Props) {
     const entry: NpcStateEntry | undefined = state.npcState?.[npc.id];
     const [justGreeted, setJustGreeted] = useState(false);
+    const [gatewayUp, setGatewayUp] = useState<boolean | null>(isGatewayAvailable());
+    // Prevent re-entry while a fetch is in flight without exposing a
+    // visible loading state — the AI work is meant to be invisible.
+    const generationInFlightRef = useRef(false);
+
+    useEffect(() => onGatewayStatusChange(setGatewayUp), []);
 
     const greet = () => {
         dispatch({ type: 'TALK_TO_NPC', npcId: npc.id, atMs: Date.now() });
         setJustGreeted(true);
+        // Fire-and-forget AI flavor generation on the first time the
+        // player actually talks to them. No visible "generate" button —
+        // the NPCs should feel like they have always existed; their
+        // voice is something the player discovers by greeting them, not
+        // something the player commissions.
+        //
+        // - Skip if we already have their flavor cached.
+        // - Skip silently if the gateway is unreachable. The authored
+        //   greeting / topic / questIntro lines still show; the player
+        //   never sees an error about AI generation.
+        // - Skip if we're not at their location (engine would reject
+        //   the TALK_TO_NPC anyway, no point spending the tokens).
+        if (entry?.generatedFlavor) return;
+        if (!isHere || gatewayUp === false) return;
+        if (generationInFlightRef.current) return;
+
+        generationInFlightRef.current = true;
+        generateNpcDialogue(npc, state, content, recentEvents)
+            .then(flavor => {
+                dispatch({
+                    type: 'SET_NPC_FLAVOR',
+                    npcId: npc.id,
+                    flavor,
+                    atMs: Date.now()
+                });
+            })
+            .catch(e => {
+                // Silent: authored prompts still render. Don't break
+                // immersion with a "gateway returned 500" toast.
+                console.warn('[npc] dialogue generation failed', e);
+            })
+            .finally(() => {
+                generationInFlightRef.current = false;
+            });
     };
 
     const location = content.locationsById[npc.locationId];
@@ -87,10 +131,16 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Pro
                     </Section>
                 )}
 
+                {flavor?.description && (
+                    <Section title="Bearing">
+                        <p style={paragraphStyle}>{flavor.description}</p>
+                    </Section>
+                )}
+
                 {flavor?.dialogueLines?.length ? (
                     <Section title="Heard before">
                         {flavor.dialogueLines.map((line, i) => (
-                            <p key={i} style={dialogueStyle}>“{line}”</p>
+                            <p key={i} style={dialogueStyle}>{line}</p>
                         ))}
                     </Section>
                 ) : null}

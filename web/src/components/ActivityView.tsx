@@ -1,4 +1,4 @@
-import { EngineState, NpcDef, PlayerCommand } from '@rpg-loom/shared';
+import { EngineState, GameEvent, NpcDef, PlayerCommand } from '@rpg-loom/shared';
 import { TacticsSelector } from './TacticsSelector';
 import { useMemo, useRef, useState } from 'react';
 import { MarketView } from './MarketView';
@@ -14,9 +14,10 @@ interface Props {
     state: EngineState;
     dispatch: (cmd: PlayerCommand) => void;
     content: any; // MVP: generic type for now to avoid deep type imports in web if not set up
+    events?: GameEvent[];
 }
 
-export function ActivityView({ state, dispatch, content }: Props) {
+export function ActivityView({ state, dispatch, content, events }: Props) {
     const { activity, player } = state;
     const [isExpanded, setIsExpanded] = useState(false);
     const [activeNpc, setActiveNpc] = useState<NpcDef | null>(null);
@@ -358,6 +359,7 @@ export function ActivityView({ state, dispatch, content }: Props) {
                     content={content}
                     dispatch={dispatch}
                     onClose={() => setActiveNpc(null)}
+                    recentEvents={events}
                 />
             )}
 

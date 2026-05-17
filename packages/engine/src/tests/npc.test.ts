@@ -120,6 +120,68 @@ describe('TALK_TO_NPC command', () => {
     expect(state.npcState['npc_other'].affinity).toBe(1);
   });
 
+  it('SET_NPC_FLAVOR persists generatedFlavor onto npcState', () => {
+    const state = freshState();
+    const res = applyCommand(state, {
+      type: 'SET_NPC_FLAVOR',
+      npcId: NPC_ID,
+      flavor: {
+        description: 'A weathered figure leaning on the counter.',
+        dialogueLines: ['"Hot iron first.', '"Conversation second."']
+      },
+      atMs: 5000
+    }, CONTENT);
+
+    const entry = res.state.npcState[NPC_ID];
+    expect(entry).toBeDefined();
+    expect(entry.generatedFlavor).toBeDefined();
+    expect(entry.generatedFlavor!.description).toBe('A weathered figure leaning on the counter.');
+    expect(entry.generatedFlavor!.dialogueLines).toHaveLength(2);
+    expect(entry.generatedFlavor!.generatedAtMs).toBe(5000);
+  });
+
+  it('SET_NPC_FLAVOR preserves existing affinity and interaction history', () => {
+    let state = freshState();
+    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 2000 }, CONTENT).state;
+    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 3000 }, CONTENT).state;
+    const before = state.npcState[NPC_ID];
+    expect(before.affinity).toBe(2);
+
+    state = applyCommand(state, {
+      type: 'SET_NPC_FLAVOR',
+      npcId: NPC_ID,
+      flavor: { description: 'x', dialogueLines: ['y'] },
+      atMs: 4000
+    }, CONTENT).state;
+
+    const after = state.npcState[NPC_ID];
+    expect(after.affinity).toBe(2);
+    expect(after.firstMetAtMs).toBe(2000);
+    expect(after.lastInteractionMs).toBe(3000);
+    expect(after.generatedFlavor?.description).toBe('x');
+  });
+
+  it('SET_NPC_FLAVOR caps dialogueLines and rejects unknown npc', () => {
+    const state = freshState();
+    const many = Array.from({ length: 20 }, (_, i) => `line ${i}`);
+    const res = applyCommand(state, {
+      type: 'SET_NPC_FLAVOR',
+      npcId: NPC_ID,
+      flavor: { description: 'd', dialogueLines: many },
+      atMs: 5000
+    }, CONTENT);
+    expect(res.state.npcState[NPC_ID].generatedFlavor!.dialogueLines).toHaveLength(8);
+
+    const res2 = applyCommand(state, {
+      type: 'SET_NPC_FLAVOR',
+      npcId: 'npc_does_not_exist',
+      flavor: { description: 'd', dialogueLines: ['x'] },
+      atMs: 5000
+    }, CONTENT);
+    expect(res2.state.npcState['npc_does_not_exist']).toBeUndefined();
+    expect(res2.events.find(e => e.type === 'ERROR')).toBeDefined();
+  });
+
   it('emits NPC_NOT_HERE and writes no state when NPC is at a different location', () => {
     // Add a far-away location and an NPC who lives there.
     const farContent: ContentIndex = {
