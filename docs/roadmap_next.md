@@ -123,7 +123,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 | `web/src/components/NpcDialogueModal.tsx` | Modal for a single NPC conversation. Shows cached `generatedFlavor.dialogueLines` and a "Talk to them" button that triggers AI dialogue generation (Phase 3c). |
 | `web/src/components/QuestView.tsx` | When a quest has an `npcId`, link to "Return to {NPC name} at {location}". |
 
-### 3c — AI flavor pipeline (~3 days)
+### 3c — AI flavor pipeline (~3 days) ✅ shipped
 
 | File | Change |
 |---|---|

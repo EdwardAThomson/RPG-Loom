@@ -409,6 +409,29 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       break;
     }
 
+    case 'SET_NPC_FLAVOR': {
+      // Phase 3c: record AI-generated dialogue for an NPC. Generation
+      // happens in the web layer; the engine just stores the result
+      // so re-opening the modal shows the same lines without spending
+      // more tokens.
+      if (!content || !content.npcsById[cmd.npcId]) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'NPC_MISSING',
+          message: `Unknown NPC ${cmd.npcId}`
+        }));
+        break;
+      }
+      ensureNpcState(next);
+      const existing = next.npcState[cmd.npcId] ?? { affinity: 0 };
+      existing.generatedFlavor = {
+        description: cmd.flavor.description,
+        dialogueLines: cmd.flavor.dialogueLines.slice(0, 8),
+        generatedAtMs: cmd.atMs
+      };
+      next.npcState[cmd.npcId] = existing;
+      break;
+    }
+
     case 'TALK_TO_NPC': {
       // Reject silently if content lookup fails — same shape as
       // applyCommand's other "unknown id" branches.

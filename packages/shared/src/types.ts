@@ -492,6 +492,20 @@ export type PlayerCommand =
     type: 'TALK_TO_NPC';
     npcId: NpcId;
     atMs: number;
+  }
+  | {
+    // Phase 3c: persist AI-generated dialogue/flavor for an NPC into
+    // `state.npcState[npcId].generatedFlavor`. Generation itself happens
+    // in `web/src/services/npcDialogue.ts` (calls the gateway); the
+    // engine just records the result so it survives reloads and
+    // subsequent visits reuse the same lines.
+    type: 'SET_NPC_FLAVOR';
+    npcId: NpcId;
+    flavor: {
+      description: string;
+      dialogueLines: string[];
+    };
+    atMs: number;
   };
 
 // ---- Rewards / loot ----

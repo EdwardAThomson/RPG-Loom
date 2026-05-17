@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { ContentIndex, EngineState, NpcDef, NpcStateEntry, PlayerCommand } from '@rpg-loom/shared';
+import { useEffect, useState } from 'react';
+import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand } from '@rpg-loom/shared';
+import { generateNpcDialogue } from '../services/npcDialogue';
+import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 
 interface Props {
     npc: NpcDef;
@@ -7,6 +9,8 @@ interface Props {
     content: ContentIndex;
     dispatch: (cmd: PlayerCommand) => void;
     onClose: () => void;
+    /** Optional: recent events to feed the AI. Defaults to []. */
+    recentEvents?: GameEvent[];
 }
 
 /**
@@ -17,13 +21,36 @@ interface Props {
  * affinity-bumping action so players don't accidentally grind affinity
  * by toggling the tab.
  */
-export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Props) {
+export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recentEvents = [] }: Props) {
     const entry: NpcStateEntry | undefined = state.npcState?.[npc.id];
     const [justGreeted, setJustGreeted] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [generationError, setGenerationError] = useState<string | null>(null);
+    const [gatewayUp, setGatewayUp] = useState<boolean | null>(isGatewayAvailable());
+
+    useEffect(() => onGatewayStatusChange(setGatewayUp), []);
 
     const greet = () => {
         dispatch({ type: 'TALK_TO_NPC', npcId: npc.id, atMs: Date.now() });
         setJustGreeted(true);
+    };
+
+    const generate = async () => {
+        setGenerationError(null);
+        setGenerating(true);
+        try {
+            const flavor = await generateNpcDialogue(npc, state, content, recentEvents);
+            dispatch({
+                type: 'SET_NPC_FLAVOR',
+                npcId: npc.id,
+                flavor,
+                atMs: Date.now()
+            });
+        } catch (e: any) {
+            setGenerationError(e?.message ?? String(e));
+        } finally {
+            setGenerating(false);
+        }
     };
 
     const location = content.locationsById[npc.locationId];
@@ -87,13 +114,47 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose }: Pro
                     </Section>
                 )}
 
+                {flavor?.description && (
+                    <Section title="Bearing">
+                        <p style={paragraphStyle}>{flavor.description}</p>
+                    </Section>
+                )}
+
                 {flavor?.dialogueLines?.length ? (
                     <Section title="Heard before">
                         {flavor.dialogueLines.map((line, i) => (
-                            <p key={i} style={dialogueStyle}>“{line}”</p>
+                            <p key={i} style={dialogueStyle}>{line}</p>
                         ))}
                     </Section>
                 ) : null}
+
+                {isHere && gatewayUp !== false && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                        <button
+                            onClick={generate}
+                            disabled={generating}
+                            style={{
+                                ...secondaryBtn,
+                                width: '100%',
+                                borderColor: '#9333ea',
+                                color: generating ? '#888' : '#c084fc',
+                                cursor: generating ? 'wait' : 'pointer'
+                            }}
+                            title={flavor ? 'Re-roll their voice' : 'Generate AI dialogue for this NPC'}
+                        >
+                            {generating
+                                ? '✨ Generating…'
+                                : flavor
+                                    ? '✨ Re-imagine them'
+                                    : '✨ Generate their voice'}
+                        </button>
+                        {generationError && (
+                            <p style={{ color: '#d44', fontSize: '0.8rem', marginTop: '0.4rem', marginBottom: 0 }}>
+                                {generationError}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                     <button
