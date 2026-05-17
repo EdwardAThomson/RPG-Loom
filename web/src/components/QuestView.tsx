@@ -420,6 +420,16 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         </div>
                                     )}
 
+                                    {q.npcId && content.npcsById?.[q.npcId] && (() => {
+                                        const npc = content.npcsById[q.npcId];
+                                        const npcLoc = content.locationsById[npc.locationId];
+                                        return (
+                                            <div style={{ fontSize: '0.8rem', color: '#8fbc8f', marginBottom: '0.5rem' }}>
+                                                Given by {npc.name}{npcLoc ? ` · ${npcLoc.name}` : ''}
+                                            </div>
+                                        );
+                                    })()}
+
                                     {tmpl && (
                                         <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
                                             {getObjectiveText(tmpl)}

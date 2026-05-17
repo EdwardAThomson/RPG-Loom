@@ -114,7 +114,7 @@ None structural. The biggest gotcha is that `summarizeEvents` is the kind of pur
 | `packages/engine/src/engine.ts` | New commands: `TALK_TO_NPC { npcId, atMs }` (records interaction, +1 affinity) and `ACCEPT_QUEST_FROM_NPC { npcId, templateId, atMs }` (links quest to NPC). Migration helper: `ensureNpcState(state)`. |
 | `packages/engine/src/engine.ts` | Modify `getAvailableQuests` to filter quest templates by NPC location + relationship (some templates need affinity ≥ N). Also a good moment to fix `getAvailableQuests`'s `Date.now()` violation from `known_gaps.md` §1. |
 
-### 3b — UI for NPC interaction (~3 days)
+### 3b — UI for NPC interaction (~3 days) ✅ shipped
 
 | File | Change |
 |---|---|
