@@ -16,9 +16,11 @@ export function QuestView({ state, content, dispatch }: Props) {
     const [generatingAdventure, setGeneratingAdventure] = useState(false);
     const [adventureError, setAdventureError] = useState<string | null>(null);
 
-    // Filter out sub-quests that belong to inactive adventures
+    // Filter out sub-quests that belong to inactive adventures.
+    // Include both in-progress and ready-to-turn-in quests so the player
+    // sees them in the same list (the latter just renders differently).
     const activeQuests = state.quests.filter(q => {
-        if (q.status !== 'active') return false;
+        if (q.status !== 'active' && q.status !== 'ready_to_turn_in') return false;
 
         // If this is a sub-quest (dynamic_* but NOT dynamic_adventure), only show it if:
         // 1. Its parent adventure step is active (so user can start it), OR
@@ -65,6 +67,14 @@ export function QuestView({ state, content, dispatch }: Props) {
         dispatch({
             type: 'ACCEPT_QUEST',
             templateId,
+            atMs: Date.now()
+        });
+    };
+
+    const handleTurnInQuest = (questId: string) => {
+        dispatch({
+            type: 'TURN_IN_QUEST',
+            questId,
             atMs: Date.now()
         });
     };
@@ -417,9 +427,14 @@ export function QuestView({ state, content, dispatch }: Props) {
                                                 ✨ AI
                                             </span>
                                         )}
-                                        {isQuestActivity && (
+                                        {isQuestActivity && q.status === 'active' && (
                                             <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--color-primary)' }}>
                                                 (Active)
+                                            </span>
+                                        )}
+                                        {q.status === 'ready_to_turn_in' && (
+                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#8fbc8f' }}>
+                                                (Ready to hand in)
                                             </span>
                                         )}
                                     </div>
@@ -602,20 +617,48 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     )}
 
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button
-                                            onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
-                                            style={{
-                                                padding: '0.5rem 1rem',
-                                                background: isQuestActivity ? '#444' : 'var(--color-primary)',
-                                                border: isQuestActivity ? '1px solid #666' : 'none',
-                                                borderRadius: '4px',
-                                                color: isQuestActivity ? '#888' : '#fff',
-                                                cursor: 'pointer',
-                                                fontSize: '0.85rem'
-                                            }}
-                                        >
-                                            {isQuestActivity ? 'Refocus' : 'Start Quest'}
-                                        </button>
+                                        {q.status === 'ready_to_turn_in' ? (() => {
+                                            // Player has to be at the giver's location to hand in.
+                                            // Engine enforces this too, but disabling the button
+                                            // up-front avoids generating a useless ERROR event.
+                                            const giver = q.npcId ? content.npcsById?.[q.npcId] : null;
+                                            const giverLoc = giver ? content.locationsById?.[giver.locationId] : null;
+                                            const canHandIn = !!giver && state.currentLocationId === giver.locationId;
+                                            return (
+                                                <button
+                                                    onClick={() => handleTurnInQuest(q.id)}
+                                                    disabled={!canHandIn}
+                                                    title={canHandIn ? undefined : (giverLoc ? `Travel to ${giverLoc.name} to hand this in.` : 'No giver to hand in to.')}
+                                                    style={{
+                                                        padding: '0.5rem 1rem',
+                                                        background: canHandIn ? '#8fbc8f' : '#2a2a2a',
+                                                        border: canHandIn ? 'none' : '1px solid #666',
+                                                        borderRadius: '4px',
+                                                        color: canHandIn ? '#0a0a0a' : '#888',
+                                                        cursor: canHandIn ? 'pointer' : 'not-allowed',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: canHandIn ? 'bold' : 'normal'
+                                                    }}
+                                                >
+                                                    {giver ? `Hand in to ${giver.name}` : 'Hand in'}
+                                                </button>
+                                            );
+                                        })() : (
+                                            <button
+                                                onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    background: isQuestActivity ? '#444' : 'var(--color-primary)',
+                                                    border: isQuestActivity ? '1px solid #666' : 'none',
+                                                    borderRadius: '4px',
+                                                    color: isQuestActivity ? '#888' : '#fff',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                            >
+                                                {isQuestActivity ? 'Refocus' : 'Start Quest'}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => handleAbandonQuest(q.id)}
                                             style={{

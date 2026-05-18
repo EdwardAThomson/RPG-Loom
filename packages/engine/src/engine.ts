@@ -54,7 +54,10 @@ export const MAX_OFFLINE_MS = 24 * 60 * 60 * 1000;
 // upgrades from lower values; higher values cause a refused load.
 //   v1 — initial shape (Phase 4a versioning).
 //   v2 — adds `npcState` (Phase 3a recurring NPCs).
-export const CURRENT_ENGINE_VERSION = 2;
+//   v3 — quest status 'ready_to_turn_in' (turn-in flow); migrates any
+//        active quest already at progress.current >= required with a
+//        giver to the new status.
+export const CURRENT_ENGINE_VERSION = 3;
 
 // Affinity earned per TALK_TO_NPC. Capped so it can't trivialize NPC
 // gating once that's wired up in 3b/3c.
@@ -227,13 +230,72 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
     }
     case 'ABANDON_QUEST': {
       const q = next.quests.find((x) => x.id === cmd.questId);
-      if (q && q.status === 'active') {
+      // Allow abandoning either an in-progress quest or one already
+      // sitting at ready_to_turn_in. Refusing the latter would lock the
+      // slot if the player wanted to drop it instead of walking back.
+      if (q && (q.status === 'active' || q.status === 'ready_to_turn_in')) {
         q.status = 'abandoned';
         // If this is an adventure quest, clean up sub-quests
         if (q.adventureSteps) {
           abandonAdventure(next, q.id);
         }
       }
+      break;
+    }
+    case 'TURN_IN_QUEST': {
+      const q = next.quests.find((x) => x.id === cmd.questId);
+      if (!q) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'QUEST_NOT_FOUND',
+          message: `No such quest ${cmd.questId}`
+        }));
+        break;
+      }
+      if (q.status !== 'ready_to_turn_in') {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'QUEST_NOT_READY',
+          message: `Quest ${cmd.questId} is not ready to turn in (status: ${q.status})`
+        }));
+        break;
+      }
+      if (!q.npcId) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'QUEST_NO_GIVER',
+          message: `Quest ${cmd.questId} has no giver to turn in to`
+        }));
+        break;
+      }
+      if (!content) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'CONTENT_MISSING', message: 'No content index' }));
+        break;
+      }
+      const npc = content.npcsById[q.npcId];
+      if (!npc) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'NPC_NOT_FOUND',
+          message: `Quest giver ${q.npcId} not in content`
+        }));
+        break;
+      }
+      // Must be at the giver's location to hand in. UI should hide the
+      // button when not co-located, but the engine guards anyway so
+      // bypassing the UI can't shortcut the trip.
+      if (next.currentLocationId !== npc.locationId) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'NPC_NOT_HERE',
+          message: `Travel to ${npc.locationId} to turn in this quest`
+        }));
+        break;
+      }
+      const tmpl = content.questTemplatesById[q.templateId];
+      if (!tmpl) {
+        events.push(ev(next, cmd.atMs, 'ERROR', {
+          code: 'QUEST_TEMPLATE_MISSING',
+          message: `Template ${q.templateId} not in content`
+        }));
+        break;
+      }
+      finalizeTemplateQuestCompletion(next, q, tmpl, events, cmd.atMs);
       break;
     }
     case 'EQUIP_ITEM': {
@@ -1348,6 +1410,35 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   const tmpl = content.questTemplatesById[q.templateId];
   if (!tmpl) return;
 
+  // Quests with a giver park at 'ready_to_turn_in'; rewards/affinity/
+  // replenishment all apply on TURN_IN_QUEST. Quests without a giver
+  // (templates lacking questGiverNpcId) auto-complete as before — there's
+  // no one to walk back to.
+  if (q.npcId && content.npcsById[q.npcId]) {
+    q.status = 'ready_to_turn_in';
+    events.push(ev(state, atMs, 'QUEST_READY_FOR_TURN_IN', {
+      questId: q.id,
+      templateId: q.templateId,
+      npcId: q.npcId
+    }));
+    return;
+  }
+
+  finalizeTemplateQuestCompletion(state, q, tmpl, events, atMs);
+}
+
+/**
+ * Apply rewards, affinity, replenishment, and mark a template quest as
+ * completed. Used by both the auto-complete path (no giver) and the
+ * TURN_IN_QUEST handler (with giver).
+ */
+function finalizeTemplateQuestCompletion(
+  state: EngineState,
+  q: QuestInstanceState,
+  tmpl: QuestTemplateDef,
+  events: GameEvent[],
+  atMs: number
+) {
   q.status = 'completed';
   q.completedAtMs = atMs;
 
@@ -1365,10 +1456,9 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
 
   events.push(ev(state, atMs, 'QUEST_COMPLETED', { questId: q.id, templateId: q.templateId, rewards }));
 
-  // Reward the quest-giver's affinity. The quest-giver is the source of
-  // social progression, not just the gold drop — handing in a job makes
-  // them think more highly of the player.
-  if (q.npcId && content.npcsById[q.npcId]) {
+  // Reward the quest-giver's affinity. Only meaningful when a giver
+  // exists; for no-giver quests this block is skipped silently.
+  if (q.npcId && state.npcState) {
     ensureNpcState(state);
     const entry = state.npcState[q.npcId] ?? { affinity: 0 };
     entry.affinity = Math.min(AFFINITY_CAP, (entry.affinity ?? 0) + AFFINITY_PER_QUEST_COMPLETED);
@@ -1385,7 +1475,6 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   // Handle quest replenishment
   if (tmpl.replenishment) {
     if (tmpl.replenishment.type === 'daily') {
-      // Set cooldown for daily quest
       const cooldownMs = (tmpl.replenishment.cooldownHours || 24) * 60 * 60 * 1000;
       state.questAvailability[tmpl.id] = {
         type: 'daily',
@@ -1393,7 +1482,6 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
         availableAfterMs: atMs + cooldownMs
       };
     } else if (tmpl.replenishment.type === 'chain' && tmpl.replenishment.chainId) {
-      // Update chain progress using chainId as the key
       const chainId = tmpl.replenishment.chainId;
       const current = state.questAvailability[chainId] || { type: 'chain', chainProgress: 0 };
       current.chainProgress = tmpl.replenishment.chainStep || 0;
@@ -1881,6 +1969,23 @@ export function migrateState(raw: any, currentContentVersion: string): EngineSta
       raw.npcState = {};
     }
   }
+  if (incoming < 3) {
+    // v3 introduced 'ready_to_turn_in'. Any in-flight quest that's
+    // already at progress.current >= required AND has a giver should
+    // be parked at the new status — otherwise the next tick would
+    // re-trigger the old auto-complete path against a quest the player
+    // already finished, which the engine no longer recognizes.
+    if (Array.isArray(raw.quests)) {
+      for (const q of raw.quests) {
+        if (q && q.status === 'active'
+            && q.progress?.current >= q.progress?.required
+            && q.npcId
+            && !String(q.templateId ?? '').startsWith('dynamic_')) {
+          q.status = 'ready_to_turn_in';
+        }
+      }
+    }
+  }
 
   // Drop the old field name if present.
   if ('version' in raw) {
@@ -2017,7 +2122,9 @@ export function getAvailableQuests(state: EngineState, content: ContentIndex, no
     }
 
     // Skip if already active
-    if (state.quests.some(q => q.templateId === templateId && q.status === 'active')) {
+    // A quest that's already in-flight or sitting at the giver waiting
+    // to be turned in shouldn't be re-offered.
+    if (state.quests.some(q => q.templateId === templateId && (q.status === 'active' || q.status === 'ready_to_turn_in'))) {
       continue;
     }
 
@@ -2087,7 +2194,9 @@ export function getQuestsOfferedByNpc(
   for (const [templateId, tmpl] of Object.entries(content.questTemplatesById)) {
     if (templateId.startsWith('dynamic_')) continue;
     if (tmpl.questGiverNpcId !== npcId) continue;
-    if (state.quests.some(q => q.templateId === templateId && q.status === 'active')) continue;
+    // Skip when there's already an in-flight copy or one sitting ready
+    // for hand-in; otherwise the player could double up.
+    if (state.quests.some(q => q.templateId === templateId && (q.status === 'active' || q.status === 'ready_to_turn_in'))) continue;
 
     if (tmpl.replenishment) {
       if (tmpl.replenishment.type === 'daily') {
