@@ -552,3 +552,118 @@ describe('TURN_IN_QUEST command', () => {
     expect((err as any)?.payload.code).toBe('QUEST_NOT_READY');
   });
 });
+
+describe('Quest XP -> skill routing', () => {
+  // A content pack where the player can gather wood (woodcutting),
+  // copper ore (mining), and herbs (foraging) from one location. Used
+  // to exercise the inferSkillsForQuestXp scan.
+  const GIVER_ID = 'npc_aldric';
+  const CONTENT_XP: ContentIndex = {
+    ...CONTENT,
+    itemsById: {
+      item_wood:    { id: 'item_wood',    name: 'Wood',   stackable: true } as any,
+      item_copper:  { id: 'item_copper',  name: 'Copper', stackable: true } as any,
+      item_herb:    { id: 'item_herb',    name: 'Herb',   stackable: true } as any
+    },
+    locationsById: {
+      ...CONTENT.locationsById,
+      loc_forest: {
+        id: 'loc_forest', name: 'Forest', description: '',
+        activities: [], encounterTable: { entries: [] },
+        woodcuttingTable: { entries: [{ itemId: 'item_wood',   minQty: 1, maxQty: 1, weight: 10 }] },
+        miningTable:      { entries: [{ itemId: 'item_copper', minQty: 1, maxQty: 1, weight: 10 }] },
+        foragingTable:    { entries: [{ itemId: 'item_herb',   minQty: 1, maxQty: 1, weight: 10 }] }
+      } as any
+    },
+    recipesById: {
+      recipe_iron_sword: {
+        id: 'recipe_iron_sword', name: 'Iron Sword', skill: 'blacksmithing',
+        requiredSkillLevel: 5, inputs: [], outputs: []
+      } as any
+    },
+    npcsById: {
+      ...CONTENT.npcsById,
+      [GIVER_ID]: { id: GIVER_ID, name: 'Aldric', role: 'quartermaster', locationId: 'loc_haven', prompts: {} } as any
+    },
+    questTemplatesById: {
+      qt_gather_wood: {
+        id: 'qt_gather_wood', name: '', objectiveType: 'gather', targetItemId: 'item_wood',
+        questGiverNpcId: GIVER_ID, locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1, difficulty: 1,
+        rewardPack: { xp: 40 }
+      } as any,
+      qt_gather_copper: {
+        id: 'qt_gather_copper', name: '', objectiveType: 'gather', targetItemId: 'item_copper',
+        questGiverNpcId: GIVER_ID, locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1, difficulty: 1,
+        rewardPack: { xp: 40 }
+      } as any,
+      qt_gather_herb: {
+        id: 'qt_gather_herb', name: '', objectiveType: 'gather', targetItemId: 'item_herb',
+        questGiverNpcId: GIVER_ID, locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1, difficulty: 1,
+        rewardPack: { xp: 40 }
+      } as any,
+      qt_kill_rat: {
+        id: 'qt_kill_rat', name: '', objectiveType: 'kill', targetEnemyId: 'enemy_rat',
+        questGiverNpcId: GIVER_ID, locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1, difficulty: 1,
+        rewardPack: { xp: 40 }
+      } as any,
+      qt_craft_iron: {
+        id: 'qt_craft_iron', name: '', objectiveType: 'craft', targetRecipeId: 'recipe_iron_sword',
+        questGiverNpcId: GIVER_ID, locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1, difficulty: 1,
+        rewardPack: { xp: 40 }
+      } as any
+    }
+  };
+
+  function turnInAt(templateId: string): EngineState {
+    let state = freshState();
+    state = applyCommand(state, { type: 'ACCEPT_QUEST', templateId, atMs: 1000 }, CONTENT_XP).state;
+    const q = state.quests.find(x => x.templateId === templateId)!;
+    q.progress.current = q.progress.required;
+    q.status = 'ready_to_turn_in';
+    return applyCommand(state, { type: 'TURN_IN_QUEST', questId: q.id, atMs: 2000 }, CONTENT_XP).state;
+  }
+
+  it('routes gather-wood xp into woodcutting', () => {
+    const baseline = freshState();
+    const wcBefore = baseline.player.skills.woodcutting.xp;
+    const after = turnInAt('qt_gather_wood');
+    expect(after.player.skills.woodcutting.xp).toBe(wcBefore + 40);
+    // Other gathering skills should be untouched.
+    expect(after.player.skills.mining.xp).toBe(baseline.player.skills.mining.xp);
+    expect(after.player.skills.foraging.xp).toBe(baseline.player.skills.foraging.xp);
+  });
+
+  it('routes gather-ore xp into mining', () => {
+    const after = turnInAt('qt_gather_copper');
+    expect(after.player.skills.mining.xp).toBe(40);
+    expect(after.player.skills.woodcutting.xp).toBe(0);
+  });
+
+  it('routes gather-herb xp into foraging', () => {
+    const after = turnInAt('qt_gather_herb');
+    expect(after.player.skills.foraging.xp).toBe(40);
+    expect(after.player.skills.mining.xp).toBe(0);
+  });
+
+  it('splits kill xp across the four combat skills', () => {
+    const after = turnInAt('qt_kill_rat');
+    // 40 / 4 = 10 per skill.
+    expect(after.player.skills.swordsmanship.xp).toBe(10);
+    expect(after.player.skills.marksmanship.xp).toBe(10);
+    expect(after.player.skills.arcana.xp).toBe(10);
+    expect(after.player.skills.defense.xp).toBe(10);
+    // Non-combat skills untouched.
+    expect(after.player.skills.woodcutting.xp).toBe(0);
+  });
+
+  it('routes craft xp into the recipe\'s skill', () => {
+    const after = turnInAt('qt_craft_iron');
+    expect(after.player.skills.blacksmithing.xp).toBe(40);
+    expect(after.player.skills.swordsmanship.xp).toBe(0);
+  });
+});

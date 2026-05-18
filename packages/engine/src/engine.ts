@@ -295,7 +295,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         }));
         break;
       }
-      finalizeTemplateQuestCompletion(next, q, tmpl, events, cmd.atMs);
+      finalizeTemplateQuestCompletion(next, q, tmpl, content, events, cmd.atMs);
       break;
     }
     case 'EQUIP_ITEM': {
@@ -1424,7 +1424,7 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
     return;
   }
 
-  finalizeTemplateQuestCompletion(state, q, tmpl, events, atMs);
+  finalizeTemplateQuestCompletion(state, q, tmpl, content, events, atMs);
 }
 
 /**
@@ -1436,6 +1436,7 @@ function finalizeTemplateQuestCompletion(
   state: EngineState,
   q: QuestInstanceState,
   tmpl: QuestTemplateDef,
+  content: ContentIndex,
   events: GameEvent[],
   atMs: number
 ) {
@@ -1446,7 +1447,26 @@ function finalizeTemplateQuestCompletion(
   if (rewards.items) {
     for (const it of rewards.items) addItem(state.inventory, it.itemId, it.qty);
   }
-  if (rewards.xp) gainXp(state, rewards.xp, events, atMs);
+  // Distribute quest XP into the skill(s) that match the objective.
+  // We can't use gainXp directly because player.xp is a derived field
+  // recomputed by syncDerivedPlayerStats from skill XPs every tick —
+  // a raw add to player.xp would be overwritten on the next tick. So
+  // we route quest XP through gainSkillXp instead, and the derived
+  // total picks it up.
+  if (rewards.xp) {
+    const skills = inferSkillsForQuestXp(tmpl, content);
+    if (skills.length > 0) {
+      const share = Math.max(1, Math.floor(rewards.xp / skills.length));
+      let anyLeveled = false;
+      for (const skillId of skills) {
+        if (gainSkillXp(state, skillId, share, events, atMs)) anyLeveled = true;
+      }
+      if (anyLeveled) recalculateStats(state, content);
+    }
+    // If no mapping (e.g. exotic objective type), the XP reward goes
+    // unspent — better than the previous behavior (a write that gets
+    // silently overwritten next tick).
+  }
   if (rewards.gold) state.player.gold += rewards.gold;
   if (rewards.reputation) {
     for (const [k, v] of Object.entries(rewards.reputation)) {
@@ -1487,6 +1507,42 @@ function finalizeTemplateQuestCompletion(
       current.chainProgress = tmpl.replenishment.chainStep || 0;
       state.questAvailability[chainId] = current;
     }
+  }
+}
+
+/**
+ * Decide which skill(s) should receive a quest's xp reward.
+ *
+ * - gather: scan locations to find which table type (woodcutting / mining
+ *   / foraging) lists the target item, and credit that one skill.
+ * - kill: split across all four combat skills (swordsmanship,
+ *   marksmanship, arcana, defense) — the quest doesn't care how the
+ *   player fought, so reward broad combat readiness.
+ * - craft: use the recipe's authored skill.
+ *
+ * Returns [] when no sensible mapping exists; callers should silently
+ * drop the xp in that case rather than picking an arbitrary skill.
+ */
+function inferSkillsForQuestXp(tmpl: QuestTemplateDef, content: ContentIndex): SkillId[] {
+  switch (tmpl.objectiveType) {
+    case 'gather': {
+      const itemId = tmpl.targetItemId;
+      if (!itemId) return [];
+      for (const loc of Object.values(content.locationsById)) {
+        if (loc.woodcuttingTable?.entries.some((e: any) => e.itemId === itemId)) return ['woodcutting'];
+        if (loc.miningTable?.entries.some((e: any) => e.itemId === itemId)) return ['mining'];
+        if (loc.foragingTable?.entries.some((e: any) => e.itemId === itemId)) return ['foraging'];
+      }
+      return [];
+    }
+    case 'kill':
+      return ['swordsmanship', 'marksmanship', 'arcana', 'defense'];
+    case 'craft': {
+      const recipe = tmpl.targetRecipeId ? content.recipesById[tmpl.targetRecipeId] : undefined;
+      return recipe?.skill ? [recipe.skill as SkillId] : [];
+    }
+    default:
+      return [];
   }
 }
 
