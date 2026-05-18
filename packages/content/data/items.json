@@ -459,6 +459,7 @@
     "value": 1800,
     "type": "weapon",
     "rarity": "rare",
+    "tags": ["wand"],
     "description": "Focuses arcane energy for devastating attacks.",
     "modifiers": {
       "atk": 25,
@@ -650,6 +651,149 @@
     "modifiers": {
       "def": 35,
       "res": 0.2
+    }
+  },
+  {
+    "id": "item_hunting_bow",
+    "name": "Hunting Bow",
+    "stackable": false,
+    "value": 15,
+    "type": "weapon",
+    "rarity": "common",
+    "tags": ["bow"],
+    "description": "A short, springy bow. Better than throwing rocks.",
+    "modifiers": {
+      "atk": 2,
+      "critChance": 0.05
+    }
+  },
+  {
+    "id": "item_short_bow",
+    "name": "Short Bow",
+    "stackable": false,
+    "value": 50,
+    "type": "weapon",
+    "rarity": "common",
+    "tags": ["bow"],
+    "description": "A serviceable hunter's bow.",
+    "modifiers": {
+      "atk": 5,
+      "critChance": 0.05,
+      "spd": 1
+    }
+  },
+  {
+    "id": "item_iron_bow",
+    "name": "Iron-Reinforced Bow",
+    "stackable": false,
+    "value": 150,
+    "type": "weapon",
+    "rarity": "uncommon",
+    "tags": ["bow"],
+    "description": "A composite bow strengthened with iron limbs.",
+    "modifiers": {
+      "atk": 9,
+      "critChance": 0.07,
+      "spd": 1
+    }
+  },
+  {
+    "id": "item_yew_longbow",
+    "name": "Yew Longbow",
+    "stackable": false,
+    "value": 400,
+    "type": "weapon",
+    "rarity": "rare",
+    "tags": ["bow"],
+    "description": "A tall longbow carved from seasoned yew.",
+    "modifiers": {
+      "atk": 16,
+      "critChance": 0.08,
+      "spd": 1
+    }
+  },
+  {
+    "id": "item_storm_bow",
+    "name": "Storm Bow",
+    "stackable": false,
+    "value": 1000,
+    "type": "weapon",
+    "rarity": "epic",
+    "tags": ["bow"],
+    "description": "A masterwork bow that hums with quiet electricity.",
+    "modifiers": {
+      "atk": 22,
+      "critChance": 0.1,
+      "spd": 2
+    }
+  },
+  {
+    "id": "item_apprentice_staff",
+    "name": "Apprentice Staff",
+    "stackable": false,
+    "value": 15,
+    "type": "weapon",
+    "rarity": "common",
+    "tags": ["staff"],
+    "description": "A simple wooden staff with a faintly glowing tip.",
+    "modifiers": {
+      "atk": 2
+    }
+  },
+  {
+    "id": "item_carved_staff",
+    "name": "Carved Staff",
+    "stackable": false,
+    "value": 50,
+    "type": "weapon",
+    "rarity": "common",
+    "tags": ["staff"],
+    "description": "Runic carvings amplify minor cantrips.",
+    "modifiers": {
+      "atk": 5,
+      "critChance": 0.03
+    }
+  },
+  {
+    "id": "item_iron_tipped_staff",
+    "name": "Iron-Tipped Staff",
+    "stackable": false,
+    "value": 150,
+    "type": "weapon",
+    "rarity": "uncommon",
+    "tags": ["staff"],
+    "description": "Channels arcane force through a banded iron head.",
+    "modifiers": {
+      "atk": 10,
+      "critChance": 0.05
+    }
+  },
+  {
+    "id": "item_runed_staff",
+    "name": "Runed Staff",
+    "stackable": false,
+    "value": 400,
+    "type": "weapon",
+    "rarity": "rare",
+    "tags": ["staff"],
+    "description": "Silver runes catch the light and the eye.",
+    "modifiers": {
+      "atk": 18,
+      "critChance": 0.07
+    }
+  },
+  {
+    "id": "item_arch_staff",
+    "name": "Archmage's Staff",
+    "stackable": false,
+    "value": 1000,
+    "type": "weapon",
+    "rarity": "epic",
+    "tags": ["staff"],
+    "description": "A masterwork stave, carved by an archmage's own hand.",
+    "modifiers": {
+      "atk": 25,
+      "critChance": 0.1
     }
   }
 ]

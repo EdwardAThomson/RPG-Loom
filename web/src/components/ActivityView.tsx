@@ -147,29 +147,45 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                         between encounters. Shows a "searching" state in the
                         gap; the real fight content when an encounter is
                         actually active. */}
-                    {(state.activeEncounter || activity.params.type === 'hunt') && (
-                        <div className="combat-widget">
-                            {state.activeEncounter ? (
-                                <>
-                                    <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
-                                    <div style={{ fontSize: '1.1rem' }}>
-                                        {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
-                                    </div>
-                                    <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
-                                    <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                        HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h3 style={{ color: '#888', marginBottom: '0.5rem' }}>🔍 Searching</h3>
-                                    <div style={{ color: '#888', fontStyle: 'italic' }}>Scanning for foes…</div>
-                                    <div style={{ color: '#444', fontSize: '0.85rem', marginTop: '0.5rem' }}>—</div>
-                                    <div style={{ color: '#444', fontSize: '0.9rem', marginTop: '0.25rem' }}>HP: — / —</div>
-                                </>
-                            )}
-                        </div>
-                    )}
+                    {(state.activeEncounter || activity.params.type === 'hunt') && (() => {
+                        // Mirror the engine's weapon-skill mapping (engine.ts
+                        // resolveEncounterTick): wand/staff → Arcana, bow →
+                        // Marksmanship, anything else → Swordsmanship. Helps
+                        // the player see which skill their current weapon is
+                        // actually training.
+                        const weaponId = state.equipment.weapon;
+                        const tags: string[] = (weaponId && content?.itemsById?.[weaponId]?.tags) || [];
+                        const weaponSkill =
+                            tags.includes('bow') ? 'Marksmanship' :
+                            (tags.includes('wand') || tags.includes('staff')) ? 'Arcana' :
+                            'Swordsmanship';
+                        return (
+                            <div className="combat-widget">
+                                {state.activeEncounter ? (
+                                    <>
+                                        <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
+                                        <div style={{ fontSize: '1.1rem' }}>
+                                            {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
+                                        </div>
+                                        <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
+                                        <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                                            HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 style={{ color: '#888', marginBottom: '0.5rem' }}>🔍 Searching</h3>
+                                        <div style={{ color: '#888', fontStyle: 'italic' }}>Scanning for foes…</div>
+                                        <div style={{ color: '#444', fontSize: '0.85rem', marginTop: '0.5rem' }}>—</div>
+                                        <div style={{ color: '#444', fontSize: '0.9rem', marginTop: '0.25rem' }}>HP: — / —</div>
+                                    </>
+                                )}
+                                <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.4rem' }}>
+                                    Weapon skill: <span style={{ color: '#ddd' }}>{weaponSkill}</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {(state.activeEncounter || activity.params.type === 'hunt') && (

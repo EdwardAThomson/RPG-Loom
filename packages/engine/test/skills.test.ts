@@ -56,6 +56,26 @@ describe('Skill Stat Scaling', () => {
         expect(state.player.baseStats.critChance).toBeCloseTo(initialCrit + 0.05);
     });
 
+    it('should increase ATK when arcana levels up', () => {
+        const state = createNewState({
+            saveId: 'test',
+            playerId: 'p1',
+            playerName: 'Hero',
+            nowMs: 1000,
+            startLocationId: 'loc1'
+        });
+
+        const initialAtk = state.player.baseStats.atk;
+        expect(state.player.skills.arcana.level).toBe(1);
+
+        // Level up arcana to 5 (+4 from base)
+        state.player.skills.arcana.level = 5;
+        recalculateStats(state, mockContent);
+
+        // arcana: +0.5 ATK per level -> +2
+        expect(state.player.baseStats.atk).toBe(initialAtk + 2);
+    });
+
     it('should increase DEF and HP when defense levels up', () => {
         const state = createNewState({
             saveId: 'test',
