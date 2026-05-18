@@ -443,6 +443,10 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     {tmpl && (
                                         <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
                                             {getObjectiveText(tmpl)}
+                                            {tmpl.objectiveType !== 'craft' && (() => {
+                                                const locName = content?.locationsById?.[q.locationId]?.name;
+                                                return locName ? ` · in ${locName}` : '';
+                                            })()}
                                         </div>
                                     )}
 

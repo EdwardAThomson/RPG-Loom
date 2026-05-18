@@ -153,6 +153,11 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                     <Section title={inFlight.length === 1 ? 'Their errand' : 'Their errands'}>
                         {inFlight.map(q => {
                             const tmpl = content.questTemplatesById[q.templateId];
+                            // q.locationId is the resolved single location
+                            // picked at accept time — clearer than pool.
+                            const locName = tmpl?.objectiveType === 'craft'
+                                ? null
+                                : content.locationsById[q.locationId]?.name ?? null;
                             return (
                                 <div key={q.id} style={questRowStyle}>
                                     <div style={{ color: '#ddd', fontSize: '0.9rem' }}>
@@ -160,6 +165,7 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                                     </div>
                                     <div style={{ color: '#888', fontSize: '0.75rem' }}>
                                         in progress · {q.progress.current}/{q.progress.required}
+                                        {locName ? ` · in ${locName}` : ''}
                                     </div>
                                 </div>
                             );
@@ -244,6 +250,7 @@ function QuestOfferRow({
     onAccept: () => void;
 }) {
     const objective = describeObjective(tmpl, content);
+    const location = describeLocation(tmpl, content);
     const reward = describeReward(tmpl.rewardPack);
     return (
         <div style={questRowStyle}>
@@ -256,6 +263,7 @@ function QuestOfferRow({
             )}
             <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                 {objective}
+                {location ? ` · ${location}` : ''}
                 {reward ? ` · ${reward}` : ''}
             </div>
             <button
@@ -299,6 +307,18 @@ function describeObjective(tmpl: QuestTemplateDef, content: ContentIndex): strin
         default:
             return tmpl.objectiveType;
     }
+}
+
+// Surface where the activity actually happens so the player knows where
+// to go after accepting. Craft objectives are tied to workstations, not
+// the quest's locationPool, so we skip them.
+function describeLocation(tmpl: QuestTemplateDef, content: ContentIndex): string | null {
+    if (tmpl.objectiveType === 'craft') return null;
+    const pool = tmpl.locationPool ?? [];
+    if (pool.length === 0) return null;
+    const names = pool.map(id => content.locationsById[id]?.name ?? id);
+    if (names.length === 1) return `in ${names[0]}`;
+    return `in ${names.join(' or ')}`;
 }
 
 function describeReward(rp: QuestTemplateDef['rewardPack']): string {
