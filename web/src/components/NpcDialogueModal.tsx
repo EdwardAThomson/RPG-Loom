@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
-import { getAvailableQuests } from '@rpg-loom/engine';
+import { getQuestsOfferedByNpc } from '@rpg-loom/engine';
 import { generateNpcDialogue } from '../services/npcDialogue';
 import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 
@@ -85,8 +85,7 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
     // availability gate the Quest Board uses) plus active quests they've
     // already handed out that aren't done yet.
     const { offered, inFlight } = useMemo(() => {
-        const offered = getAvailableQuests(state, content, Date.now())
-            .filter(t => t.questGiverNpcId === npc.id);
+        const offered = getQuestsOfferedByNpc(state, content, npc.id, Date.now());
         const inFlight = state.quests.filter(
             q => q.npcId === npc.id && q.status === 'active' && !q.templateId.startsWith('dynamic_')
         );

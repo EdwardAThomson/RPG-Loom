@@ -2063,3 +2063,49 @@ export function getAvailableQuests(state: EngineState, content: ContentIndex, no
 
   return available;
 }
+
+/**
+ * Quests this NPC currently has on offer.
+ *
+ * Mirrors `getAvailableQuests` (active/replenishment/one-time gates) but
+ * deliberately skips the "player must be at the quest's locationPool"
+ * check: the player IS at the NPC's location by the time the dialogue
+ * modal renders (engine's TALK_TO_NPC already enforces co-location), and
+ * the quest activity can take place elsewhere. The giver is fixed to
+ * this NPC; the activity location is not.
+ */
+export function getQuestsOfferedByNpc(
+  state: EngineState,
+  content: ContentIndex,
+  npcId: string,
+  nowMs: number
+): QuestTemplateDef[] {
+  ensureQuestAvailability(state);
+  if (!content?.questTemplatesById) return [];
+
+  const out: QuestTemplateDef[] = [];
+  for (const [templateId, tmpl] of Object.entries(content.questTemplatesById)) {
+    if (templateId.startsWith('dynamic_')) continue;
+    if (tmpl.questGiverNpcId !== npcId) continue;
+    if (state.quests.some(q => q.templateId === templateId && q.status === 'active')) continue;
+
+    if (tmpl.replenishment) {
+      if (tmpl.replenishment.type === 'daily') {
+        const availability = state.questAvailability[templateId];
+        if (availability?.availableAfterMs && nowMs < availability.availableAfterMs) continue;
+      } else if (tmpl.replenishment.type === 'chain' && tmpl.replenishment.chainId) {
+        const chainId = tmpl.replenishment.chainId;
+        const chainAvailability = state.questAvailability[chainId];
+        const chainStep = tmpl.replenishment.chainStep || 1;
+        const chainProgress = chainAvailability?.chainProgress || 0;
+        if (chainProgress < chainStep - 1) continue;
+        if (chainProgress >= chainStep) continue;
+      }
+    } else {
+      if (state.quests.some(q => q.templateId === templateId && q.status === 'completed')) continue;
+    }
+
+    out.push(tmpl);
+  }
+  return out;
+}
