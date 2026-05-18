@@ -433,3 +433,122 @@ describe('migrateState v1 → v2 (Phase 3a)', () => {
     expect(migrated.npcState.npc_existing.firstMetAtMs).toBe(5);
   });
 });
+
+describe('migrateState v2 → v3 (turn-in flow)', () => {
+  it('parks 5/5 active quests with a giver at ready_to_turn_in', () => {
+    const v2Save: any = {
+      engineVersion: 2,
+      saveId: 's', createdAtMs: 1, updatedAtMs: 2, tickIndex: 0, lastTickAtMs: 0, nextEventId: 0,
+      currentLocationId: 'loc_haven',
+      player: {
+        id: 'p', name: 'X', level: 0, combatLevel: 0, xp: 0, gold: 0, tactics: 'balanced',
+        baseStats: { hp: 25, hpMax: 25, atk: 5, def: 3, spd: 5, critChance: 0.05, critMult: 1.5, res: 0.05 },
+        skills: {}, reputation: {}, flags: {}
+      },
+      inventory: [], equipment: {},
+      quests: [
+        // mid-flight, no giver — should stay active
+        { id: 'q1', templateId: 'tmpl_a', status: 'active', progress: { current: 3, required: 5 }, locationId: 'loc_haven', createdAtMs: 0 },
+        // hit 5/5 with a giver — should bump to ready_to_turn_in
+        { id: 'q2', templateId: 'tmpl_b', status: 'active', progress: { current: 5, required: 5 }, locationId: 'loc_haven', npcId: 'npc_aldric', createdAtMs: 0 },
+        // hit 5/5 with NO giver — should stay active (auto-complete path)
+        { id: 'q3', templateId: 'tmpl_c', status: 'active', progress: { current: 5, required: 5 }, locationId: 'loc_haven', createdAtMs: 0 },
+        // dynamic sub-quest at 5/5 — should stay active (no turn-in for dynamic)
+        { id: 'q4', templateId: 'dynamic_kill_enemy_rat', status: 'active', progress: { current: 5, required: 5 }, locationId: 'loc_haven', npcId: 'npc_aldric', createdAtMs: 0 }
+      ],
+      questAvailability: {},
+      activity: { id: 'act_idle_0', params: { type: 'idle' }, startedAtMs: 0 },
+      metrics: { startTimeMs: 0, startXp: 0, startGold: 0 },
+      npcState: {}
+    };
+
+    const migrated = migrateState(v2Save, '2026-05-18');
+    expect(migrated.engineVersion).toBe(CURRENT_ENGINE_VERSION);
+    const byId = Object.fromEntries(migrated.quests.map(q => [q.id, q]));
+    expect(byId.q1.status).toBe('active');
+    expect(byId.q2.status).toBe('ready_to_turn_in');
+    expect(byId.q3.status).toBe('active');
+    expect(byId.q4.status).toBe('active');
+  });
+});
+
+describe('TURN_IN_QUEST command', () => {
+  // A minimal content pack hosting one quest from one giver at loc_haven.
+  const GIVER_ID = 'npc_aldric';
+  const CONTENT_TURN_IN: ContentIndex = {
+    ...CONTENT,
+    itemsById: {
+      item_wood: { id: 'item_wood', name: 'Wood', stackable: true } as any
+    },
+    questTemplatesById: {
+      qt_turn_in: {
+        id: 'qt_turn_in', name: 'Turn-In Errand',
+        objectiveType: 'gather', targetItemId: 'item_wood',
+        questGiverNpcId: GIVER_ID,
+        locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 10, gold: 7 }
+      } as any
+    },
+    npcsById: {
+      ...CONTENT.npcsById,
+      [GIVER_ID]: {
+        id: GIVER_ID, name: 'Aldric',
+        role: 'quartermaster', locationId: 'loc_haven', prompts: {}
+      } as any
+    },
+    locationsById: {
+      ...CONTENT.locationsById,
+      loc_forest: { id: 'loc_forest', name: 'Forest', description: '', activities: [], encounterTable: { entries: [] } } as any
+    }
+  };
+
+  function readyQuest(): { state: any; questId: string } {
+    const state = freshState();
+    const accepted = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_turn_in', atMs: 1000
+    }, CONTENT_TURN_IN).state;
+    const q = accepted.quests.find(x => x.templateId === 'qt_turn_in')!;
+    q.progress.current = q.progress.required;
+    q.status = 'ready_to_turn_in';
+    return { state: accepted, questId: q.id };
+  }
+
+  it('credits rewards + bumps affinity when at giver location', () => {
+    const { state: initial, questId } = readyQuest();
+    expect(initial.currentLocationId).toBe('loc_haven'); // freshState starts at loc_haven
+    const goldBefore = initial.player.gold;
+
+    const res = applyCommand(initial, { type: 'TURN_IN_QUEST', questId, atMs: 2000 }, CONTENT_TURN_IN);
+    expect(res.state.quests.find(q => q.id === questId)?.status).toBe('completed');
+    expect(res.state.player.gold).toBe(goldBefore + 7);
+    expect(res.state.npcState[GIVER_ID].affinity).toBeGreaterThanOrEqual(5);
+    expect(res.events.find(e => e.type === 'QUEST_COMPLETED')).toBeDefined();
+    expect(res.events.find(e => e.type === 'NPC_INTERACTED')).toBeDefined();
+  });
+
+  it('refuses turn-in when not at the giver\'s location', () => {
+    const { state: ready, questId } = readyQuest();
+    // Force the player elsewhere without TRAVELling (engine respects current state).
+    const elsewhere = { ...ready, currentLocationId: 'loc_forest' };
+
+    const res = applyCommand(elsewhere, { type: 'TURN_IN_QUEST', questId, atMs: 2000 }, CONTENT_TURN_IN);
+    expect(res.state.quests.find(q => q.id === questId)?.status).toBe('ready_to_turn_in');
+    const err = res.events.find(e => e.type === 'ERROR');
+    expect((err as any)?.payload.code).toBe('NPC_NOT_HERE');
+  });
+
+  it('refuses turn-in if the quest is not at ready_to_turn_in', () => {
+    const fresh = freshState();
+    const accepted = applyCommand(fresh, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_turn_in', atMs: 1000
+    }, CONTENT_TURN_IN).state;
+    const q = accepted.quests.find(x => x.templateId === 'qt_turn_in')!;
+    // Still 'active' (no progress yet).
+    const res = applyCommand(accepted, { type: 'TURN_IN_QUEST', questId: q.id, atMs: 2000 }, CONTENT_TURN_IN);
+    expect(res.state.quests[0].status).toBe('active');
+    const err = res.events.find(e => e.type === 'ERROR');
+    expect((err as any)?.payload.code).toBe('QUEST_NOT_READY');
+  });
+});

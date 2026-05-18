@@ -266,7 +266,11 @@ export interface PlayerState {
 export interface QuestInstanceState {
   id: QuestInstanceId;
   templateId: QuestTemplateId;
-  status: 'active' | 'completed' | 'failed' | 'abandoned';
+  // 'ready_to_turn_in' is the step between hitting the objective count
+  // and handing the quest in to its giver. Only quests with an npcId
+  // enter this state; quests without a giver (adventure sub-quests,
+  // templates lacking questGiverNpcId) auto-complete as before.
+  status: 'active' | 'ready_to_turn_in' | 'completed' | 'failed' | 'abandoned';
   // For most templates a single counter is enough; keep it simple for MVP
   progress: {
     current: number;
@@ -404,6 +408,11 @@ export type PlayerCommand =
   }
   | {
     type: 'ABANDON_QUEST';
+    questId: QuestInstanceId;
+    atMs: number;
+  }
+  | {
+    type: 'TURN_IN_QUEST';
     questId: QuestInstanceId;
     atMs: number;
   }
@@ -550,6 +559,7 @@ export type GameEvent =
   | BaseEvent<'ACTIVITY_SET', { activity: ActivityParams }>
   | BaseEvent<'QUEST_ACCEPTED', { questId: QuestInstanceId; templateId: QuestTemplateId; locationId: LocationId; npcId?: NpcId }>
   | BaseEvent<'QUEST_PROGRESS', { questId: QuestInstanceId; gained: number; current: number; required: number }>
+  | BaseEvent<'QUEST_READY_FOR_TURN_IN', { questId: QuestInstanceId; templateId: QuestTemplateId; npcId: NpcId }>
   | BaseEvent<'QUEST_COMPLETED', { questId: QuestInstanceId; templateId: QuestTemplateId; rewards: RewardPack }>
   | BaseEvent<'ENCOUNTER_STARTED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number }>
   | BaseEvent<'ENCOUNTER_RESOLVED', { locationId: LocationId; enemyId: EnemyId; enemyLevel: number; outcome: 'win' | 'loss' | 'escape' }>

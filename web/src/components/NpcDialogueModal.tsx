@@ -84,18 +84,24 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
     // Quests this NPC currently has on offer (filtered through the same
     // availability gate the Quest Board uses) plus active quests they've
     // already handed out that aren't done yet.
-    const { offered, inFlight } = useMemo(() => {
+    const { offered, inFlight, readyToHandIn } = useMemo(() => {
         const offered = getQuestsOfferedByNpc(state, content, npc.id, Date.now());
-        const inFlight = state.quests.filter(
-            q => q.npcId === npc.id && q.status === 'active' && !q.templateId.startsWith('dynamic_')
+        const mine = state.quests.filter(
+            q => q.npcId === npc.id && !q.templateId.startsWith('dynamic_')
         );
-        return { offered, inFlight };
+        const inFlight = mine.filter(q => q.status === 'active');
+        const readyToHandIn = mine.filter(q => q.status === 'ready_to_turn_in');
+        return { offered, inFlight, readyToHandIn };
     }, [state, content, npc.id]);
 
     const acceptQuest = (templateId: string) => {
         // Pass an explicit npcId so attribution survives even if the
         // template's questGiverNpcId is ever cleared.
         dispatch({ type: 'ACCEPT_QUEST', templateId, npcId: npc.id, atMs: Date.now() });
+    };
+
+    const turnInQuest = (questId: string) => {
+        dispatch({ type: 'TURN_IN_QUEST', questId, atMs: Date.now() });
     };
 
     return (
@@ -146,6 +152,45 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                 {prompts.questIntro && (
                     <Section title="A favor to ask">
                         <p style={dialogueStyle}>“{prompts.questIntro}”</p>
+                    </Section>
+                )}
+
+                {readyToHandIn.length > 0 && (
+                    <Section title={readyToHandIn.length === 1 ? 'Ready to hand in' : 'Ready to hand in'}>
+                        {readyToHandIn.map(q => {
+                            const tmpl = content.questTemplatesById[q.templateId];
+                            const reward = tmpl ? describeReward(tmpl.rewardPack) : '';
+                            return (
+                                <div key={q.id} style={{ ...questRowStyle, border: '1px solid #8fbc8f' }}>
+                                    <div style={{ color: '#ddd', fontSize: '0.9rem' }}>
+                                        {tmpl?.name ?? q.templateId}
+                                    </div>
+                                    <div style={{ color: '#8fbc8f', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                                        ready · {q.progress.current}/{q.progress.required}
+                                        {reward ? ` · ${reward}` : ''}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => turnInQuest(q.id)}
+                                        disabled={!isHere}
+                                        title={isHere ? 'Hand this quest in for rewards.' : `Travel to ${location?.name ?? npc.locationId}.`}
+                                        style={{
+                                            marginTop: '0.4rem',
+                                            padding: '0.35rem 0.7rem',
+                                            background: '#2a2a2a',
+                                            color: '#fff',
+                                            border: '1px solid #8fbc8f',
+                                            borderRadius: 3,
+                                            cursor: isHere ? 'pointer' : 'not-allowed',
+                                            opacity: isHere ? 1 : 0.5,
+                                            fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        Hand in
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </Section>
                 )}
 
