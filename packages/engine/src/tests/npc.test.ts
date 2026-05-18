@@ -4,7 +4,8 @@ import {
   createNewState,
   migrateState,
   AFFINITY_CAP,
-  CURRENT_ENGINE_VERSION
+  CURRENT_ENGINE_VERSION,
+  getQuestsOfferedByNpc
 } from '../engine.js';
 import type { ContentIndex } from '@rpg-loom/shared';
 
@@ -210,6 +211,179 @@ describe('TALK_TO_NPC command', () => {
     expect((err as any).payload.code).toBe('NPC_NOT_HERE');
     // No NPC_INTERACTED should have fired.
     expect(res.events.find(e => e.type === 'NPC_INTERACTED')).toBeUndefined();
+  });
+});
+
+describe('Quest-giver attribution', () => {
+  const GIVER_ID = 'npc_giver';
+  const QUEST_CONTENT: ContentIndex = {
+    ...CONTENT,
+    itemsById: {
+      item_wood: { id: 'item_wood', name: 'Wood', stackable: true } as any
+    },
+    questTemplatesById: {
+      qt_attributed: {
+        id: 'qt_attributed',
+        name: 'Attributed Errand',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        questGiverNpcId: GIVER_ID,
+        locationPool: ['loc_haven'],
+        qtyMin: 1,
+        qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 10, gold: 5 }
+      } as any,
+      qt_unattributed: {
+        id: 'qt_unattributed',
+        name: 'No-Giver Errand',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        locationPool: ['loc_haven'],
+        qtyMin: 1,
+        qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 10, gold: 5 }
+      } as any
+    },
+    npcsById: {
+      ...CONTENT.npcsById,
+      [GIVER_ID]: {
+        id: GIVER_ID, name: 'The Giver',
+        role: 'quartermaster', locationId: 'loc_haven', prompts: {}
+      } as any
+    }
+  };
+
+  it('ACCEPT_QUEST inherits npcId from template.questGiverNpcId', () => {
+    const state = freshState();
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_attributed', atMs: 2000
+    }, QUEST_CONTENT);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_attributed');
+    expect(quest).toBeDefined();
+    expect(quest?.npcId).toBe(GIVER_ID);
+
+    const accepted = res.events.find(e => e.type === 'QUEST_ACCEPTED');
+    expect((accepted as any).payload.npcId).toBe(GIVER_ID);
+  });
+
+  it('an explicit cmd.npcId wins over the template default', () => {
+    const state = freshState();
+    // Add a second NPC at the same location so the override is valid.
+    const c2 = {
+      ...QUEST_CONTENT,
+      npcsById: {
+        ...QUEST_CONTENT.npcsById,
+        npc_other: { id: 'npc_other', name: 'Other', role: 'generic', locationId: 'loc_haven', prompts: {} } as any
+      }
+    };
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_attributed', npcId: 'npc_other', atMs: 2000
+    }, c2);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_attributed');
+    expect(quest?.npcId).toBe('npc_other');
+  });
+
+  it('templates without questGiverNpcId leave the instance npcId undefined', () => {
+    const state = freshState();
+    const res = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_unattributed', atMs: 2000
+    }, QUEST_CONTENT);
+
+    const quest = res.state.quests.find(q => q.templateId === 'qt_unattributed');
+    expect(quest?.npcId).toBeUndefined();
+  });
+
+  // Completion-side affinity bump is covered in gameplay_loop.test.ts
+  // because it requires the real activity loop to drive quest progress.
+});
+
+describe('getQuestsOfferedByNpc', () => {
+  const GIVER_ID = 'npc_giver';
+  // Quest activity is at loc_forest; giver lives at loc_haven. The player
+  // is standing at loc_haven (next to the giver) and we expect the quest
+  // to still surface — that's the whole point of the helper.
+  const CONTENT_REMOTE_ACTIVITY: ContentIndex = {
+    ...CONTENT,
+    itemsById: { item_wood: { id: 'item_wood', name: 'Wood', stackable: true } as any },
+    locationsById: {
+      ...CONTENT.locationsById,
+      loc_forest: {
+        id: 'loc_forest', name: 'Forest', description: '',
+        activities: [], encounterTable: { entries: [] }
+      } as any
+    },
+    questTemplatesById: {
+      qt_remote: {
+        id: 'qt_remote',
+        name: 'Gather from Afar',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        questGiverNpcId: GIVER_ID,
+        locationPool: ['loc_forest'],
+        qtyMin: 1, qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 1, gold: 1 }
+      } as any,
+      qt_other_giver: {
+        id: 'qt_other_giver',
+        name: 'Someone Else\'s Job',
+        objectiveType: 'gather',
+        targetItemId: 'item_wood',
+        questGiverNpcId: 'npc_other',
+        locationPool: ['loc_haven'],
+        qtyMin: 1, qtyMax: 1,
+        difficulty: 1,
+        rewardPack: { xp: 1, gold: 1 }
+      } as any
+    },
+    npcsById: {
+      ...CONTENT.npcsById,
+      [GIVER_ID]: {
+        id: GIVER_ID, name: 'The Giver',
+        role: 'quartermaster', locationId: 'loc_haven', prompts: {}
+      } as any
+    }
+  };
+
+  it('surfaces a giver\'s quest even when the activity location is elsewhere', () => {
+    const state = freshState();
+    // Player is at loc_haven (the giver's location); the quest's activity
+    // is at loc_forest. The Quest Board would hide this, but the giver
+    // modal should not.
+    const offered = getQuestsOfferedByNpc(state, CONTENT_REMOTE_ACTIVITY, GIVER_ID, 2000);
+    expect(offered.map(t => t.id)).toEqual(['qt_remote']);
+  });
+
+  it('does not include quests attributed to a different NPC', () => {
+    const state = freshState();
+    const offered = getQuestsOfferedByNpc(state, CONTENT_REMOTE_ACTIVITY, GIVER_ID, 2000);
+    expect(offered.find(t => t.id === 'qt_other_giver')).toBeUndefined();
+  });
+
+  it('hides a quest that is already active', () => {
+    let state = freshState();
+    state = applyCommand(state, {
+      type: 'ACCEPT_QUEST', templateId: 'qt_remote', atMs: 2000
+    }, CONTENT_REMOTE_ACTIVITY).state;
+
+    const offered = getQuestsOfferedByNpc(state, CONTENT_REMOTE_ACTIVITY, GIVER_ID, 2000);
+    expect(offered).toEqual([]);
+  });
+
+  it('hides a one-time quest that has already been completed', () => {
+    const state = freshState();
+    state.quests.push({
+      id: 'q_done', templateId: 'qt_remote', status: 'completed',
+      progress: { current: 1, required: 1 }, locationId: 'loc_forest',
+      createdAtMs: 1000, completedAtMs: 2000, npcId: GIVER_ID
+    } as any);
+
+    const offered = getQuestsOfferedByNpc(state, CONTENT_REMOTE_ACTIVITY, GIVER_ID, 2000);
+    expect(offered).toEqual([]);
   });
 });
 

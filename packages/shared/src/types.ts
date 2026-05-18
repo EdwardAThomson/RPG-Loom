@@ -150,6 +150,14 @@ export interface QuestTemplateDef {
   rewardPack: RewardPack;
   difficulty: 1 | 2 | 3 | 4 | 5;
 
+  /**
+   * NPC who hands out this quest. When set, ACCEPT_QUEST defaults its
+   * `npcId` to this value (so the quest instance carries the giver) and
+   * completing the quest bumps the giver's affinity. The UI surfaces
+   * the giver on the quest board and in the NPC's dialogue modal.
+   */
+  questGiverNpcId?: NpcId;
+
   // Quest replenishment configuration (optional)
   replenishment?: {
     type: 'daily' | 'chain';

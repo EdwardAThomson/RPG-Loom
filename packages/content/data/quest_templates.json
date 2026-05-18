@@ -5,6 +5,7 @@
     "description": "Gather wood to prepare for the journey.",
     "objectiveType": "gather",
     "targetItemId": "item_wood",
+    "questGiverNpcId": "npc_aldric",
     "locationPool": [
       "loc_forest"
     ],
@@ -28,6 +29,7 @@
     "description": "Craft a Bronze Sword to defend yourself.",
     "objectiveType": "craft",
     "targetRecipeId": "recipe_bronze_sword",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -51,6 +53,7 @@
     "description": "Clear out the Giant Rats in the forest.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_rat",
+    "questGiverNpcId": "npc_marrick",
     "locationPool": [
       "loc_forest"
     ],
@@ -71,6 +74,7 @@
     "description": "Mine Copper Ore for the smith.",
     "objectiveType": "gather",
     "targetItemId": "item_copper_ore",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -94,6 +98,7 @@
     "description": "Deal with the bandits harassing travelers.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_bandit",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_forest"
     ],
@@ -117,6 +122,7 @@
     "description": "Scout the Old Quarry.",
     "objectiveType": "gather",
     "targetItemId": "item_stone",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_quarry"
     ],
@@ -134,6 +140,7 @@
     "description": "Defeat Rock Golems to clear the path.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_golem",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_quarry"
     ],
@@ -157,6 +164,7 @@
     "description": "Gather Iron Ore for better gear.",
     "objectiveType": "gather",
     "targetItemId": "item_iron_ore",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_quarry"
     ],
@@ -180,6 +188,7 @@
     "description": "Collect slime gel from Green Slimes.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_slime",
+    "questGiverNpcId": "npc_vesna",
     "locationPool": [
       "loc_swamp"
     ],
@@ -203,6 +212,7 @@
     "description": "Gather Green Herbs from the swamp.",
     "objectiveType": "gather",
     "targetItemId": "item_herb_green",
+    "questGiverNpcId": "npc_vesna",
     "locationPool": [
       "loc_swamp"
     ],
@@ -220,6 +230,7 @@
     "description": "Craft a full set of Iron Gear (Sword).",
     "objectiveType": "craft",
     "targetRecipeId": "recipe_iron_sword",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_quarry"
     ],
@@ -243,6 +254,7 @@
     "description": "Investigate the Forgotten Catacombs.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_skeleton",
+    "questGiverNpcId": "npc_vidar",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -266,6 +278,7 @@
     "description": "Gather Silver Ore from the catacombs.",
     "objectiveType": "gather",
     "targetItemId": "item_silver_ore",
+    "questGiverNpcId": "npc_kael",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -283,6 +296,7 @@
     "description": "Put Wailing Ghosts to rest.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_ghost",
+    "questGiverNpcId": "npc_kael",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -306,6 +320,7 @@
     "description": "Begin your climb up Jagged Peak.",
     "objectiveType": "gather",
     "targetItemId": "item_frost_stone",
+    "questGiverNpcId": "npc_vidar",
     "locationPool": [
       "loc_peak"
     ],
@@ -323,6 +338,7 @@
     "description": "Hunt Yetis for their warm fur.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_yeti",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_peak"
     ],
@@ -346,6 +362,7 @@
     "description": "Mine Gold Ore from the peak.",
     "objectiveType": "gather",
     "targetItemId": "item_gold_ore",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_peak"
     ],
@@ -363,6 +380,7 @@
     "description": "Craft a Gold Sword.",
     "objectiveType": "craft",
     "targetRecipeId": "recipe_gold_sword",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_peak"
     ],
@@ -386,6 +404,7 @@
     "description": "Defeat the Storm Roc at the peak.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_roc",
+    "questGiverNpcId": "npc_lyra",
     "locationPool": [
       "loc_peak"
     ],
@@ -406,6 +425,7 @@
     "description": "Prove your mastery by crafting a stack of Gold Ingots.",
     "objectiveType": "craft",
     "targetRecipeId": "recipe_gold_ingot",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_peak"
     ],
@@ -423,6 +443,7 @@
     "description": "The smith needs a steady supply of copper ore.",
     "objectiveType": "gather",
     "targetItemId": "item_copper_ore",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -444,6 +465,7 @@
     "description": "Gather wood for the village carpenters.",
     "objectiveType": "gather",
     "targetItemId": "item_wood",
+    "questGiverNpcId": "npc_aldric",
     "locationPool": [
       "loc_forest"
     ],
@@ -465,6 +487,7 @@
     "description": "Keep the rat population under control.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_rat",
+    "questGiverNpcId": "npc_eolyn",
     "locationPool": [
       "loc_forest"
     ],
@@ -486,6 +509,7 @@
     "description": "The quarry needs iron ore delivered daily.",
     "objectiveType": "gather",
     "targetItemId": "item_iron_ore",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_quarry"
     ],
@@ -507,6 +531,7 @@
     "description": "Meet the daily stone mining quota.",
     "objectiveType": "gather",
     "targetItemId": "item_stone",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_quarry"
     ],
@@ -528,6 +553,7 @@
     "description": "Collect herbs for the apothecary.",
     "objectiveType": "gather",
     "targetItemId": "item_herb_green",
+    "questGiverNpcId": "npc_branna",
     "locationPool": [
       "loc_swamp"
     ],
@@ -549,6 +575,7 @@
     "description": "Clear out the restless undead in the catacombs.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_skeleton",
+    "questGiverNpcId": "npc_kael",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -570,6 +597,7 @@
     "description": "Mine silver ore from the haunted depths.",
     "objectiveType": "gather",
     "targetItemId": "item_silver_ore",
+    "questGiverNpcId": "npc_kael",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -591,6 +619,7 @@
     "description": "Gather bone fragments for the necromancer's research.",
     "objectiveType": "gather",
     "targetItemId": "item_bone_fragment",
+    "questGiverNpcId": "npc_kael",
     "locationPool": [
       "loc_catacombs"
     ],
@@ -612,6 +641,7 @@
     "description": "Hunt yetis to protect mountain travelers.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_yeti",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_peak"
     ],
@@ -633,6 +663,7 @@
     "description": "Mine precious gold ore from the peak.",
     "objectiveType": "gather",
     "targetItemId": "item_gold_ore",
+    "questGiverNpcId": "npc_brokk",
     "locationPool": [
       "loc_peak"
     ],
@@ -654,6 +685,7 @@
     "description": "Gather frost stones from the frozen heights.",
     "objectiveType": "gather",
     "targetItemId": "item_frost_stone",
+    "questGiverNpcId": "npc_vidar",
     "locationPool": [
       "loc_peak"
     ],
@@ -675,6 +707,7 @@
     "description": "Hunt harpies threatening the mountain pass.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_harpy",
+    "questGiverNpcId": "npc_lyra",
     "locationPool": [
       "loc_peak"
     ],
@@ -696,6 +729,7 @@
     "description": "Begin your journey as a master miner.",
     "objectiveType": "gather",
     "targetItemId": "item_copper_ore",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -719,6 +753,7 @@
     "description": "Your mining skills are improving. Gather more ore.",
     "objectiveType": "gather",
     "targetItemId": "item_copper_ore",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -742,6 +777,7 @@
     "description": "Become a legendary miner. Prove your mastery.",
     "objectiveType": "gather",
     "targetItemId": "item_copper_ore",
+    "questGiverNpcId": "npc_tovan",
     "locationPool": [
       "loc_forest"
     ],
@@ -770,6 +806,7 @@
     "description": "Prove yourself in battle against rats.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_rat",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_forest"
     ],
@@ -793,6 +830,7 @@
     "description": "Face tougher foes. Hunt bandits.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_bandit",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_forest"
     ],
@@ -822,6 +860,7 @@
     "description": "Master warrior training. Defeat golems.",
     "objectiveType": "kill",
     "targetEnemyId": "enemy_golem",
+    "questGiverNpcId": "npc_mira",
     "locationPool": [
       "loc_quarry"
     ],
@@ -850,6 +889,7 @@
     "description": "Start your path to becoming a master lumberjack.",
     "objectiveType": "gather",
     "targetItemId": "item_wood",
+    "questGiverNpcId": "npc_aldric",
     "locationPool": [
       "loc_forest"
     ],
@@ -873,6 +913,7 @@
     "description": "Your axe skills are improving. Gather more timber.",
     "objectiveType": "gather",
     "targetItemId": "item_wood",
+    "questGiverNpcId": "npc_aldric",
     "locationPool": [
       "loc_forest"
     ],
@@ -902,6 +943,7 @@
     "description": "Become a legendary lumberjack.",
     "objectiveType": "gather",
     "targetItemId": "item_wood",
+    "questGiverNpcId": "npc_aldric",
     "locationPool": [
       "loc_forest"
     ],

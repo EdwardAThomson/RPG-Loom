@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand } from '@rpg-loom/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
+import { getQuestsOfferedByNpc } from '@rpg-loom/engine';
 import { generateNpcDialogue } from '../services/npcDialogue';
 import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 
@@ -80,6 +81,23 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
     // instead of producing a silent error.
     const isHere = state.currentLocationId === npc.locationId;
 
+    // Quests this NPC currently has on offer (filtered through the same
+    // availability gate the Quest Board uses) plus active quests they've
+    // already handed out that aren't done yet.
+    const { offered, inFlight } = useMemo(() => {
+        const offered = getQuestsOfferedByNpc(state, content, npc.id, Date.now());
+        const inFlight = state.quests.filter(
+            q => q.npcId === npc.id && q.status === 'active' && !q.templateId.startsWith('dynamic_')
+        );
+        return { offered, inFlight };
+    }, [state, content, npc.id]);
+
+    const acceptQuest = (templateId: string) => {
+        // Pass an explicit npcId so attribution survives even if the
+        // template's questGiverNpcId is ever cleared.
+        dispatch({ type: 'ACCEPT_QUEST', templateId, npcId: npc.id, atMs: Date.now() });
+    };
+
     return (
         <div
             className="modal-overlay"
@@ -128,6 +146,38 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                 {prompts.questIntro && (
                     <Section title="A favor to ask">
                         <p style={dialogueStyle}>“{prompts.questIntro}”</p>
+                    </Section>
+                )}
+
+                {inFlight.length > 0 && (
+                    <Section title={inFlight.length === 1 ? 'Their errand' : 'Their errands'}>
+                        {inFlight.map(q => {
+                            const tmpl = content.questTemplatesById[q.templateId];
+                            return (
+                                <div key={q.id} style={questRowStyle}>
+                                    <div style={{ color: '#ddd', fontSize: '0.9rem' }}>
+                                        {tmpl?.name ?? q.templateId}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '0.75rem' }}>
+                                        in progress · {q.progress.current}/{q.progress.required}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </Section>
+                )}
+
+                {offered.length > 0 && (
+                    <Section title={offered.length === 1 ? 'They have work' : 'Work they offer'}>
+                        {offered.map(tmpl => (
+                            <QuestOfferRow
+                                key={tmpl.id}
+                                tmpl={tmpl}
+                                content={content}
+                                canAccept={isHere}
+                                onAccept={() => acceptQuest(tmpl.id)}
+                            />
+                        ))}
                     </Section>
                 )}
 
@@ -182,6 +232,82 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
     );
 }
 
+function QuestOfferRow({
+    tmpl,
+    content,
+    canAccept,
+    onAccept
+}: {
+    tmpl: QuestTemplateDef;
+    content: ContentIndex;
+    canAccept: boolean;
+    onAccept: () => void;
+}) {
+    const objective = describeObjective(tmpl, content);
+    const reward = describeReward(tmpl.rewardPack);
+    return (
+        <div style={questRowStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
+                <div style={{ color: '#ddd', fontSize: '0.9rem' }}>{tmpl.name ?? tmpl.id}</div>
+                <div style={{ color: '#ffa500', fontSize: '0.75rem' }}>{'★'.repeat(tmpl.difficulty)}</div>
+            </div>
+            {tmpl.description && (
+                <div style={{ color: '#aaa', fontSize: '0.8rem', marginTop: '0.15rem' }}>{tmpl.description}</div>
+            )}
+            <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                {objective}
+                {reward ? ` · ${reward}` : ''}
+            </div>
+            <button
+                type="button"
+                onClick={onAccept}
+                disabled={!canAccept}
+                title={canAccept ? undefined : 'Travel here first.'}
+                style={{
+                    marginTop: '0.4rem',
+                    padding: '0.35rem 0.7rem',
+                    background: '#2a2a2a',
+                    color: '#fff',
+                    border: '1px solid #8fbc8f',
+                    borderRadius: 3,
+                    cursor: canAccept ? 'pointer' : 'not-allowed',
+                    opacity: canAccept ? 1 : 0.5,
+                    fontSize: '0.8rem'
+                }}
+            >
+                Accept
+            </button>
+        </div>
+    );
+}
+
+function describeObjective(tmpl: QuestTemplateDef, content: ContentIndex): string {
+    const qty = tmpl.qtyMin === tmpl.qtyMax ? `${tmpl.qtyMin}` : `${tmpl.qtyMin}-${tmpl.qtyMax}`;
+    switch (tmpl.objectiveType) {
+        case 'kill': {
+            const name = content.enemiesById[tmpl.targetEnemyId ?? '']?.name ?? tmpl.targetEnemyId ?? '?';
+            return `Kill ${qty} ${name}`;
+        }
+        case 'gather': {
+            const name = content.itemsById[tmpl.targetItemId ?? '']?.name ?? tmpl.targetItemId ?? '?';
+            return `Gather ${qty} ${name}`;
+        }
+        case 'craft': {
+            const name = content.recipesById[tmpl.targetRecipeId ?? '']?.name ?? tmpl.targetRecipeId ?? '?';
+            return `Craft ${qty} ${name}`;
+        }
+        default:
+            return tmpl.objectiveType;
+    }
+}
+
+function describeReward(rp: QuestTemplateDef['rewardPack']): string {
+    const parts: string[] = [];
+    if (rp.xp) parts.push(`${rp.xp} XP`);
+    if (rp.gold) parts.push(`${rp.gold} g`);
+    return parts.join(', ');
+}
+
 function AffinityBar({ affinity, haveMet }: { affinity: number; haveMet: boolean }) {
     const pct = Math.max(0, Math.min(100, affinity));
     return (
@@ -205,6 +331,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         </div>
     );
 }
+
+const questRowStyle: React.CSSProperties = {
+    background: '#181818',
+    border: '1px solid #2a2a2a',
+    borderRadius: 4,
+    padding: '0.5rem 0.6rem',
+    marginBottom: '0.4rem'
+};
 
 const paragraphStyle: React.CSSProperties = {
     margin: 0,
