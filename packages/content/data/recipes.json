@@ -625,6 +625,9 @@
   },
   {
     "id": "recipe_darksteel_greatsword",
+    "name": "Darksteel Greatsword",
+    "skill": "blacksmithing",
+    "requiredSkillLevel": 60,
     "inputs": [
       {
         "itemId": "item_darksteel_ore",
