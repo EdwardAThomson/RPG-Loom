@@ -142,21 +142,37 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                         </div>
                     )}
 
-                    {state.activeEncounter && (
+                    {/* Combat widget — kept mounted whenever the player is
+                        in a fight-capable activity, so layout doesn't jump
+                        between encounters. Shows a "searching" state in the
+                        gap; the real fight content when an encounter is
+                        actually active. */}
+                    {(state.activeEncounter || activity.params.type === 'hunt') && (
                         <div className="combat-widget">
-                            <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
-                            <div style={{ fontSize: '1.1rem' }}>
-                                {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
-                            </div>
-                            <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
-                            <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
-                            </div>
+                            {state.activeEncounter ? (
+                                <>
+                                    <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
+                                    <div style={{ fontSize: '1.1rem' }}>
+                                        {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
+                                    <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                                        HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <h3 style={{ color: '#888', marginBottom: '0.5rem' }}>🔍 Searching</h3>
+                                    <div style={{ color: '#888', fontStyle: 'italic' }}>Scanning for foes…</div>
+                                    <div style={{ color: '#444', fontSize: '0.85rem', marginTop: '0.5rem' }}>—</div>
+                                    <div style={{ color: '#444', fontSize: '0.9rem', marginTop: '0.25rem' }}>HP: — / —</div>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {state.activeEncounter && (
+                {(state.activeEncounter || activity.params.type === 'hunt') && (
                     <section style={{ marginBottom: '1.5rem' }}>
                         <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Combat Stance</h3>
                         <TacticsSelector player={player} dispatch={dispatch} />
