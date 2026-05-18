@@ -9,8 +9,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 5,
-    "qtyMax": 10,
+    "qtyMin": 8,
+    "qtyMax": 15,
     "difficulty": 1,
     "rewardPack": {
       "xp": 50,
@@ -78,8 +78,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 5,
-    "qtyMax": 8,
+    "qtyMin": 8,
+    "qtyMax": 12,
     "difficulty": 1,
     "rewardPack": {
       "xp": 80,
@@ -126,8 +126,8 @@
     "locationPool": [
       "loc_quarry"
     ],
-    "qtyMin": 10,
-    "qtyMax": 20,
+    "qtyMin": 15,
+    "qtyMax": 30,
     "difficulty": 1,
     "rewardPack": {
       "xp": 120,
@@ -168,8 +168,8 @@
     "locationPool": [
       "loc_quarry"
     ],
-    "qtyMin": 5,
-    "qtyMax": 10,
+    "qtyMin": 8,
+    "qtyMax": 15,
     "difficulty": 2,
     "rewardPack": {
       "xp": 150,
@@ -216,8 +216,8 @@
     "locationPool": [
       "loc_swamp"
     ],
-    "qtyMin": 5,
-    "qtyMax": 8,
+    "qtyMin": 8,
+    "qtyMax": 12,
     "difficulty": 2,
     "rewardPack": {
       "xp": 160,
@@ -282,8 +282,8 @@
     "locationPool": [
       "loc_catacombs"
     ],
-    "qtyMin": 3,
-    "qtyMax": 6,
+    "qtyMin": 5,
+    "qtyMax": 10,
     "difficulty": 3,
     "rewardPack": {
       "xp": 280,
@@ -324,8 +324,8 @@
     "locationPool": [
       "loc_peak"
     ],
-    "qtyMin": 5,
-    "qtyMax": 10,
+    "qtyMin": 8,
+    "qtyMax": 15,
     "difficulty": 4,
     "rewardPack": {
       "xp": 400,
@@ -366,8 +366,8 @@
     "locationPool": [
       "loc_peak"
     ],
-    "qtyMin": 3,
-    "qtyMax": 5,
+    "qtyMin": 5,
+    "qtyMax": 8,
     "difficulty": 4,
     "rewardPack": {
       "xp": 450,
@@ -447,8 +447,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 5,
-    "qtyMax": 5,
+    "qtyMin": 8,
+    "qtyMax": 8,
     "difficulty": 1,
     "rewardPack": {
       "xp": 100,
@@ -469,8 +469,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 10,
-    "qtyMax": 10,
+    "qtyMin": 15,
+    "qtyMax": 15,
     "difficulty": 1,
     "rewardPack": {
       "xp": 80,
@@ -513,8 +513,8 @@
     "locationPool": [
       "loc_quarry"
     ],
-    "qtyMin": 5,
-    "qtyMax": 5,
+    "qtyMin": 8,
+    "qtyMax": 8,
     "difficulty": 2,
     "rewardPack": {
       "xp": 150,
@@ -535,8 +535,8 @@
     "locationPool": [
       "loc_quarry"
     ],
-    "qtyMin": 15,
-    "qtyMax": 15,
+    "qtyMin": 22,
+    "qtyMax": 22,
     "difficulty": 2,
     "rewardPack": {
       "xp": 140,
@@ -557,8 +557,8 @@
     "locationPool": [
       "loc_swamp"
     ],
-    "qtyMin": 8,
-    "qtyMax": 8,
+    "qtyMin": 12,
+    "qtyMax": 12,
     "difficulty": 2,
     "rewardPack": {
       "xp": 160,
@@ -601,8 +601,8 @@
     "locationPool": [
       "loc_catacombs"
     ],
-    "qtyMin": 5,
-    "qtyMax": 5,
+    "qtyMin": 8,
+    "qtyMax": 8,
     "difficulty": 3,
     "rewardPack": {
       "xp": 220,
@@ -623,8 +623,8 @@
     "locationPool": [
       "loc_catacombs"
     ],
-    "qtyMin": 8,
-    "qtyMax": 8,
+    "qtyMin": 12,
+    "qtyMax": 12,
     "difficulty": 3,
     "rewardPack": {
       "xp": 210,
@@ -667,8 +667,8 @@
     "locationPool": [
       "loc_peak"
     ],
-    "qtyMin": 3,
-    "qtyMax": 3,
+    "qtyMin": 5,
+    "qtyMax": 5,
     "difficulty": 4,
     "rewardPack": {
       "xp": 350,
@@ -689,8 +689,8 @@
     "locationPool": [
       "loc_peak"
     ],
-    "qtyMin": 8,
-    "qtyMax": 8,
+    "qtyMin": 12,
+    "qtyMax": 12,
     "difficulty": 4,
     "rewardPack": {
       "xp": 320,
@@ -733,8 +733,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 5,
-    "qtyMax": 5,
+    "qtyMin": 8,
+    "qtyMax": 8,
     "difficulty": 1,
     "rewardPack": {
       "xp": 150,
@@ -757,8 +757,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 15,
-    "qtyMax": 15,
+    "qtyMin": 22,
+    "qtyMax": 22,
     "difficulty": 2,
     "rewardPack": {
       "xp": 300,
@@ -781,8 +781,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 30,
-    "qtyMax": 30,
+    "qtyMin": 45,
+    "qtyMax": 45,
     "difficulty": 3,
     "rewardPack": {
       "xp": 600,
@@ -893,8 +893,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 20,
-    "qtyMax": 20,
+    "qtyMin": 30,
+    "qtyMax": 30,
     "difficulty": 1,
     "rewardPack": {
       "xp": 150,
@@ -917,8 +917,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 50,
-    "qtyMax": 50,
+    "qtyMin": 75,
+    "qtyMax": 75,
     "difficulty": 2,
     "rewardPack": {
       "xp": 300,
@@ -947,8 +947,8 @@
     "locationPool": [
       "loc_forest"
     ],
-    "qtyMin": 100,
-    "qtyMax": 100,
+    "qtyMin": 150,
+    "qtyMax": 150,
     "difficulty": 3,
     "rewardPack": {
       "xp": 600,
