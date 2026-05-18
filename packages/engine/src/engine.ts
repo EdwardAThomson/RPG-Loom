@@ -2060,9 +2060,11 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
 
   // Sum Skill Modifiers (Persistent Training)
   // Mapping:
-  // Melee (swordsmanship): +1 ATK per level (above 1)
+  // Melee (swordsmanship): +0.5 ATK per level (above 1)
   // Ranged (marksmanship): +1 SPD per level, +0.5% Crit per level
-  // Defense (defense): +1 DEF per level, +5 HP Max per level
+  // Magic (arcana): +0.5 ATK per level (matches sword — arcane focus
+  //   for the player who wields wand/staff weapons)
+  // Defense (defense): +0.5 DEF per level, +5 HP Max per level
 
   const s = state.player.skills;
   if (s.swordsmanship) {
@@ -2071,6 +2073,9 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
   if (s.marksmanship) {
     effective.spd += Math.max(0, s.marksmanship.level - 1) * 1;
     effective.critChance += Math.max(0, s.marksmanship.level - 1) * 0.005;
+  }
+  if (s.arcana) {
+    effective.atk += Math.max(0, s.arcana.level - 1) * 0.5;
   }
   if (s.defense) {
     effective.def += Math.max(0, s.defense.level - 1) * 0.5;
