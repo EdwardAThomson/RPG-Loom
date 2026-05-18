@@ -44,8 +44,8 @@
       "entries": [
         {
           "itemId": "item_wood",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 10
         }
       ]
@@ -65,7 +65,7 @@
         {
           "itemId": "item_copper_ore",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 10
         }
       ]
@@ -103,20 +103,20 @@
       "entries": [
         {
           "itemId": "item_stone",
-          "minQty": 3,
-          "maxQty": 8,
+          "minQty": 2,
+          "maxQty": 5,
           "weight": 10
         },
         {
           "itemId": "item_iron_ore",
           "minQty": 1,
-          "maxQty": 4,
+          "maxQty": 2,
           "weight": 5
         },
         {
           "itemId": "item_copper_ore",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 3
         }
       ]
@@ -151,8 +151,8 @@
       "entries": [
         {
           "itemId": "item_hardwood",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 10
         }
       ]
@@ -161,8 +161,8 @@
       "entries": [
         {
           "itemId": "item_herb_green",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 5
         },
         {
@@ -203,8 +203,8 @@
       "entries": [
         {
           "itemId": "item_bone_fragment",
-          "minQty": 3,
-          "maxQty": 6,
+          "minQty": 2,
+          "maxQty": 4,
           "weight": 10
         }
       ]
@@ -214,7 +214,7 @@
         {
           "itemId": "item_silver_ore",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 10
         }
       ]
@@ -252,14 +252,14 @@
       "entries": [
         {
           "itemId": "item_frost_stone",
-          "minQty": 2,
-          "maxQty": 4,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 8
         },
         {
           "itemId": "item_gold_ore",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 4
         }
       ]
@@ -302,26 +302,26 @@
       "entries": [
         {
           "itemId": "item_volcanic_ash",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 8
         },
         {
           "itemId": "item_obsidian",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 5
         },
         {
           "itemId": "item_sulfur",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 4
         },
         {
           "itemId": "item_gold_ore",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 2
         }
       ]
@@ -364,20 +364,20 @@
       "entries": [
         {
           "itemId": "item_crystal_shard",
-          "minQty": 2,
-          "maxQty": 6,
+          "minQty": 1,
+          "maxQty": 4,
           "weight": 8
         },
         {
           "itemId": "item_luminite_ore",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 5
         },
         {
           "itemId": "item_gold_ore",
-          "minQty": 2,
-          "maxQty": 4,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 3
         }
       ]
@@ -418,14 +418,14 @@
       "entries": [
         {
           "itemId": "item_pearl",
-          "minQty": 2,
-          "maxQty": 5,
+          "minQty": 1,
+          "maxQty": 3,
           "weight": 6
         },
         {
           "itemId": "item_ancient_moss",
-          "minQty": 3,
-          "maxQty": 8,
+          "minQty": 2,
+          "maxQty": 5,
           "weight": 8
         }
       ]
@@ -466,14 +466,14 @@
       "entries": [
         {
           "itemId": "item_brass_gear",
-          "minQty": 2,
-          "maxQty": 6,
+          "minQty": 1,
+          "maxQty": 4,
           "weight": 8
         },
         {
           "itemId": "item_steam_canister",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 4
         }
       ]
@@ -514,14 +514,14 @@
       "entries": [
         {
           "itemId": "item_darksteel_ore",
-          "minQty": 3,
-          "maxQty": 6,
+          "minQty": 2,
+          "maxQty": 4,
           "weight": 8
         },
         {
           "itemId": "item_ethereal_essence",
           "minQty": 1,
-          "maxQty": 3,
+          "maxQty": 2,
           "weight": 5
         }
       ]
