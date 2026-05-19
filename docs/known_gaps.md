@@ -40,16 +40,12 @@ Decide: either delete `schemas.ts`, or treat it as canonical and regenerate type
 
 Small but real footguns:
 
-- **`CLAUDE_API_KEY` vs `ANTHROPIC_API_KEY`.** `gateway/src/server.ts:185` reads `CLAUDE_API_KEY`. README and `@anthropic-ai/sdk` convention is `ANTHROPIC_API_KEY`. Anyone following the README will hit "API key required for Cloud provider: claude" with no obvious cause. Pick one and update the other.
-- **`coerceNarrativeBlockFromText` always tags `'gemini'`.** `gateway/src/server.ts:348, 360` hardcodes `tags: ['gemini', ...]` regardless of which backend produced the text. Should use the backend ID from the task record.
-- **`bestiary_entry` is half-defined.** Present in `NarrativeTaskType` (`packages/shared/src/types.ts:504`); missing from `NarrativeTaskTypeSchema` (`schemas.ts`) and from `CreateTaskReqSchema` (`gateway/src/server.ts:29`). Either implement it or drop it from the type.
 - **React 18 vs React 19.** `web/` is on React 18.3 (`web/package.json`); `packages/ui/` is on React 19.2. Don't copy components between them without checking compat.
 
 ## 5) Adventure-quest fragility
 
 The `dynamic_*` template-id convention threads through several files; mismatches between them are silent failures.
 
-- **Pre-refactor saves stall.** `spawnAdventureSubQuest` (`engine.ts:1294`) returns `null` for steps missing a `template` field, with only a `console.warn`. The auto-spawn loop in `runOneTick` (~line 458) retries every tick. There is no `ABANDON_QUEST` triggered or `ERROR` event emitted — the adventure just sits there.
 - **Adding a new step type requires editing two places.**
   1. Engine: `spawnAdventureSubQuest`, the matching `bumpQuestProgressFrom*` `startsWith('dynamic_…_')` branch, and `checkQuestCompletion` / `handleAdventureSubQuestCompletion` routing.
   2. Web: the parser fallback in `adventureQuestGeneration.ts:parseAdventureSpec`, and the prompt template that lists allowed step types.
