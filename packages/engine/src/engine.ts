@@ -621,11 +621,14 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
 
   const a = next.activity.params;
 
-  // Auto-spawn missing sub-quests for adventures (fixes old saves)
+  // Auto-spawn missing sub-quests for adventures (fixes old saves).
+  // Status guard prevents the loop from re-firing once the adventure is
+  // failed/abandoned/completed; otherwise a failed adventure with its
+  // adventureSteps still present would trigger spawn every tick forever.
   if (a.type === 'adventure' && content) {
     const adventureParams = a as { type: 'adventure'; questId: string };
     const adventureQuest = next.quests.find(q => q.id === adventureParams.questId);
-    if (adventureQuest && adventureQuest.adventureSteps) {
+    if (adventureQuest && adventureQuest.status === 'active' && adventureQuest.adventureSteps) {
       const activeStepIndex = adventureQuest.adventureSteps.findIndex(
         step => step.status === 'active' && !step.subQuestId
       );
@@ -644,6 +647,25 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
           events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
             message: `New objective: ${adventureQuest.adventureSteps[activeStepIndex].narrative.description}`
           }));
+        } else {
+          // Kill-switch: spawn returned null (almost certainly a step
+          // missing its `template` field, i.e. an old save from before
+          // the template format). Without this branch the loop would
+          // re-call spawn every tick forever, spamming console.warn.
+          // Fail the adventure cleanly so the player can abandon and
+          // regenerate; switch them out of the activity so they aren't
+          // stuck on a quest that can't progress.
+          adventureQuest.status = 'failed';
+          next.activity = {
+            id: `act_idle_${next.tickIndex}`,
+            params: { type: 'idle' },
+            startedAtMs: tickAtMs
+          };
+          events.push(ev(next, tickAtMs, 'ERROR', {
+            code: 'ADVENTURE_STEP_UNSPAWNABLE',
+            message: `Adventure "${adventureQuest.aiNarrative?.title ?? adventureQuest.id}" step ${activeStepIndex + 1} can't be spawned (likely an older save format). Marking the adventure as failed; abandon it and generate a new one.`
+          }));
+          events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
         }
       }
     }
