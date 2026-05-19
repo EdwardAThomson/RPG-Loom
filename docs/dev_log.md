@@ -1,5 +1,145 @@
 # Developer Log
 
+## 2026-05-19
+
+### AI Gateway Fixes (Closed)
+
+*   **Prompt leak into UI on AI failure**: `generateWithCLI` had been baking the full CLI args (including the prompt body as the value of `-p`) into thrown error strings, which `/api/llm/generate` echoed back to the client. A failed adventure-quest generation rendered the entire authoring prompt in the player UI. Split logging from throwing: full detail (command + args + stderr) now goes to `console.error` server-side; the thrown `Error` carries only `AI provider X failed (exit code N)` plus a length-capped stderr summary.
+*   **`claude` CLI flag mismatch**: `ClaudeAdapter` requested `-p <prompt> --output-format stream-json`, which the CLI rejects with `Error: When using --print, --output-format=stream-json requires --verbose`. Added `--verbose`; the existing event-stream parser already discards non-`assistant` events so the extra log lines are harmless.
+*   **`CLAUDE_API_KEY` vs `ANTHROPIC_API_KEY`**: `getApiKeyForProvider` read `CLAUDE_API_KEY` while the README and `@anthropic-ai/sdk` convention is `ANTHROPIC_API_KEY`. Prefer the canonical name; keep `CLAUDE_API_KEY` as a fallback for back-compat.
+
+### Narrative Block Cleanup (Closed)
+
+*   **Backend attribution in tags**: `finalizeBlock` and `coerceNarrativeBlockFromText` hardcoded `tags: ['gemini', ...]` regardless of which backend produced the block. Use `task.backendId` (with `'unknown'` fallback) so tags actually reflect the source.
+*   **`bestiary_entry` finished**: was in `NarrativeTaskType` but missing from `NarrativeTaskTypeSchema` and from `CreateTaskReqSchema` — clients hit a 400 trying to create one. Added to the shared schema; pointed `CreateTaskReqSchema` at the shared enum so future additions are a one-place change; gave `mockGenerate` placeholder lines.
+*   **E4 free-text ID scanner**: `parseAdventureSpec` already validated structured IDs and `finalizeBlock` enforced length budgets, but free text in `lines` could still contain invented IDs like `enemy_dragon`. New `sanitizeNarrativeText(text, content)` scans `(item|enemy|loc|npc|recipe)_<rest>` tokens: valid IDs are substituted with the entity's human name (UX win — `item_wood` reads as "Wood"); invented IDs are substituted with a generic placeholder ("a creature", "the area"). Threaded through `finalizeBlock` and `server.ts` (JSON, extracted JSON, prose fallback, mock paths). Closes `known_gaps.md` §3.
+
+### Engine Resilience (Closed)
+
+*   **Offline catch-up on visibility regain and wake**: the cold-start path simulated offline progress correctly, but two cases never reached it. (1) Background-throttled tabs got `~1 tick/min` from the browser, so `lastTickAtMs` crept forward and the gap never crossed the 60s threshold. (2) Laptop sleep with the tab open: on wake, the interval fired `step()` once with an 8-hour gap, which grinds ~28k ticks synchronously on the main thread and surfaces no summary modal. Factored the catchup into `tryOfflineCatchup()` and called it from three signals: initial mount, `visibilitychange → visible`, and the top of every interval tick as defense in depth (routes through `simulateOffline`, capped at `MAX_OFFLINE_MS`).
+*   **Adventure auto-spawn kill switch**: `runOneTick` retried `spawnAdventureSubQuest` every tick when a step's `template` field was missing (an old save shape), spamming `console.warn` forever. Added a status gate (`adventureQuest.status === 'active'`) so the loop is inert once the adventure is failed/abandoned/completed, and on null spawn marked the adventure as `failed`, idled the activity, and emitted `ERROR + ACTIVITY_SET` so the player can recover.
+
+## 2026-05-18
+
+### Quest Turn-In Flow (Completed)
+
+*   **New `ready_to_turn_in` status**: template quests with an `npcId` no longer auto-complete at progress complete; they park at the new status until the player travels to the giver and issues `TURN_IN_QUEST`. Rewards (xp/gold/items/reputation), affinity bump, and daily/chain replenishment all credit at turn-in.
+*   **Auto-complete preserved for ID-less quests**: adventure sub-quests (`dynamic_*`) and templates lacking `questGiverNpcId` keep the old auto-complete path — there's nobody to walk back to.
+*   **Engine version bumped to v3** with a v2→v3 migration that parks any in-flight 5/5 active quest with a giver at the new status, so mid-game saves stay coherent.
+*   **Quest XP routes to relevant skills**: `player.xp` is a derived field (rebuilt from skill XPs every tick by `syncDerivedPlayerStats`), so the existing `gainXp(state, rewards.xp)` was a write that got overwritten. New `inferSkillsForQuestXp(tmpl, content)` maps each objective type to the skill(s) that should receive the XP — gather → matching gathering skill (woodcutting/mining/foraging based on which table the target item lives in); kill → split across the 4 combat skills; craft → recipe's authored skill.
+*   **UI**: NpcDialogueModal grew a "Ready to hand in" section with a Hand-In button; QuestView active cards show "(Ready to hand in)" + "Hand in to {NPC}" disabled until the player is co-located.
+
+### Arcana + Marksmanship Unlock (Completed)
+
+The engine had dispatched offensive skill by weapon tag since combat first shipped (`bow` → marksmanship, `wand`/`staff` → arcana, else → swordsmanship), but two of the three combat paths were unreachable:
+
+*   **No weapons carried `tags`**: tagged `item_crystal_wand` with `["wand"]` so the existing wand actually routes to arcana.
+*   **No bow items existed**: added 5 bow tiers (hunting → short → iron-reinforced → yew longbow → storm bow) with parallel atk + crit + spd modifiers to the sword tier.
+*   **Arcana had no stat curve**: added `+0.5 ATK per level` (mirrors swordsmanship). Added 5 staff tiers (apprentice → carved → iron-tipped → runed → archmage's) to give arcana real progression.
+*   **10 new woodworking recipes** at levels 1/5/10/15/25 so the player can craft each bow + staff tier with sensible materials.
+*   **UI hint**: Combat widget now shows `Weapon skill: Swordsmanship/Marksmanship/Arcana` derived from the equipped weapon's tag.
+
+### Quest Location Signposts + Pacing (Completed)
+
+*   **Quest activity location now surfaced in three places** so players know where to go after accepting: NPC modal offered quests (`Gather 1-3 Wood · in Whispering Forest`), NPC modal "Their errand" section (`in progress · 3/5 · in Whispering Forest`), and Quest tab active cards (under the objective line).
+*   **Fix: NPC quest offers when activity is elsewhere**: the dialogue modal had piped offered quests through `getAvailableQuests` which filters by the player's current location. Aldric at Haven's Cross couldn't offer his "Gather wood in the Forest" quest — the player isn't at the Forest. New `getQuestsOfferedByNpc(state, content, npcId, nowMs)` applies the same active/replenishment/one-time gates without the player-location check.
+*   **Gather pacing slowed**: drop max-qtys reduced across all 11 locations (e.g. forest wood 2-5 → 1-3) and gather quest targets bumped ~50% (intro/daily/chain). The intro "Winter Supplies" used to finish in 1-2 ticks; now ~4-8.
+
+### Combat UI Stability (Completed)
+
+The Combat widget + Combat Stance section were tied to `state.activeEncounter`, so they vanished between fights and the surrounding UI jumped. Render both whenever the activity is `hunt`; show a "Scanning for foes…" placeholder between encounters with the same row count so the container holds its height.
+
+## 2026-05-17
+
+### Recurring NPCs — Phase 3b + 3c (Completed)
+
+*   **Phase 3b: NPC interaction UI** — new NPCs tab listing NPCs at the current location (name, role, last interaction, affinity, available quests); `NpcDialogueModal` for a single NPC conversation with cached AI flavor, affinity bar, and a Greet/Talk-again button.
+*   **Phase 3c: AI dialogue pipeline** — first-time interaction fires off a `NarrativeTask { type: 'npc_dialogue' }` to the gateway and caches the result in `npcState[npcId].generatedFlavor`. Subsequent visits show the cached output instantly. Fire-and-forget on the first Greet (no visible "generate" button — the NPCs feel like they've always existed). Gateway-offline path falls back to the authored prompts in `npcs.json`.
+*   **NPC polish**: dropped the "???" reveal placeholder, enforced NPC location server-side, added an Activity-tab chat affordance.
+
+### Build Plumbing
+
+*   `Vite @rpg-loom/content` aliased to source (`data/index.ts`) like `engine` and `shared`, so content edits hot-reload without a `tsc` rebuild step.
+
+## 2026-05-16
+
+### Recurring NPCs — Phase 3a (Completed)
+
+*   **NPC content + engine state foundation**: hand-authored `npcs.json` with ~12 NPCs across 5 locations (Aldric, Tovan, Marrick, Mira, Brokk, Vesna, Vidar, Kael, etc.); `npcsById` added to `ContentIndex`; `npcState: Record<NpcId, { firstMetAtMs, lastInteractionMs, affinity, generatedFlavor? }>` added to `EngineState`; new commands `TALK_TO_NPC` (+1 affinity, capped at 100) and `SET_NPC_FLAVOR`; bumped `CURRENT_ENGINE_VERSION` to `2` with a v1→v2 migration that backfills `npcState = {}`.
+*   **`getAvailableQuests` accepts `nowMs`**: the wall-clock read flagged in `known_gaps.md` §1 fixed at the same time the function was touched for NPC-affinity gating.
+
+### Milestone E4 (Phase 1): Structured ID Validator (Completed)
+
+*   `parseAdventureSpec` now validates every step-template ID against the content pack at parse time. Invalid IDs reject the spec instead of producing a sub-quest that never progresses.
+*   `finalizeBlock` enforces length budgets on title (80 chars), lines (240 per line, 6 lines max, 1200 total), and tags (8 max).
+*   Free-text ID scanning was deferred to a follow-up (eventually closed on 2026-05-19).
+
+### Cloud Saves — Phases 4b/4c/4d/4e (Completed)
+
+*   **4b: Postgres schema + read-only API** — `users`, `saves`, `narrative_blocks` tables; `gateway/src/persistence/` for `pg` access; `GET /api/saves` and `GET /api/saves/:slot` behind a hardcoded dev user.
+*   **4c: Auth abstraction + write API** — `AuthProvider` interface with `SupabaseAuthProvider` (JWT-verify via `jose`, no `supabase-js` data dependency) and `DevAuthProvider` (any token → fixed test user); `requireAuth` middleware; `PUT /api/saves/:slot` with `If-Match`-style generation conflict check returning 409.
+*   **4d: Client-side cloud sync** — `web/src/services/auth.ts` and `cloudSave.ts`; `useGameEngine` tries cloud on mount and falls back to localStorage; periodic push every 30s; `SettingsModal` got sign-in/out, "Sync now" button, conflict-resolution prompt (Keep Local / Use Server).
+*   **4e: Narrative store** — `gateway/src/persistence/narrative.ts`; successful `NarrativeTask` blocks are persisted per save slot; `GET /api/saves/:slot/narrative`; new `JournalView` renders accumulated history. Closes Milestone E5.
+
+## 2026-05-15
+
+### Phase 1: Offline Catch-Up Summary (Completed)
+
+*   `simulateOffline(state, fromMs, toMs, content)` already existed; this surfaced it. New `summarizeEvents(events, opts)` rolls the event stream into `OfflineSummary { durationMs, kills, loot, xpGained, goldDelta, questsCompleted, levelUps, cappedAtMs? }`.
+*   On mount, if `Date.now() - state.lastTickAtMs > 60s`, simulate offline (capped at `MAX_OFFLINE_MS = 24h`) and surface the summary in a new `OfflineSummaryModal`.
+*   **Followup fix**: capped offline-event spillover into the live event log at the last 15 entries — 86k events from a 24h catchup was freezing the modal click handler.
+
+### Phase 4a: Save Versioning + Migration (Completed)
+
+*   `EngineState.engineVersion: number` + `contentVersion: string` (replaced the literal `version: 1`); `CONTENT_VERSION` exported from `@rpg-loom/content`.
+*   `migrateState(raw, currentContentVersion)` is now the single load-time entry point. Throws `FutureSaveError` when `engineVersion > current`; otherwise folds the ad-hoc `ensureIntrinsicStats`/`ensureQuestAvailability`/`ensureAllSkills` helpers into one ordered migration. Per-version migration steps live behind `if (incoming < N)` guards.
+*   Used by both `useGameEngine`'s localStorage load and (later) the cloud restore path.
+
+### Phase 2: Next-Goal Widget (Completed)
+
+*   New `getNextGoals(state, content, limit = 3): Goal[]` in the engine. Scans active quests, nearby recipes (within 5 skill levels of `requiredSkillLevel`), and nearby locations (within 5 levels/stats of `requirements`). Ranks by "fraction-complete," with active quests boosted into `[0.5, 1.0]` so a freshly-accepted quest doesn't get buried under nearly-unlocked recipes.
+*   `NextGoalsPanel` renders the top N goals as progress bars; each goal carries an `actionHint` so clicking jumps to Crafting / Travel / Quests.
+*   **Followup**: dedupe goals when multiple recipes share a skill milestone — e.g. "Unlock Obsidian Armor" + "Unlock Obsidian Shield" (both at blacksmithing 30) collapse into "Reach blacksmithing 30 (unlocks 2 recipes)".
+
+### Roadmap Reconciliation
+
+*   New `docs/roadmap_next.md` captures the near-term plan layered on `plan.md`: Phase 1 (offline catch-up), Phase 2 (next-goal widget), Phase 3 (recurring NPCs), Phase 4 (Postgres-backed cloud saves, pulled forward from Milestone F1).
+*   `plan.md` / `milestone_checklist.md` reconciled to match.
+
+## 2026-05-14
+
+### Project Documentation Foundation
+
+*   `CLAUDE.md` at repo root — monorepo layout, common commands, engine + AI invariants, the two parallel quest paths (template vs. adventure), known gotchas. Single source of truth for "what is this repo and what rules constrain edits."
+*   `docs/known_gaps.md` catalogs deltas between the project's documentation and the current code — not a backlog, a triage list. Captured the engine invariant violations, the `schemas.ts` drift from `types.ts`, Milestone E partial shipping, several cross-component inconsistencies, and the adventure-quest fragility.
+
+## 2026-03-17 to 2026-03-18
+
+### Hosting + Build Hygiene
+
+*   Bumped `engines.node` to `>=22.12` and Node 22 baselines.
+*   `tsconfig` excludes tests from the build output.
+*   Updated OG image, favicon, deployment metadata for the upcoming Cloudflare host.
+*   Gateway cleanup ahead of multi-LLM provider work.
+*   Debug menu hidden by default (still in source, commented out).
+
+## 2026-01-15 to 2026-01-29
+
+### Adventure Quests — Sub-Quest Refactor (Completed)
+
+*   Refactored the adventure system to use real sub-quests with dynamic step progression instead of inline step state. Each adventure step now spawns a sub-quest with a synthetic `dynamic_<type>_<target>` template-id that the existing `bumpQuestProgressFrom*` helpers progress against.
+*   Delayed sub-quest spawning to the tick the parent step becomes active, so a future step doesn't appear in the player's quest list prematurely.
+*   Skill migration for older saves so the new sub-quest progression doesn't trip on missing fields.
+
+### Activity Independence + Inventory Refinement
+
+*   Quest activity no longer locks the player's general activity — they can switch freely while keeping the active sub-quest in progress.
+*   Inventory stack merging tightened (consolidation pass via `syncDerivedPlayerStats`).
+
+### Adventure Quest Generation — Blog Post
+
+*   `docs/blog_adventure_quest_generation.md` writeup of the hybrid AI-powered adventure generation system (parser, fallback, content-aware prompting).
+
 ## 2026-01-14
 
 ### Quest Replenishment System (Completed)
