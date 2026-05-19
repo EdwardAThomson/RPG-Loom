@@ -124,24 +124,45 @@ export function useGameEngine() {
                 });
                 console.log('Created new game');
             } else {
-                const now = Date.now();
-                const elapsed = now - stateRef.current.lastTickAtMs;
-                if (elapsed > OFFLINE_SUMMARY_THRESHOLD_MS) {
-                    const cappedAtMs = elapsed > MAX_OFFLINE_MS ? MAX_OFFLINE_MS : undefined;
-                    const res = simulateOffline(stateRef.current, stateRef.current.lastTickAtMs, now, content as any);
-                    stateRef.current = res.state;
-                    saveState(res.state);
-                    if (res.events.length > 0) {
-                        setEvents(prev => [...prev.slice(-50), ...res.events.slice(-15)]);
-                    }
-                    setPendingOfflineSummary(summarizeEvents(res.events, {
-                        durationMs: Math.min(elapsed, MAX_OFFLINE_MS),
-                        cappedAtMs
-                    }));
-                }
+                tryOfflineCatchup();
             }
 
             setUiState(stateRef.current);
+        }
+
+        // Catch up state when wall-clock has run far ahead of our last
+        // tick. Triggers on three signals: initial mount (above), tab
+        // visibility regain, and the very next interval tick after a
+        // suspend (laptop wake / OS sleep). Returns true when a catchup
+        // actually ran.
+        //
+        // Without this, two failure modes leaked through:
+        //   - Foreground tab throttled by the browser → 1 tick/min in the
+        //     background → no "offline" gap ever accumulated → no summary
+        //     when the user returned, even after hours.
+        //   - Laptop sleep with the tab open → on wake, the next interval
+        //     fires step() with an 8-hour gap → engine runs ~28k ticks
+        //     synchronously on the main thread → no summary modal.
+        function tryOfflineCatchup(): boolean {
+            const state = stateRef.current;
+            if (!state) return false;
+            const now = Date.now();
+            const elapsed = now - state.lastTickAtMs;
+            if (elapsed <= OFFLINE_SUMMARY_THRESHOLD_MS) return false;
+
+            const cappedAtMs = elapsed > MAX_OFFLINE_MS ? MAX_OFFLINE_MS : undefined;
+            const res = simulateOffline(state, state.lastTickAtMs, now, content as any);
+            stateRef.current = res.state;
+            saveState(res.state);
+            setUiState(res.state);
+            if (res.events.length > 0) {
+                setEvents(prev => [...prev.slice(-50), ...res.events.slice(-15)]);
+            }
+            setPendingOfflineSummary(summarizeEvents(res.events, {
+                durationMs: Math.min(elapsed, MAX_OFFLINE_MS),
+                cappedAtMs
+            }));
+            return true;
         }
 
         // Async: cloud-fetch on mount if signed in. Cloud wins for any
@@ -180,6 +201,12 @@ export function useGameEngine() {
         const intervalId = setInterval(() => {
             if (!stateRef.current) return;
 
+            // Defense in depth: if the wall clock has jumped (laptop wake,
+            // tab unfroze after long throttle, system clock adjusted),
+            // route through the offline-summary path instead of letting
+            // step() try to grind through thousands of ticks synchronously.
+            if (tryOfflineCatchup()) return;
+
             const now = Date.now();
             const res = step(stateRef.current, now, content as any);
 
@@ -191,6 +218,16 @@ export function useGameEngine() {
                 setEvents(prev => [...prev.slice(-50), ...res.events]);
             }
         }, tickRate);
+
+        // Tab visibility: when the player switches back to this tab after
+        // a long stretch elsewhere, run the same catchup the cold-start
+        // path uses. Most users don't fully close the tab between sessions.
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                tryOfflineCatchup();
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
 
         const cloudIntervalId = setInterval(() => {
             void cloudPush();
@@ -238,6 +275,7 @@ export function useGameEngine() {
             clearInterval(intervalId);
             clearInterval(cloudIntervalId);
             unsubAuth();
+            document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     }, [tickRate]);
 
