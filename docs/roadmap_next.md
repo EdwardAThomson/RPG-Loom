@@ -1,6 +1,8 @@
 # Roadmap: Near-term plan
 
-Captured 2026-05-14. This is a **near-term plan layered on `docs/plan.md`**, not a replacement for it. The phases here all fit inside or alongside Milestone E (AI Narrative) and an early F1; they're chosen to make the existing systems feel finished before adding new content.
+Captured 2026-05-14, completed 2026-05-19. This is a **near-term plan layered on `docs/plan.md`**, not a replacement for it. The phases here all fit inside or alongside Milestone E (AI Narrative) and an early F1; they were chosen to make the existing systems feel finished before adding new content.
+
+**Status: all phases shipped.** Milestone E is closed in `docs/plan.md`; Phase 4 also closed Milestone F1 ahead of schedule. The detail sections below are kept as a historical record of what each phase included.
 
 If this conflicts with `docs/plan.md`, plan.md wins — update this doc or close the gap.
 
@@ -8,14 +10,14 @@ If this conflicts with `docs/plan.md`, plan.md wins — update this doc or close
 
 ## Ship order (TL;DR)
 
-1. ~~**Phase 1** — Offline catch-up summary (1–2 days)~~ ✅ shipped
-2. ~~**Phase 4a** — Save versioning + migration (1 day, unblocks Phase 3)~~ ✅ shipped
-3. **Phase 2** — Next-goal widget (2–3 days) — **next**
-4. **Phase 4b–4d** — Cloud saves end-to-end (~1 week)
-5. **Phase 3a–3c** — Recurring NPCs (~1–2 weeks)
-6. ~~**Phase 4e** — Narrative store (2 days, closes Milestone E5)~~ ✅ shipped
+1. ~~**Phase 1** — Offline catch-up summary~~ ✅ shipped (2026-05-15)
+2. ~~**Phase 4a** — Save versioning + migration~~ ✅ shipped (2026-05-15)
+3. ~~**Phase 2** — Next-goal widget~~ ✅ shipped (2026-05-15)
+4. ~~**Phase 4b–4d** — Cloud saves end-to-end~~ ✅ shipped (2026-05-16)
+5. ~~**Phase 3a–3c** — Recurring NPCs~~ ✅ shipped (2026-05-16 to 2026-05-17)
+6. ~~**Phase 4e** — Narrative store (closes Milestone E5)~~ ✅ shipped (2026-05-16)
 
-Total: ~6 weeks. See "Sequencing" near the bottom for the dependency diagram and rationale.
+**Post-roadmap polish (2026-05-18 → 2026-05-19):** quest turn-in flow, quest XP routing into skills, gather pacing slowdown, arcana + marksmanship unlock, crafting collapsible sections, offline catchup on visibility/wake, adventure auto-spawn kill switch, AI gateway hardening (prompt-leak fix, claude-cli flags, ANTHROPIC_API_KEY), narrative backend attribution, bestiary_entry, E4 free-text ID scanner. See `docs/dev_log.md`.
 
 ---
 

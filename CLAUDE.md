@@ -83,30 +83,34 @@ Don't break these — they're the reason the engine is testable and serializable
 
 The game must remain fully playable with the gateway offline. AI code lives in `gateway/src/llm/` and `web/src/services/{adventureQuestGeneration,questEnhancement,aiSettings,gateway}.ts`.
 
-Documented intent (from `docs/architecture.md`, README, `docs/plan.md` Milestone E):
+Rules:
 
 - AI output is JSON-only, validated against zod schemas in `@rpg-loom/shared` (`NarrativeBlockSchema`, `NarrativeTaskSchema`).
 - AI cannot invent IDs — only items/enemies/locations/quests that exist in the content pack.
 - AI never changes game mechanics or outcomes, only narrative text.
-- Invalid output → gateway returns a safe fallback; UI must degrade gracefully.
+- Invalid output → gateway returns a safe fallback; UI degrades gracefully.
 
-What's actually enforced today (Milestone E is incomplete):
+Enforcement (Milestone E shipped):
 
-- The gateway only validates **shape** via `NarrativeBlockSchema` (lines are strings, type is in the enum). It does **not** cross-check that IDs referenced in `lines` exist in the content pack. `finalizeBlock` in `gateway/src/server.ts` substitutes `task.references` verbatim, so AI-supplied refs are dropped — but free text in `lines` is not scanned.
-- `web/src/services/adventureQuestGeneration.ts:parseAdventureSpec` does **not** verify that returned `targetEnemyId`/`targetItemId`/`targetLocationId`/`targetRecipeId` exist before handing the spec to the engine as a `GENERATE_ADVENTURE_QUEST` command. If the AI invents an ID, the resulting sub-quest spawns but never progresses (no match in `bumpQuestProgressFromKill/Loot/Craft`).
-- The on-error fallback hardcodes `loc_forest` / `enemy_rat` / `loc_haven` — these must remain valid IDs in the content pack or the fallback is also broken.
-
-If you touch the AI pipeline, the missing "no invented IDs" validator is the highest-value place to start.
+- **Structured IDs**: `web/src/services/adventureQuestGeneration.ts:parseAdventureSpec` rejects specs whose step-template IDs aren't in the content pack.
+- **Free-text IDs**: `gateway/src/narrative/finalize.ts:sanitizeNarrativeText` scans `(item|enemy|loc|npc|recipe)_<rest>` tokens in lines + title; valid IDs are substituted with the entity's human name (`item_wood` → "Wood"), invented ones with a generic placeholder ("a creature", "the area"). Runs in `finalizeBlock` before the length budget.
+- **Length budgets**: `finalizeBlock` caps title (80 chars), lines (240/line × 6 lines × 1200 total), tags (8 max).
+- **Refs**: AI-supplied `references` are dropped; the task's `references` are substituted verbatim.
 
 Providers are defined in `gateway/src/llm/providers.ts` (`gemini-cli`, `gemini`, `openai`, `claude`, `claude-cli`, `codex`, `mock`). Each has a typed list of allowed `models` and a default. The unified entry point is `generateUnified` in `gateway/src/llm/generator.ts`; CLI-vs-cloud routing comes from `isCLIProvider` / `isCloudProvider`.
 
-Cloud env vars: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`. Note: `gateway/src/server.ts:getApiKeyForProvider` currently reads `CLAUDE_API_KEY` for the `claude` provider, not `ANTHROPIC_API_KEY` as the README states — one of these is wrong.
+Cloud env vars: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`. Gateway accepts `CLAUDE_API_KEY` as a legacy fallback for the `claude` provider but prefers `ANTHROPIC_API_KEY`.
 
 ### Save/version compatibility
 
-Documented rule: saves should include `engineVersion` and `contentVersion` and bump these on shape changes. Engine state is serializable JSON; keep it that way (no `Map`/`Set`/`Date`/class instances in `EngineState`).
+`EngineState` carries `engineVersion: number` (current: `3`) and `contentVersion: string` (current: `'2026-05-19'`). Engine state must remain serializable JSON — no `Map`/`Set`/`Date`/class instances.
 
-In practice: `EngineState` only carries a literal `version: 1`. `web/src/hooks/useGameEngine.ts` base64-encodes the whole state to localStorage on every tick with no versioning or schema validation on load — just a duck-type check on `inventory`/`player` in `importSave`. Lazy migrations live ad-hoc in the engine (`ensureIntrinsicStats`, `ensureQuestAvailability`, `ensureAllSkills` in the hook). Add a proper version stamp + migration step before changing `EngineState` shape.
+`migrateState(raw, currentContentVersion)` in `packages/engine/src/engine.ts` is the single load-time entry point. It:
+- Throws `FutureSaveError` if `incoming > CURRENT_ENGINE_VERSION` (don't silently truncate saves from the future).
+- Runs ordered per-version migrations behind `if (incoming < N)` guards (v1→v2 backfills `npcState`; v2→v3 parks any in-flight 5/5 quest with a giver at `'ready_to_turn_in'`).
+- Restamps `engineVersion` + `contentVersion` and calls the centralized `ensure*` helpers (`ensureAllSkills`, `ensureIntrinsicStats`, `ensureQuestAvailability`, `ensureNpcState`).
+
+Both `useGameEngine`'s localStorage load and the cloud-save restore path go through `migrateState`. When bumping `EngineState` shape, add a new `if (incoming < N+1)` block and bump `CURRENT_ENGINE_VERSION`.
 
 ### Quest system: two parallel paths
 
@@ -123,12 +127,12 @@ When adding a new objective/step type, update **both** `bumpQuestProgressFrom*` 
 
 ## Docs (and how current they are)
 
-- `docs/plan.md` — active roadmap. Milestones A–D are marked complete; **Milestone E (AI Narrative)** is the current/upcoming work; F–G (online, co-op) are future.
+- `docs/plan.md` — milestone roadmap. Milestones A–E are complete; F (async online) and G (instanced co-op) are future scope.
 - `docs/milestone_checklist.md` — finer-grained acceptance criteria for the same milestones.
-- `docs/roadmap_next.md` — near-term plan layered on `plan.md`: offline-catch-up summary, next-goal widget, recurring NPCs, and Postgres-backed cloud saves (auth-provider agnostic).
-- `docs/known_gaps.md` — catalog of docs-vs-code deltas (engine invariant violations, partially-shipped Milestone E validation, schema drift, etc.). Read this before trusting the system-level docs as ground truth.
-- `docs/architecture.md`, `docs/spec.md`, `docs/design.md`, `docs/tech_stack.md` — system-level docs. They describe **intended** invariants; some are aspirational (see "AI rules" and "Save/version compatibility" above, and `docs/known_gaps.md`).
-- `docs/dev_log.md` — chronological feature log; last entry 2026-01-14, so trailing reality.
+- `docs/roadmap_next.md` — near-term plan layered on `plan.md`. All phases (offline summary, next-goal widget, recurring NPCs, Postgres-backed cloud saves) have shipped.
+- `docs/known_gaps.md` — catalog of remaining docs-vs-code deltas. Short list now (schemas.ts drift, React 18 vs 19, adventure step type registry).
+- `docs/architecture.md`, `docs/spec.md`, `docs/design.md`, `docs/tech_stack.md` — system-level docs. They describe **intended** invariants; many are now actually shipped (see "AI rules" and "Save/version compatibility" above).
+- `docs/dev_log.md` — chronological feature log; current through 2026-05-19.
 - `docs/PHASE2_TEST_RESULTS.md`, `docs/PHASE3_COMPLETE.md`, `docs/TESTING_PHASE1.md` — historical artifacts of the LLM provider integration, kept for reference.
 - `docs/archive/` — superseded notes; don't rely on as current.
 
@@ -138,9 +142,7 @@ When the docs and the code disagree, treat the code as authoritative and update 
 
 Sharp edges I'd want to know about before editing:
 
-- **`getAvailableQuests` calls `Date.now()`** (`packages/engine/src/engine.ts:1786`). This violates the no-wall-clock-reads rule the docs emphasize. It should take `nowMs` as an argument like `step`/`simulateOffline`.
-- **`packages/shared/src/schemas.ts` is stale** vs `types.ts`. `EngineStateSchema` has `version: z.string()` (type says literal `1`), `flags`/`locationId` at the wrong nesting, and `ActivityTypeSchema` is missing `recovery`/`mine`/`woodcut`/`forage`/`adventure`. The runtime doesn't validate `EngineState` with these schemas, but don't trust them as the contract.
-- **`NarrativeTaskTypeSchema` omits `'bestiary_entry'`** even though `types.ts` includes it; the gateway's `CreateTaskReqSchema` enum likewise omits it.
-- **`coerceNarrativeBlockFromText` hardcodes `tags: ['gemini', ...]`** regardless of which backend produced the text.
-- **Old adventure saves can stall** — `spawnAdventureSubQuest` returns `null` for steps missing a `template` (pre-refactor saves), with only a `console.warn`. The auto-spawn loop in `runOneTick` (~458) keeps retrying every tick.
+- **`player.xp` is a derived field**, not a write target. `syncDerivedPlayerStats` rebuilds it from the sum of skill XPs every tick. Any direct `state.player.xp += N` or `gainXp(state, N)` call is silently overwritten on the next tick. Quest XP rewards route through `gainSkillXp` via `inferSkillsForQuestXp` instead; other `gainXp` callers (`+1`/tick during gather/combat) don't actually stick to `player.xp` either. If you need a real "total XP" gain, write it into a skill.
+- **`packages/shared/src/schemas.ts` is stale** vs `types.ts` (seven mismatches catalogued in `known_gaps.md` §2). The runtime doesn't validate `EngineState` with these schemas, but don't trust them as the contract.
+- **Adding a new adventure step type touches four places**: engine's `spawnAdventureSubQuest`, the matching `bumpQuestProgressFrom*` `startsWith('dynamic_…_')` branch, `handleAdventureSubQuestCompletion` routing, and the web parser's fallback in `adventureQuestGeneration.ts`. There's no shared registry — a partial addition fails silently.
 - **`web/`'s React is 18** while `packages/ui/` is on React 19. Don't copy components blindly between them.
