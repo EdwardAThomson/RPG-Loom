@@ -1,6 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { applyLengthBudget, finalizeBlock, MAX_LINES, MAX_CHARS_PER_LINE, MAX_CHARS_TOTAL, MAX_TAGS, MAX_TITLE_CHARS } from './finalize.js';
-import type { NarrativeTaskDTO } from '@rpg-loom/shared';
+import { applyLengthBudget, finalizeBlock, sanitizeNarrativeText, MAX_LINES, MAX_CHARS_PER_LINE, MAX_CHARS_TOTAL, MAX_TAGS, MAX_TITLE_CHARS } from './finalize.js';
+import type { ContentIndex, NarrativeTaskDTO } from '@rpg-loom/shared';
+
+const CONTENT: ContentIndex = {
+    itemsById: {
+        item_wood: { id: 'item_wood', name: 'Wood' } as any
+    },
+    enemiesById: {
+        enemy_rat: { id: 'enemy_rat', name: 'Giant Rat' } as any
+    },
+    locationsById: {
+        loc_forest: { id: 'loc_forest', name: 'Whispering Forest' } as any
+    },
+    npcsById: {
+        npc_aldric: { id: 'npc_aldric', name: 'Aldric the Quartermaster' } as any
+    },
+    questTemplatesById: {},
+    recipesById: {
+        recipe_plank: { id: 'recipe_plank', name: 'Plank' } as any
+    }
+};
 
 const TASK: NarrativeTaskDTO = {
     id: 't1',
@@ -76,9 +95,16 @@ describe('finalizeBlock', () => {
         expect(block.tags.length).toBe(MAX_TAGS);
     });
 
-    it('defaults tags to ["gemini"] when none provided', () => {
+    it('defaults tags to the task\'s backendId when none provided', () => {
+        // TASK.backendId is 'mock'.
         const block = finalizeBlock({}, TASK);
-        expect(block.tags).toEqual(['gemini']);
+        expect(block.tags).toEqual(['mock']);
+    });
+
+    it('falls back to "unknown" when backendId is null', () => {
+        const noBackend = { ...TASK, backendId: null };
+        const block = finalizeBlock({}, noBackend);
+        expect(block.tags).toEqual(['unknown']);
     });
 
     it('generates a uuid id when none is provided', () => {
@@ -113,5 +139,63 @@ describe('finalizeBlock', () => {
     it('uses the task type, not any type field from the AI', () => {
         const block = finalizeBlock({ type: 'rumor_feed' }, TASK);
         expect(block.type).toBe('quest_flavor');
+    });
+
+    it('sanitizes invented IDs in lines + title when content is provided', () => {
+        const block = finalizeBlock({
+            title: 'A warning about enemy_dragon',
+            lines: [
+                'Bring back item_wood.',
+                'The path runs through loc_undefined and past enemy_rat.',
+                'Visit npc_aldric and ask about npc_ghost.'
+            ]
+        }, TASK, CONTENT);
+
+        // title: enemy_dragon is not in CONTENT → placeholder.
+        expect(block.title).toBe('A warning about a creature');
+        // line 1: item_wood IS in CONTENT → human name.
+        expect(block.lines[0]).toBe('Bring back Wood.');
+        // line 2: mix of invalid loc + valid enemy.
+        expect(block.lines[1]).toBe('The path runs through the area and past Giant Rat.');
+        // line 3: mix of valid npc + invalid npc.
+        expect(block.lines[2]).toBe('Visit Aldric the Quartermaster and ask about a figure.');
+    });
+
+    it('leaves text alone when no content is provided', () => {
+        const block = finalizeBlock({
+            title: 'enemy_dragon roars',
+            lines: ['Bring back item_wood.']
+        }, TASK);
+        expect(block.title).toBe('enemy_dragon roars');
+        expect(block.lines[0]).toBe('Bring back item_wood.');
+    });
+});
+
+describe('sanitizeNarrativeText', () => {
+    it('substitutes valid IDs with human names across all prefixes', () => {
+        expect(sanitizeNarrativeText('Visit npc_aldric in loc_forest for recipe_plank.', CONTENT))
+            .toBe('Visit Aldric the Quartermaster in Whispering Forest for Plank.');
+    });
+
+    it('substitutes invented IDs with the prefix\'s generic placeholder', () => {
+        expect(sanitizeNarrativeText('enemy_dragon emerges from loc_void.', CONTENT))
+            .toBe('a creature emerges from the area.');
+    });
+
+    it('is idempotent — already-sanitized text passes through unchanged', () => {
+        const once = sanitizeNarrativeText('Bring back item_wood.', CONTENT);
+        const twice = sanitizeNarrativeText(once, CONTENT);
+        expect(twice).toBe(once);
+    });
+
+    it('only matches the known prefixes', () => {
+        // "skill_swordsmanship" looks ID-shaped but isn't one of our prefixes.
+        expect(sanitizeNarrativeText('Train skill_swordsmanship.', CONTENT))
+            .toBe('Train skill_swordsmanship.');
+    });
+
+    it('returns the input unchanged when content is undefined', () => {
+        expect(sanitizeNarrativeText('Bring back item_wood.', undefined))
+            .toBe('Bring back item_wood.');
     });
 });
