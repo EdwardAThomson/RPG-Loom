@@ -194,41 +194,79 @@ async function generateWithCLI(params: {
     });
 
     if (exitCode !== 0) {
-        // Build verbose error message
-        const errorParts = [
-            `CLI process failed (exit code ${exitCode})`,
-            `Provider: ${provider}`,
-            `Command: ${invocation.command} ${invocation.args.join(' ')}`
-        ];
-
-        if (lastError) {
-            errorParts.push(`Error: ${lastError}`);
-        }
-
-        if (stderrOutput.trim()) {
-            errorParts.push(`Stderr:\n${stderrOutput.trim()}`);
-        }
-
-        if (output.trim()) {
-            errorParts.push(`Stdout:\n${output.trim()}`);
-        }
-
-        throw new Error(errorParts.join('\n'));
+        // Log the full detail (including the prompt embedded in args)
+        // for server-side debugging. The thrown error keeps just the
+        // bits a caller can safely surface — provider + exit code +
+        // any short stderr message. The prompt is end-user content;
+        // /api/llm/generate returns error.message to the client, and
+        // we don't want it echoed into the UI.
+        logCliFailure({
+            provider,
+            invocation,
+            exitCode,
+            lastError,
+            stderrOutput,
+            output
+        });
+        const summary = summarizeCliStderr(stderrOutput) || lastError;
+        const suffix = summary ? `: ${summary}` : '';
+        throw new Error(`AI provider "${provider}" failed (exit code ${exitCode})${suffix}`);
     }
 
     if (!output.trim()) {
-        const errorParts = [
-            'CLI produced no output',
-            `Provider: ${provider}`,
-            `Command: ${invocation.command} ${invocation.args.join(' ')}`
-        ];
-
-        if (stderrOutput.trim()) {
-            errorParts.push(`Stderr:\n${stderrOutput.trim()}`);
-        }
-
-        throw new Error(errorParts.join('\n'));
+        logCliFailure({
+            provider,
+            invocation,
+            exitCode,
+            lastError,
+            stderrOutput,
+            output,
+            reason: 'no output'
+        });
+        const summary = summarizeCliStderr(stderrOutput) || lastError;
+        const suffix = summary ? `: ${summary}` : '';
+        throw new Error(`AI provider "${provider}" returned no output${suffix}`);
     }
 
     return output.trim();
+}
+
+/**
+ * Server-side detailed log of a CLI failure. Includes the full command
+ * (prompt and all) so the operator can reproduce. Kept here so callers
+ * don't have to remember the discipline of redacting before throwing.
+ */
+function logCliFailure(opts: {
+    provider: string;
+    invocation: { command: string; args: string[] };
+    exitCode: number;
+    lastError: string | null;
+    stderrOutput: string;
+    output: string;
+    reason?: string;
+}) {
+    const lines = [
+        `[CLI] ${opts.reason ?? 'process failed'} — provider=${opts.provider} exit=${opts.exitCode}`,
+        `[CLI] command: ${opts.invocation.command} ${opts.invocation.args.join(' ')}`
+    ];
+    if (opts.lastError) lines.push(`[CLI] lastError: ${opts.lastError}`);
+    if (opts.stderrOutput.trim()) lines.push(`[CLI] stderr:\n${opts.stderrOutput.trim()}`);
+    if (opts.output.trim()) lines.push(`[CLI] stdout:\n${opts.output.trim()}`);
+    console.error(lines.join('\n'));
+}
+
+/**
+ * Pull the most actionable line out of stderr without echoing
+ * arbitrary content. We allow short stderr summaries through —
+ * e.g. CLI usage errors like "Error: --output-format=stream-json
+ * requires --verbose" — but cap aggressively so a CLI that decided
+ * to log the prompt into stderr can't leak it.
+ */
+function summarizeCliStderr(stderr: string): string | null {
+    const trimmed = stderr.trim();
+    if (!trimmed) return null;
+    // First non-empty line is usually the operative error message.
+    const firstLine = trimmed.split('\n').find(l => l.trim().length > 0)?.trim() ?? '';
+    // Hard cap to keep accidental prompt-in-stderr leaks bounded.
+    return firstLine.length > 200 ? null : firstLine;
 }
