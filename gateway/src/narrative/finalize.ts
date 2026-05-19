@@ -41,6 +41,12 @@ export function finalizeBlock(obj: any, task: NarrativeTaskDTO): NarrativeBlockD
     ? (obj.title.length > MAX_TITLE_CHARS ? obj.title.slice(0, MAX_TITLE_CHARS - 1).trimEnd() + '…' : obj.title)
     : undefined;
 
+  // When the AI didn't return any tags, fall back to a one-tag
+  // attribution of which backend produced the block. Previously
+  // hardcoded 'gemini' regardless of provider — misleading once
+  // OpenAI / Claude / Codex backends started flowing through here.
+  const fallbackTag = task.backendId ?? 'unknown';
+
   return {
     id: typeof obj.id === 'string' ? obj.id : uuidv4(),
     type: task.type,
@@ -48,6 +54,6 @@ export function finalizeBlock(obj: any, task: NarrativeTaskDTO): NarrativeBlockD
     references: task.references ?? {},
     title,
     lines: applyLengthBudget(obj.lines),
-    tags: Array.isArray(obj.tags) ? obj.tags.map(String).slice(0, MAX_TAGS) : ['gemini']
+    tags: Array.isArray(obj.tags) ? obj.tags.map(String).slice(0, MAX_TAGS) : [fallbackTag]
   };
 }

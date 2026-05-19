@@ -3,7 +3,7 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-import { NarrativeBlockSchema, NarrativeTaskSchema } from '@rpg-loom/shared';
+import { NarrativeBlockSchema, NarrativeTaskSchema, NarrativeTaskTypeSchema } from '@rpg-loom/shared';
 import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
 
 // NEW: Import unified LLM generator
@@ -45,10 +45,14 @@ interface TaskRecord {
 
 const tasks = new Map<string, TaskRecord>();
 
+// Reuse the shared NarrativeTaskTypeSchema so adding a new task type
+// is a one-place change in @rpg-loom/shared (previously this enum had
+// drifted — it was missing `bestiary_entry` even though the type union
+// in shared/types.ts already included it).
 const CreateTaskReqSchema = z.object({
-  type: z.enum(['quest_flavor', 'npc_dialogue', 'rumor_feed', 'journal_entry']),
+  type: NarrativeTaskTypeSchema,
   backendId: z.string().min(1).nullable().optional(),
-  model: z.string().min(1).nullable().optional(), // NEW: Optional model selection
+  model: z.string().min(1).nullable().optional(),
   references: z.record(z.string(), z.string()).optional().default({}),
   facts: z.record(z.string(), z.any())
 });
@@ -526,6 +530,10 @@ function mockGenerate(task: NarrativeTaskDTO): NarrativeBlockDTO {
     lines.push('“Bring back proof. And try not to bleed on the paperwork.”');
   } else if (task.type === 'journal_entry') {
     lines.push('The day passed in hard steps and small victories. The guild ledger grew heavier by a few coins and a few names.');
+  } else if (task.type === 'bestiary_entry') {
+    const enemy = String(task.references?.enemyId ?? 'the creature');
+    lines.push(`${enemy}: a brief account, drawn from what the player has seen in the field.`);
+    lines.push('Notes on habitat, behavior, and weaknesses sit just below the surface — for the journal to fill in later.');
   }
 
   return {
@@ -597,7 +605,7 @@ function coerceNarrativeBlockFromText(text: string, task: NarrativeTaskDTO): Nar
     references: task.references ?? {},
     title: task.type,
     lines: lines.length ? lines : ['(no narrative)'],
-    tags: ['gemini', 'fallback']
+    tags: [task.backendId ?? 'unknown', 'fallback']
   };
 }
 

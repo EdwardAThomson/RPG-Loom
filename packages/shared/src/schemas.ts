@@ -122,7 +122,7 @@ export const GameEventSchema = z.union([
 ]);
 
 // Narrative
-export const NarrativeTaskTypeSchema = z.enum(['quest_flavor', 'npc_dialogue', 'rumor_feed', 'journal_entry']);
+export const NarrativeTaskTypeSchema = z.enum(['quest_flavor', 'npc_dialogue', 'rumor_feed', 'journal_entry', 'bestiary_entry']);
 
 export const NarrativeTaskSchema = z.object({
   id: z.string().min(1),
