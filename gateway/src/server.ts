@@ -431,7 +431,10 @@ function getApiKeyForProvider(provider: string): string | undefined {
     case 'openai':
       return process.env.OPENAI_API_KEY;
     case 'claude':
-      return process.env.CLAUDE_API_KEY;
+      // README and Anthropic SDK convention is ANTHROPIC_API_KEY;
+      // keep CLAUDE_API_KEY as a fallback so existing local setups
+      // don't break on this change.
+      return process.env.ANTHROPIC_API_KEY ?? process.env.CLAUDE_API_KEY;
     default:
       return undefined;
   }

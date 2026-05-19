@@ -17,8 +17,14 @@ export class ClaudeAdapter implements CLIAdapter {
             args.push('--model', model);
         }
 
-        // Request JSON streaming format
-        args.push('--output-format', 'stream-json');
+        // Request JSON streaming format. The Claude CLI requires
+        // --verbose alongside --output-format=stream-json when invoked
+        // non-interactively (`-p / --print`); without it the CLI exits
+        // with "Error: When using --print, --output-format=stream-json
+        // requires --verbose". --verbose adds extra event types to the
+        // stream which the generator's parser already ignores (it picks
+        // out assistant messages and discards the rest).
+        args.push('--output-format', 'stream-json', '--verbose');
 
         return {
             command,
