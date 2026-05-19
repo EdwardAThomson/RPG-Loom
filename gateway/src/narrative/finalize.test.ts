@@ -76,9 +76,16 @@ describe('finalizeBlock', () => {
         expect(block.tags.length).toBe(MAX_TAGS);
     });
 
-    it('defaults tags to ["gemini"] when none provided', () => {
+    it('defaults tags to the task\'s backendId when none provided', () => {
+        // TASK.backendId is 'mock'.
         const block = finalizeBlock({}, TASK);
-        expect(block.tags).toEqual(['gemini']);
+        expect(block.tags).toEqual(['mock']);
+    });
+
+    it('falls back to "unknown" when backendId is null', () => {
+        const noBackend = { ...TASK, backendId: null };
+        const block = finalizeBlock({}, noBackend);
+        expect(block.tags).toEqual(['unknown']);
     });
 
     it('generates a uuid id when none is provided', () => {
