@@ -30,19 +30,13 @@ Concrete mismatches:
 
 Decide: either delete `schemas.ts`, or treat it as canonical and regenerate types from it.
 
-## 3) Milestone E (AI Narrative) — remaining work
-
-`docs/plan.md` Milestone E is largely shipped. The remaining gap:
-
-- **E4 free-text ID scanning is still missing.** `parseAdventureSpec` now validates step-template IDs against the content pack and `finalizeBlock` enforces line/title length budgets (closed in PR for branch `claude/e4-no-invented-ids`). What's still not implemented: the gateway's `finalizeBlock` does not scan free text in `lines` for invented IDs like `enemy_dragon` mentioned in prose. Lower impact than the structured-ID case (free-text mentions don't drive engine logic) but worth a follow-up that imports the content pack into the gateway and substitutes/strips unknown ID tokens.
-
-## 4) Cross-component inconsistencies
+## 3) Cross-component inconsistencies
 
 Small but real footguns:
 
 - **React 18 vs React 19.** `web/` is on React 18.3 (`web/package.json`); `packages/ui/` is on React 19.2. Don't copy components between them without checking compat.
 
-## 5) Adventure-quest fragility
+## 4) Adventure-quest fragility
 
 The `dynamic_*` template-id convention threads through several files; mismatches between them are silent failures.
 
@@ -52,11 +46,11 @@ The `dynamic_*` template-id convention threads through several files; mismatches
   
   These two sides are not linked by a shared registry. A new step type that's added to one and not the other will fail silently.
 
-## 6) Doc staleness
+## 5) Doc staleness
 
 - `docs/dev_log.md` — last entry 2026-01-14. Adventure quest generation and quest replenishment are the most recent items; nothing since.
 - `docs/PHASE2_TEST_RESULTS.md`, `docs/PHASE3_COMPLETE.md`, `docs/TESTING_PHASE1.md` — artifacts of the LLM-provider integration. Historically useful, but referring to them as current is misleading.
-- `docs/architecture.md` and `docs/tech_stack.md` describe **intent**, not the shipped state. The "AI rules" section in particular is still aspirational (see §3 above).
+- `docs/architecture.md` and `docs/tech_stack.md` describe **intent**, not the shipped state.
 
 ---
 

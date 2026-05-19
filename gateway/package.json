@@ -13,6 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
+    "@rpg-loom/content": "0.1.0",
     "@rpg-loom/shared": "0.1.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",

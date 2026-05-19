@@ -4,7 +4,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { NarrativeBlockSchema, NarrativeTaskSchema, NarrativeTaskTypeSchema } from '@rpg-loom/shared';
-import type { NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
+import type { ContentIndex, NarrativeBlockDTO, NarrativeTaskDTO } from '@rpg-loom/shared';
+import content from '@rpg-loom/content';
+
+// The content default export carries CONTENT_VERSION + createContentIndex
+// alongside the lookup maps; cast to the structural ContentIndex shape
+// for use with finalizeBlock's sanitizer.
+const CONTENT = content as unknown as ContentIndex;
 
 // NEW: Import unified LLM generator
 import { generateUnified } from './llm/generator.js';
@@ -536,15 +542,17 @@ function mockGenerate(task: NarrativeTaskDTO): NarrativeBlockDTO {
     lines.push('Notes on habitat, behavior, and weaknesses sit just below the surface — for the journal to fill in later.');
   }
 
-  return {
+  // Route mock output through finalizeBlock so its prose gets the
+  // same ID sanitization as the AI path. Mock embeds task.references
+  // values directly (e.g. "trouble out by loc_forest"), which read
+  // poorly until sanitize swaps them for human names.
+  return finalizeBlock({
     id: uuidv4(),
-    type: task.type,
     createdAtMs,
-    references: task.references ?? {},
     title: titleByType[task.type] ?? 'Narrative',
     lines,
     tags: ['mvp', 'mock']
-  };
+  }, task, CONTENT);
 }
 
 // NOTE: Old geminiCliGenerate function removed - now using unified generator
@@ -582,31 +590,26 @@ function buildNarrativePrompt(task: NarrativeTaskDTO): string {
 function coerceNarrativeBlockFromText(text: string, task: NarrativeTaskDTO): NarrativeBlockDTO {
   // Try parse as JSON directly
   const direct = safeJsonParse(text.trim());
-  if (direct && typeof direct === 'object') return finalizeBlock(direct as any, task);
+  if (direct && typeof direct === 'object') return finalizeBlock(direct as any, task, CONTENT);
 
   // Try extract first {...} region
   const extracted = extractFirstJsonObject(text);
   if (extracted) {
     const parsed = safeJsonParse(extracted);
-    if (parsed && typeof parsed === 'object') return finalizeBlock(parsed as any, task);
+    if (parsed && typeof parsed === 'object') return finalizeBlock(parsed as any, task, CONTENT);
   }
 
-  // Fallback: wrap into a minimal block
+  // Fallback: wrap into a minimal block. Route through finalizeBlock
+  // too so the same sanitization (invented IDs, length budgets) runs.
   const lines = text
     .trim()
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(0, 6);
-  return {
-    id: uuidv4(),
-    type: task.type,
-    createdAtMs: Date.now(),
-    references: task.references ?? {},
-    title: task.type,
+    .filter(Boolean);
+  return finalizeBlock({
     lines: lines.length ? lines : ['(no narrative)'],
     tags: [task.backendId ?? 'unknown', 'fallback']
-  };
+  }, task, CONTENT);
 }
 
 // finalizeBlock + length budget enforcement lives in ./narrative/finalize.ts
