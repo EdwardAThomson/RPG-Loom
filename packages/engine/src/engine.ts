@@ -1957,11 +1957,93 @@ export class FutureSaveError extends Error {
 }
 
 /**
+ * Thrown by migrateState when the input passes the version check but
+ * its structural shape (required arrays, objects, primitives) doesn't
+ * match what the engine expects. Distinguished from `Error` so the UI
+ * can show "your save looks corrupt" instead of a generic crash.
+ */
+export class MalformedSaveError extends Error {
+  readonly field: string;
+  readonly reason: string;
+  constructor(field: string, reason: string) {
+    super(`Save is malformed: ${field} ${reason}`);
+    this.name = 'MalformedSaveError';
+    this.field = field;
+    this.reason = reason;
+  }
+}
+
+/**
+ * Structural shape check run at the end of migrateState. Intentionally
+ * narrow: only asserts the invariants the engine actually depends on
+ * (top-level required arrays/objects/primitives + a handful of nested
+ * structural fields). Resists drift by NOT mirroring every field in
+ * `types.ts` — the previous attempt at that (the deleted schemas.ts)
+ * silently fell out of sync.
+ *
+ * Throws `MalformedSaveError` on the first failing field with a
+ * specific reason so the caller can surface "your save is bad because
+ * X" rather than a generic load error.
+ */
+function assertEngineStateShape(raw: any): void {
+  const requireObject = (path: string, val: unknown) => {
+    if (!val || typeof val !== 'object' || Array.isArray(val)) {
+      throw new MalformedSaveError(path, 'must be an object');
+    }
+  };
+  const requireArray = (path: string, val: unknown) => {
+    if (!Array.isArray(val)) {
+      throw new MalformedSaveError(path, 'must be an array');
+    }
+  };
+  const requireString = (path: string, val: unknown) => {
+    if (typeof val !== 'string') {
+      throw new MalformedSaveError(path, 'must be a string');
+    }
+  };
+  const requireNumber = (path: string, val: unknown) => {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      throw new MalformedSaveError(path, 'must be a finite number');
+    }
+  };
+
+  requireObject('<root>', raw);
+
+  requireNumber('engineVersion', raw.engineVersion);
+  requireString('contentVersion', raw.contentVersion);
+  requireString('saveId', raw.saveId);
+  requireString('currentLocationId', raw.currentLocationId);
+  requireNumber('createdAtMs', raw.createdAtMs);
+  requireNumber('updatedAtMs', raw.updatedAtMs);
+  requireNumber('lastTickAtMs', raw.lastTickAtMs);
+  requireNumber('tickIndex', raw.tickIndex);
+  requireNumber('nextEventId', raw.nextEventId);
+
+  requireObject('player', raw.player);
+  requireObject('player.skills', raw.player.skills);
+  requireObject('player.baseStats', raw.player.baseStats);
+  requireObject('player.reputation', raw.player.reputation);
+  requireObject('player.flags', raw.player.flags);
+
+  requireArray('inventory', raw.inventory);
+  requireObject('equipment', raw.equipment);
+  requireArray('quests', raw.quests);
+  requireObject('questAvailability', raw.questAvailability);
+  requireObject('npcState', raw.npcState);
+  requireObject('activity', raw.activity);
+  requireObject('activity.params', raw.activity.params);
+  requireObject('metrics', raw.metrics);
+}
+
+/**
  * Bring a loaded save up to the current engine + content shape.
  *
  * - Accepts `any` because the input is untrusted JSON.
  * - Throws `FutureSaveError` if the save's engineVersion is higher than
  *   this build supports (don't silently truncate state from the future).
+ * - Throws `MalformedSaveError` if the post-migration shape doesn't
+ *   match the engine's structural invariants (missing fields, arrays
+ *   that arrived as objects, etc.).
  * - Older saves: re-stamps `engineVersion`/`contentVersion` and runs the
  *   per-shape fixups (skills, intrinsic stats, questAvailability).
  *
@@ -1970,7 +2052,7 @@ export class FutureSaveError extends Error {
  */
 export function migrateState(raw: any, currentContentVersion: string): EngineState {
   if (!raw || typeof raw !== 'object') {
-    throw new Error('migrateState: input is not an object');
+    throw new MalformedSaveError('<root>', 'must be an object');
   }
 
   // Resolve incoming engine version. Earliest saves used `version: 1`.
@@ -2017,11 +2099,26 @@ export function migrateState(raw: any, currentContentVersion: string): EngineSta
   raw.engineVersion = CURRENT_ENGINE_VERSION;
   raw.contentVersion = currentContentVersion;
 
+  // Sanity-check the parent containers the ensure* helpers will touch.
+  // Without this a `player: null` save crashes inside ensureAllSkills
+  // with a confusing TypeError instead of a clean MalformedSaveError.
+  if (!raw.player || typeof raw.player !== 'object' || Array.isArray(raw.player)) {
+    throw new MalformedSaveError('player', 'must be an object');
+  }
+
+  // The ensure* helpers backfill missing-but-known fields so the shape
+  // check below has something coherent to validate.
   const state = raw as EngineState;
   ensureAllSkills(state);
   ensureIntrinsicStats(state);
   ensureQuestAvailability(state);
   ensureNpcState(state);
+
+  // Final boundary check. If a malformed save somehow slipped past the
+  // version + migration steps (wrong type on `quests`, missing player,
+  // etc.), reject it here rather than letting bad shapes propagate
+  // through the engine and produce confusing downstream errors.
+  assertEngineStateShape(state);
 
   return state;
 }
