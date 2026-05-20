@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { migrateState, FutureSaveError, createNewState, CURRENT_ENGINE_VERSION, ALL_SKILL_IDS } from '../engine.js';
+import { migrateState, FutureSaveError, MalformedSaveError, createNewState, CURRENT_ENGINE_VERSION, ALL_SKILL_IDS } from '../engine.js';
 
 const CONTENT_TAG = '2026-05-15';
 
@@ -102,8 +102,60 @@ describe('migrateState', () => {
   });
 
   it('rejects non-object input', () => {
-    expect(() => migrateState(null as any, CONTENT_TAG)).toThrow();
-    expect(() => migrateState('save' as any, CONTENT_TAG)).toThrow();
+    expect(() => migrateState(null as any, CONTENT_TAG)).toThrow(MalformedSaveError);
+    expect(() => migrateState('save' as any, CONTENT_TAG)).toThrow(MalformedSaveError);
+  });
+
+  describe('shape validation', () => {
+    it('rejects a save whose quests field is not an array', () => {
+      const bad = makeOldSave({ quests: { 'q1': 'oops' } });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+      try { migrateState(bad, CONTENT_TAG); } catch (e) {
+        expect((e as MalformedSaveError).field).toBe('quests');
+      }
+    });
+
+    it('rejects a save whose inventory field is not an array', () => {
+      const bad = makeOldSave({ inventory: { 'wood': 5 } });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+      try { migrateState(bad, CONTENT_TAG); } catch (e) {
+        expect((e as MalformedSaveError).field).toBe('inventory');
+      }
+    });
+
+    it('rejects a save with no player object', () => {
+      const bad = makeOldSave({ player: null });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+    });
+
+    it('rejects a save where currentLocationId is missing', () => {
+      const bad = makeOldSave({ currentLocationId: undefined });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+      try { migrateState(bad, CONTENT_TAG); } catch (e) {
+        expect((e as MalformedSaveError).field).toBe('currentLocationId');
+      }
+    });
+
+    it('rejects a save with NaN timestamps', () => {
+      const bad = makeOldSave({ lastTickAtMs: NaN });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+    });
+
+    it('rejects a save where activity.params is the wrong shape', () => {
+      const bad = makeOldSave({ activity: { id: 'a', params: 'idle', startedAtMs: 0 } });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+      try { migrateState(bad, CONTENT_TAG); } catch (e) {
+        expect((e as MalformedSaveError).field).toBe('activity.params');
+      }
+    });
+
+    it('rejects a save with an array where equipment object is expected', () => {
+      const bad = makeOldSave({ equipment: ['weapon'] });
+      expect(() => migrateState(bad, CONTENT_TAG)).toThrow(MalformedSaveError);
+      try { migrateState(bad, CONTENT_TAG); } catch (e) {
+        expect((e as MalformedSaveError).field).toBe('equipment');
+      }
+    });
   });
 
   it('round-trips a freshly created save without changes (other than re-stamp)', () => {

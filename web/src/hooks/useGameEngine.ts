@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { EngineState, PlayerCommand, ContentIndex, OfflineSummary } from '@rpg-loom/shared';
-import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, migrateState, FutureSaveError, MAX_OFFLINE_MS } from '@rpg-loom/engine';
+import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, migrateState, FutureSaveError, MalformedSaveError, MAX_OFFLINE_MS } from '@rpg-loom/engine';
 import content, { CONTENT_VERSION } from '@rpg-loom/content';
 import { fetchSave, pushSave, type CloudSave } from '../services/cloudSave';
 import { getAuthState, onAuthChange } from '../services/auth';
@@ -107,6 +107,14 @@ export function useGameEngine() {
                 if (e instanceof FutureSaveError) {
                     alert(`Cannot load save: ${e.message}`);
                     return;
+                }
+                if (e instanceof MalformedSaveError) {
+                    // The local save is structurally broken (corrupted in
+                    // storage, hand-edited badly, etc.). Tell the player
+                    // what we found and fall through to creating a new
+                    // game; we don't want to silently overwrite their
+                    // bad save, but we also can't load it.
+                    alert(`Saved game is corrupted (${e.message}). Starting a new game.`);
                 }
                 console.warn('Failed to load save', e);
             }
@@ -307,6 +315,10 @@ export function useGameEngine() {
             window.location.reload();
         } catch (e) {
             if (e instanceof FutureSaveError) {
+                alert(`Import failed: ${e.message}`);
+                return;
+            }
+            if (e instanceof MalformedSaveError) {
                 alert(`Import failed: ${e.message}`);
                 return;
             }
