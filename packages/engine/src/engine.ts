@@ -295,7 +295,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         }));
         break;
       }
-      finalizeTemplateQuestCompletion(next, q, tmpl, events, cmd.atMs);
+      finalizeTemplateQuestCompletion(next, q, tmpl, content, events, cmd.atMs);
       break;
     }
     case 'EQUIP_ITEM': {
@@ -1446,7 +1446,7 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
     return;
   }
 
-  finalizeTemplateQuestCompletion(state, q, tmpl, events, atMs);
+  finalizeTemplateQuestCompletion(state, q, tmpl, content, events, atMs);
 }
 
 /**
@@ -1458,6 +1458,7 @@ function finalizeTemplateQuestCompletion(
   state: EngineState,
   q: QuestInstanceState,
   tmpl: QuestTemplateDef,
+  content: ContentIndex,
   events: GameEvent[],
   atMs: number
 ) {
@@ -1468,7 +1469,14 @@ function finalizeTemplateQuestCompletion(
   if (rewards.items) {
     for (const it of rewards.items) addItem(state.inventory, it.itemId, it.qty);
   }
-  if (rewards.xp) gainXp(state, rewards.xp, events, atMs);
+  // Quest xp routes through gainSkillXp via inferSkillsForQuestXp.
+  // A direct gainXp() write to player.xp wouldn't survive the next
+  // syncDerivedPlayerStats tick (it rebuilds player.xp from skill xps),
+  // so the reward has to land in real skill totals to actually stick.
+  if (rewards.xp) {
+    const skills = inferSkillsForQuestXp(tmpl, content);
+    distributeXpToSkills(state, skills, rewards.xp, events, atMs, content);
+  }
   if (rewards.gold) state.player.gold += rewards.gold;
   if (rewards.reputation) {
     for (const [k, v] of Object.entries(rewards.reputation)) {
@@ -1510,6 +1518,69 @@ function finalizeTemplateQuestCompletion(
       state.questAvailability[chainId] = current;
     }
   }
+}
+
+/**
+ * Decide which skill(s) a quest's xp reward should land in. Quest XP
+ * has to route through `gainSkillXp` to actually stick — `player.xp`
+ * is a derived field, rebuilt from skill XPs every tick, so a direct
+ * write via `gainXp` is wiped on the next sync.
+ *
+ * - gather: scan content.locationsById for which table type
+ *   (woodcutting / mining / foraging) lists the target item, and
+ *   credit that one skill.
+ * - kill: split across all four combat skills (swordsmanship,
+ *   marksmanship, arcana, defense) — the quest doesn't observe how
+ *   the player fought, so reward broad combat readiness.
+ * - craft: use the recipe's authored skill.
+ *
+ * Returns [] when no sensible mapping exists; callers silently drop
+ * the xp in that case rather than picking an arbitrary skill.
+ */
+function inferSkillsForQuestXp(tmpl: QuestTemplateDef, content: ContentIndex): SkillId[] {
+  switch (tmpl.objectiveType) {
+    case 'gather': {
+      const itemId = tmpl.targetItemId;
+      if (!itemId) return [];
+      for (const loc of Object.values(content.locationsById)) {
+        if (loc.woodcuttingTable?.entries.some((e: any) => e.itemId === itemId)) return ['woodcutting'];
+        if (loc.miningTable?.entries.some((e: any) => e.itemId === itemId)) return ['mining'];
+        if (loc.foragingTable?.entries.some((e: any) => e.itemId === itemId)) return ['foraging'];
+      }
+      return [];
+    }
+    case 'kill':
+      return ['swordsmanship', 'marksmanship', 'arcana', 'defense'];
+    case 'craft': {
+      const recipe = tmpl.targetRecipeId ? content.recipesById[tmpl.targetRecipeId] : undefined;
+      return recipe?.skill ? [recipe.skill as SkillId] : [];
+    }
+    default:
+      return [];
+  }
+}
+
+/**
+ * Distribute a chunk of xp evenly across the given skills, calling
+ * gainSkillXp for each and refreshing derived stats if any of them
+ * leveled up. No-op when skills is empty (caller has no opinion on
+ * where the xp should land).
+ */
+function distributeXpToSkills(
+  state: EngineState,
+  skills: SkillId[],
+  totalAmount: number,
+  events: GameEvent[],
+  atMs: number,
+  content: ContentIndex
+): void {
+  if (skills.length === 0 || totalAmount <= 0) return;
+  const share = Math.max(1, Math.floor(totalAmount / skills.length));
+  let anyLeveled = false;
+  for (const skillId of skills) {
+    if (gainSkillXp(state, skillId, share, events, atMs)) anyLeveled = true;
+  }
+  if (anyLeveled) recalculateStats(state, content);
 }
 
 // ---- Adventure Quest Helpers ----
@@ -1727,7 +1798,21 @@ function handleAdventureSubQuestCompletion(
     adventure.completedAtMs = atMs;
 
     const rewards = adventure.adventureRewards || { xp: 300, gold: 150 };
-    if (rewards.xp) gainXp(state, rewards.xp, events, atMs);
+    // Adventures don't have a single template/objective type, so we
+    // distribute the xp across the four combat skills — same default
+    // as kill quests, broadly reflecting the kind of work an adventure
+    // tends to involve. Direct gainXp wouldn't stick (see finalize-
+    // TemplateQuestCompletion for the underlying reason).
+    if (rewards.xp) {
+      distributeXpToSkills(
+        state,
+        ['swordsmanship', 'marksmanship', 'arcana', 'defense'],
+        rewards.xp,
+        events,
+        atMs,
+        content
+      );
+    }
     if (rewards.gold) {
       state.player.gold += rewards.gold;
       events.push(ev(state, atMs, 'GOLD_CHANGED', { amount: rewards.gold, newTotal: state.player.gold }));
@@ -1785,25 +1870,23 @@ function getTotalXpForSkillLevel(level: number): number {
   return total;
 }
 
+/**
+ * Emit an XP_GAINED event and resync derived player stats. Does NOT
+ * touch `state.player.xp` directly — that field is recomputed from the
+ * sum of skill xps every tick by `syncDerivedPlayerStats`, so any
+ * direct write here would be wiped on the next sync.
+ *
+ * The contract: callers that want xp to actually persist must also
+ * call `gainSkillXp` for a specific skill. This function exists for
+ * the event side of that pair (so the offline summary's xpGained
+ * accumulator picks up the gain) and for the resync.
+ *
+ * `newTotal` reports the post-sync `player.xp` so the event payload
+ * reflects what the player will see, not a transient pre-sync value.
+ */
 function gainXp(state: EngineState, amount: number, events: GameEvent[], atMs: number) {
-  // For now, general 'Player XP' still increments the total pool, 
-  // but it will be slightly out of sync with the sum of skills unless we distribute it.
-  // The user wants the UI to reflect the sum, so we'll ensure recalculation is called.
-  state.player.xp += amount;
-  events.push(ev(state, atMs, 'XP_GAINED', { amount, newTotal: state.player.xp }));
-
-  // We no longer use the quadratic curve for 'Player Level'.
-  // Instead, 'Player Level' is the summation of Skill levels.
-  // We'll call the helper to ensure it's updated (though gainXp usually accompanied by gainSkillXp).
   syncDerivedPlayerStats(state);
-
-  // Growth check
-  // Since level can change via summation, we should ensure stats stay in sync.
-  // However, recalculateTotalXpAndLevel doesn't handle the level-up stat gains (HP/Atk/Def) 
-  // that were previously in this loop. We should probably move them to a 'syncPlayerStatsToLevel' helper.
-
-  // NOTE: In the summation model, stat growth per 'Total Level' might be too fast.
-  // If we have 10 skills at Level 10, Total Level is 100.
+  events.push(ev(state, atMs, 'XP_GAINED', { amount, newTotal: state.player.xp }));
 }
 
 export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number, events?: GameEvent[], atMs?: number): boolean {
