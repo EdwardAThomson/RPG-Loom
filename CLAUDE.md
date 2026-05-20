@@ -142,7 +142,7 @@ When the docs and the code disagree, treat the code as authoritative and update 
 
 Sharp edges I'd want to know about before editing:
 
-- **`player.xp` is a derived field**, not a write target. `syncDerivedPlayerStats` rebuilds it from the sum of skill XPs every tick. Any direct `state.player.xp += N` or `gainXp(state, N)` call is silently overwritten on the next tick. Quest XP rewards route through `gainSkillXp` via `inferSkillsForQuestXp` instead; other `gainXp` callers (`+1`/tick during gather/combat) don't actually stick to `player.xp` either. If you need a real "total XP" gain, write it into a skill.
+- **`player.xp` is a derived field**, not a write target. `syncDerivedPlayerStats` rebuilds it from the sum of skill XPs every tick. To grant XP that sticks, call `gainSkillXp(state, skillId, amount, ...)` — `gainXp` is now event-side only (emits `XP_GAINED` for the offline summary, doesn't touch `player.xp`). Quest + adventure rewards route through `inferSkillsForQuestXp` + `distributeXpToSkills` for this reason.
 - **`packages/shared/src/schemas.ts` is stale** vs `types.ts` (seven mismatches catalogued in `known_gaps.md` §2). The runtime doesn't validate `EngineState` with these schemas, but don't trust them as the contract.
 - **Adding a new adventure step type touches four places**: engine's `spawnAdventureSubQuest`, the matching `bumpQuestProgressFrom*` `startsWith('dynamic_…_')` branch, `handleAdventureSubQuestCompletion` routing, and the web parser's fallback in `adventureQuestGeneration.ts`. There's no shared registry — a partial addition fails silently.
 - **`web/`'s React is 18** while `packages/ui/` is on React 19. Don't copy components blindly between them.
