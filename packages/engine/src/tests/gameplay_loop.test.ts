@@ -110,6 +110,8 @@ describe('Gameplay Loop (Integration)', () => {
         }
 
         const goldBeforeTurnIn = state.player.gold;
+        const xpBeforeTurnIn = state.player.xp;
+        const woodcuttingXpBeforeTurnIn = state.player.skills.woodcutting.xp;
         expect(state.inventory.find(x => x.itemId === 'item_plank')).toBeUndefined();
 
         // 4. Travel to Aldric and hand the quest in.
@@ -129,16 +131,13 @@ describe('Gameplay Loop (Integration)', () => {
 
         const qDone = state.quests.find(x => x.id === qAfter.id);
         expect(qDone?.status).toBe('completed');
-        // Gold and item rewards land at turn-in, not at progress complete.
-        // (Note: player.xp is recomputed from skill XPs by
-        // syncDerivedPlayerStats every tick, so the quest's xp reward
-        // doesn't stick to player.xp directly; we settle for the QUEST_COMPLETED
-        // event carrying the rewards payload.)
+        // Rewards land at turn-in. Quest xp routes through gainSkillXp
+        // (gather-wood → woodcutting), so it shows up in the skill xp
+        // total AND in the derived player.xp.
         expect(state.player.gold).toBeGreaterThan(goldBeforeTurnIn);
         expect(state.inventory.find(x => x.itemId === 'item_plank')).toBeDefined();
-        const completedEvt = turnIn.events.find(e => e.type === 'QUEST_COMPLETED');
-        expect(completedEvt).toBeDefined();
-        expect((completedEvt as any).payload.rewards.xp).toBe(50);
+        expect(state.player.skills.woodcutting.xp).toBeGreaterThan(woodcuttingXpBeforeTurnIn);
+        expect(state.player.xp).toBeGreaterThan(xpBeforeTurnIn);
     });
 
     it('quest-giver attribution: completing the gather parks at ready_to_turn_in; TURN_IN_QUEST bumps Aldric\'s affinity', () => {
