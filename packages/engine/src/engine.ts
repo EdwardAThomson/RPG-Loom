@@ -13,6 +13,7 @@ import type {
   ContentIndex,
   SkillId
 } from '@rpg-loom/shared';
+import { parseDynamicTemplateId, buildDynamicTemplateId, assertNever } from './adventure_steps.js';
 
 export type {
   ActivityParams,
@@ -817,61 +818,61 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     const q = next.quests.find((x) => x.id === a.questId);
     if (!q || q.status !== 'active') return { state: next, events };
 
-    // Dynamic sub-quests (from adventures) are handled by the adventure system
-    // They track progress through kills/loot/etc, not through template objectives
-    if (q.templateId.startsWith('dynamic_')) {
-      // For dynamic_kill quests, run combat
-      if (q.templateId.startsWith('dynamic_kill_')) {
-        const enemyId = q.templateId.replace('dynamic_kill_', '');
-        return resolveEncounterTick(next, tickAtMs, q.locationId, content, enemyId);
-      }
+    // Dynamic sub-quests (from adventures) are handled by the adventure
+    // system — they track progress through kills/loot/etc, not template
+    // objectives. Routing on the parsed kind gives us exhaustiveness:
+    // any future adventure step kind has to be handled here or fail at
+    // typecheck.
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed) {
+      switch (parsed.kind) {
+        case 'kill':
+          return resolveEncounterTick(next, tickAtMs, q.locationId, content, parsed.targetId!);
 
-      // For dynamic_explore quests, progress is tracked via progressExploreQuests
-      if (q.templateId === 'dynamic_explore') {
-        if (next.currentLocationId === q.locationId) {
-          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You are exploring the area for your quest...` }));
-          progressExploreQuests(next, events, tickAtMs, content);
-        } else {
-          events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You need to be at ${content?.locationsById[q.locationId]?.name || q.locationId} to explore.` }));
-        }
-        return { state: next, events };
-      }
-
-      // For dynamic_gather quests, perform gathering
-      if (q.templateId.startsWith('dynamic_gather_')) {
-        const itemId = q.templateId.replace('dynamic_gather_', '');
-        const loc = content.locationsById[q.locationId];
-
-        let gatherResult: StepResult | null = null;
-        if (loc) {
-          if (loc.miningTable?.entries.some(e => e.itemId === itemId)) {
-            gatherResult = performMineTick(next, q.locationId, tickAtMs, content);
-          } else if (loc.woodcuttingTable?.entries.some(e => e.itemId === itemId)) {
-            gatherResult = performWoodcutTick(next, q.locationId, tickAtMs, content);
-          } else if (loc.foragingTable?.entries.some(e => e.itemId === itemId)) {
-            gatherResult = performForageTick(next, q.locationId, tickAtMs, content);
+        case 'explore':
+          if (next.currentLocationId === q.locationId) {
+            events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You are exploring the area for your quest...` }));
+            progressExploreQuests(next, events, tickAtMs, content);
+          } else {
+            events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You need to be at ${content?.locationsById[q.locationId]?.name || q.locationId} to explore.` }));
           }
-        }
+          return { state: next, events };
 
-        if (gatherResult) {
-          return gatherResult;
-        } else {
+        case 'gather': {
+          const itemId = parsed.targetId!;
+          const loc = content.locationsById[q.locationId];
+
+          let gatherResult: StepResult | null = null;
+          if (loc) {
+            if (loc.miningTable?.entries.some(e => e.itemId === itemId)) {
+              gatherResult = performMineTick(next, q.locationId, tickAtMs, content);
+            } else if (loc.woodcuttingTable?.entries.some(e => e.itemId === itemId)) {
+              gatherResult = performWoodcutTick(next, q.locationId, tickAtMs, content);
+            } else if (loc.foragingTable?.entries.some(e => e.itemId === itemId)) {
+              gatherResult = performForageTick(next, q.locationId, tickAtMs, content);
+            }
+          }
+
+          if (gatherResult) return gatherResult;
           events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
             message: `You search for quest items, but they aren't here.`
           }));
           return { state: next, events };
         }
-      }
 
-      // For dynamic_craft quests, perform crafting
-      if (q.templateId.startsWith('dynamic_craft_')) {
-        const recipeId = q.templateId.replace('dynamic_craft_', '');
-        return performCraftTick(next, recipeId, tickAtMs, content);
-      }
+        case 'craft':
+          return performCraftTick(next, parsed.targetId!, tickAtMs, content);
 
-      // For dynamic_travel, progress is tracked via checkTravelQuests (instant when at location)
-      // For dynamic_deliver, progress is tracked via checkDeliverQuests
-      return { state: next, events };
+        case 'travel':
+        case 'deliver':
+          // Travel progress lands via checkTravelQuests when the player
+          // arrives; deliver progress lands via checkDeliverQuests.
+          // Neither needs per-tick work here.
+          return { state: next, events };
+
+        default:
+          return assertNever(parsed.kind);
+      }
     }
 
     const tmpl = content.questTemplatesById[q.templateId];
@@ -1236,59 +1237,66 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 }
 
 // ---- Quest helpers ----
+
+/**
+ * Common progress-bump emit-and-check, used by all the
+ * bumpQuestProgressFrom* helpers below.
+ */
+function recordQuestProgress(
+  state: EngineState,
+  q: QuestInstanceState,
+  gained: number,
+  events: GameEvent[],
+  atMs: number,
+  content: ContentIndex
+) {
+  q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
+  events.push(ev(state, atMs, 'QUEST_PROGRESS', {
+    questId: q.id, gained, current: q.progress.current, required: q.progress.required
+  }));
+  checkQuestCompletion(state, q.id, content, events, atMs);
+}
+
 function bumpQuestProgressFromKill(state: EngineState, killedEnemyId: string, events: GameEvent[], atMs: number, content: ContentIndex) {
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Handle dynamic_kill quests (from adventures)
-    if (q.templateId.startsWith('dynamic_kill_')) {
-      const targetEnemyId = q.templateId.replace('dynamic_kill_', '');
-      if (targetEnemyId === killedEnemyId) {
-        q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
-        checkQuestCompletion(state, q.id, content, events, atMs);
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind === 'kill') {
+      if (parsed.targetId === killedEnemyId) {
+        recordQuestProgress(state, q, 1, events, atMs, content);
       }
       continue;
     }
+    if (parsed) continue; // dynamic but not a kill — skip
 
-    // Handle template-based quests
+    // Template-based quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'kill' && tmpl.targetEnemyId === killedEnemyId) {
-      q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
-      checkQuestCompletion(state, q.id, content, events, atMs);
+      recordQuestProgress(state, q, 1, events, atMs, content);
     }
   }
 }
 
 function bumpQuestProgressFromLoot(state: EngineState, loot: Array<{ itemId: ItemId; qty: number }>, events: GameEvent[], atMs: number, content: ContentIndex) {
-  // console.log(`[Engine] bumpQuestProgressFromLoot called with ${loot.length} items`);
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Handle dynamic gather quests (e.g., dynamic_gather_frost_stone)
-    if (q.templateId.startsWith('dynamic_gather_')) {
-      const targetItemId = q.templateId.replace('dynamic_gather_', '');
-      const gained = loot.filter((x) => x.itemId === targetItemId).reduce((s, x) => s + x.qty, 0);
-      if (gained > 0) {
-        q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained, current: q.progress.current, required: q.progress.required }));
-        checkQuestCompletion(state, q.id, content, events, atMs);
-      }
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind === 'gather') {
+      const gained = loot.filter((x) => x.itemId === parsed.targetId).reduce((s, x) => s + x.qty, 0);
+      if (gained > 0) recordQuestProgress(state, q, gained, events, atMs, content);
       continue;
     }
+    if (parsed) continue;
 
-    // Handle template-based gather quests
+    // Template-based gather quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'gather' && tmpl.targetItemId) {
       const gained = loot.filter((x) => x.itemId === tmpl.targetItemId).reduce((s, x) => s + x.qty, 0);
-      if (gained > 0) {
-        q.progress.current = Math.min(q.progress.current + gained, q.progress.required);
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained, current: q.progress.current, required: q.progress.required }));
-        checkQuestCompletion(state, q.id, content, events, atMs);
-      }
+      if (gained > 0) recordQuestProgress(state, q, gained, events, atMs, content);
     }
   }
 }
@@ -1297,24 +1305,20 @@ function bumpQuestProgressFromCraft(state: EngineState, recipeId: string, events
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Handle dynamic_craft_ quests (from adventures)
-    if (q.templateId.startsWith('dynamic_craft_')) {
-      const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
-      if (targetRecipeId === recipeId) {
-        q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
-        checkQuestCompletion(state, q.id, content, events, atMs);
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind === 'craft') {
+      if (parsed.targetId === recipeId) {
+        recordQuestProgress(state, q, 1, events, atMs, content);
       }
       continue;
     }
+    if (parsed) continue;
 
-    // Handle template-based quests
+    // Template-based quests
     const tmpl = content.questTemplatesById[q.templateId];
     if (!tmpl) continue;
     if (tmpl.objectiveType === 'craft' && tmpl.targetRecipeId === recipeId) {
-      q.progress.current = Math.min(q.progress.current + 1, q.progress.required);
-      events.push(ev(state, atMs, 'QUEST_PROGRESS', { questId: q.id, gained: 1, current: q.progress.current, required: q.progress.required }));
-      checkQuestCompletion(state, q.id, content, events, atMs);
+      recordQuestProgress(state, q, 1, events, atMs, content);
     }
   }
 }
@@ -1326,16 +1330,9 @@ function checkTravelQuests(state: EngineState, locationId: LocationId, events: G
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Check dynamic travel quests (from adventures)
-    if (q.templateId === 'dynamic_travel' && q.locationId === locationId) {
-      q.progress.current = q.progress.required;
-      events.push(ev(state, atMs, 'QUEST_PROGRESS', {
-        questId: q.id,
-        gained: 1,
-        current: q.progress.current,
-        required: q.progress.required
-      }));
-      checkQuestCompletion(state, q.id, content, events, atMs);
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind === 'travel' && q.locationId === locationId) {
+      recordQuestProgress(state, q, q.progress.required - q.progress.current, events, atMs, content);
     }
   }
 }
@@ -1347,22 +1344,15 @@ function checkDeliverQuests(state: EngineState, events: GameEvent[], atMs: numbe
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Check dynamic deliver quests (from adventures)
-    if (q.templateId.startsWith('dynamic_deliver_')) {
-      const itemId = q.templateId.replace('dynamic_deliver_', '');
-      const hasItems = state.inventory.find(stack => stack.itemId === itemId && stack.qty >= q.progress.required);
-      const atLocation = state.currentLocationId === q.locationId;
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind !== 'deliver') continue;
 
-      if (hasItems && atLocation && q.progress.current < q.progress.required) {
-        q.progress.current = q.progress.required;
-        events.push(ev(state, atMs, 'QUEST_PROGRESS', {
-          questId: q.id,
-          gained: q.progress.required,
-          current: q.progress.current,
-          required: q.progress.required
-        }));
-        checkQuestCompletion(state, q.id, content, events, atMs);
-      }
+    const itemId = parsed.targetId!;
+    const hasItems = state.inventory.find(stack => stack.itemId === itemId && stack.qty >= q.progress.required);
+    const atLocation = state.currentLocationId === q.locationId;
+
+    if (hasItems && atLocation && q.progress.current < q.progress.required) {
+      recordQuestProgress(state, q, q.progress.required - q.progress.current, events, atMs, content);
     }
   }
 }
@@ -1374,27 +1364,20 @@ function progressExploreQuests(state: EngineState, events: GameEvent[], atMs: nu
   for (const q of state.quests) {
     if (q.status !== 'active') continue;
 
-    // Check dynamic explore quests (from adventures)
-    if (q.templateId === 'dynamic_explore') {
-      const atLocation = state.currentLocationId === q.locationId;
-      const isExploring = state.activity.params.type === 'explore' &&
-        state.activity.params.locationId === q.locationId;
+    const parsed = parseDynamicTemplateId(q.templateId);
+    if (parsed?.kind !== 'explore') continue;
 
-      if (atLocation && isExploring && q.progress.current < q.progress.required) {
-        // Simple completion after some time (could be enhanced with duration check)
-        const elapsedMs = atMs - q.createdAtMs;
-        const requiredMs = 30000; // 30 seconds default
+    const atLocation = state.currentLocationId === q.locationId;
+    const isExploring = state.activity.params.type === 'explore' &&
+      state.activity.params.locationId === q.locationId;
 
-        if (elapsedMs >= requiredMs) {
-          q.progress.current = q.progress.required;
-          events.push(ev(state, atMs, 'QUEST_PROGRESS', {
-            questId: q.id,
-            gained: 1,
-            current: q.progress.current,
-            required: q.progress.required
-          }));
-          checkQuestCompletion(state, q.id, content, events, atMs);
-        }
+    if (atLocation && isExploring && q.progress.current < q.progress.required) {
+      // Simple completion after some time (could be enhanced with duration check)
+      const elapsedMs = atMs - q.createdAtMs;
+      const requiredMs = 30000; // 30 seconds default
+
+      if (elapsedMs >= requiredMs) {
+        recordQuestProgress(state, q, q.progress.required - q.progress.current, events, atMs, content);
       }
     }
   }
@@ -1409,22 +1392,21 @@ function checkQuestCompletion(state: EngineState, questId: string, content: Cont
   // Ensure state is migrated for old saves
   ensureQuestAvailability(state);
 
-  // Check if this is a dynamic quest (adventure sub-quest)
-  const isDynamicQuest = q.templateId.startsWith('dynamic_');
-
-  if (isDynamicQuest) {
-    // Dynamic quests don't have templates, mark as completed
+  // Adventure sub-quest? parseDynamicTemplateId returns non-null only
+  // for the per-step kinds (kill/gather/craft/travel/explore/deliver),
+  // not the parent 'dynamic_adventure' marker. Sub-quests don't carry
+  // rewards — their parent adventure's adventureRewards land when the
+  // last step completes via handleAdventureSubQuestCompletion.
+  if (parseDynamicTemplateId(q.templateId)) {
     q.status = 'completed';
     q.completedAtMs = atMs;
 
-    // No rewards for sub-quests (rewards come from parent adventure)
     events.push(ev(state, atMs, 'QUEST_COMPLETED', {
       questId: q.id,
       templateId: q.templateId,
       rewards: {} as any
     }));
 
-    // Check if this is an adventure sub-quest and handle step progression
     handleAdventureSubQuestCompletion(state, q.id, content, events, atMs);
     return;
   }
@@ -1615,98 +1597,60 @@ function spawnAdventureSubQuest(
   // Create quest based on template type
   const subQuestId = `q_adv_sub_${adventureQuest.id}_step${stepIndex}_${state.tickIndex}`;
 
-  let subQuest: QuestInstanceState;
-
-  if (template.type === 'kill') {
-    subQuest = {
-      id: subQuestId,
-      templateId: `dynamic_kill_${template.targetEnemyId}`,
-      status: 'active',
-      locationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: template.qty },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Kill ${template.qty} ${template.targetEnemyId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else if (template.type === 'gather') {
-    subQuest = {
-      id: subQuestId,
-      templateId: `dynamic_gather_${template.targetItemId}`,
-      status: 'active',
-      locationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: template.qty },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Gather ${template.qty} ${template.targetItemId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else if (template.type === 'craft') {
-    subQuest = {
-      id: subQuestId,
-      templateId: `dynamic_craft_${template.targetRecipeId}`,
-      status: 'active',
-      locationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: template.qty },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Craft ${template.qty} ${template.targetRecipeId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else if (template.type === 'travel') {
-    // Travel quests auto-complete when player is at location
-    subQuest = {
-      id: subQuestId,
-      templateId: 'dynamic_travel',
-      status: 'active',
-      locationId: template.targetLocationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: 1 },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Travel to ${template.targetLocationId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else if (template.type === 'explore') {
-    // Explore quests are time-based
-    subQuest = {
-      id: subQuestId,
-      templateId: 'dynamic_explore',
-      status: 'active',
-      locationId: template.targetLocationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: 1 },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Explore ${template.targetLocationId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else if (template.type === 'deliver') {
-    // Deliver quests check inventory + location
-    subQuest = {
-      id: subQuestId,
-      templateId: `dynamic_deliver_${template.targetItemId}`,
-      status: 'active',
-      locationId: template.targetLocationId,
-      createdAtMs: atMs,
-      progress: { current: 0, required: template.qty },
-      aiNarrative: {
-        title: step.narrative.description,
-        description: step.narrative.context || `Deliver ${template.qty} ${template.targetItemId} to ${template.targetLocationId}`,
-        generatedAtMs: atMs
-      }
-    };
-  } else {
-    return null; // Unknown template type
+  // Per-kind specifics: where the sub-quest lives, how many ticks it
+  // needs, and a default description. Everything else (id, status,
+  // aiNarrative scaffold) is shared.
+  let questLocationId: string;
+  let required: number;
+  let defaultDescription: string;
+  switch (template.type) {
+    case 'kill':
+      questLocationId = locationId;
+      required = template.qty;
+      defaultDescription = `Kill ${template.qty} ${template.targetEnemyId}`;
+      break;
+    case 'gather':
+      questLocationId = locationId;
+      required = template.qty;
+      defaultDescription = `Gather ${template.qty} ${template.targetItemId}`;
+      break;
+    case 'craft':
+      questLocationId = locationId;
+      required = template.qty;
+      defaultDescription = `Craft ${template.qty} ${template.targetRecipeId}`;
+      break;
+    case 'travel':
+      questLocationId = template.targetLocationId;
+      required = 1;
+      defaultDescription = `Travel to ${template.targetLocationId}`;
+      break;
+    case 'explore':
+      questLocationId = template.targetLocationId;
+      required = 1;
+      defaultDescription = `Explore ${template.targetLocationId}`;
+      break;
+    case 'deliver':
+      questLocationId = template.targetLocationId;
+      required = template.qty;
+      defaultDescription = `Deliver ${template.qty} ${template.targetItemId} to ${template.targetLocationId}`;
+      break;
+    default:
+      return assertNever(template);
   }
+
+  const subQuest: QuestInstanceState = {
+    id: subQuestId,
+    templateId: buildDynamicTemplateId(template),
+    status: 'active',
+    locationId: questLocationId,
+    createdAtMs: atMs,
+    progress: { current: 0, required },
+    aiNarrative: {
+      title: step.narrative.description,
+      description: step.narrative.context || defaultDescription,
+      generatedAtMs: atMs
+    }
+  };
 
   // Link sub-quest to adventure step
   step.subQuestId = subQuest.id;

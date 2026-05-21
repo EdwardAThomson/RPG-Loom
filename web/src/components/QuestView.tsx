@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EngineState, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
-import { getAvailableQuests } from '@rpg-loom/engine';
+import { getAvailableQuests, parseDynamicTemplateId } from '@rpg-loom/engine';
 import { enhanceQuest } from '../services/questEnhancement';
 import { generateAdventureQuest } from '../services/adventureQuestGeneration';
 
@@ -22,10 +22,12 @@ export function QuestView({ state, content, dispatch }: Props) {
     const activeQuests = state.quests.filter(q => {
         if (q.status !== 'active' && q.status !== 'ready_to_turn_in') return false;
 
-        // If this is a sub-quest (dynamic_* but NOT dynamic_adventure), only show it if:
+        // If this is a sub-quest (one of the per-step dynamic kinds —
+        // parseDynamicTemplateId rejects the 'dynamic_adventure' parent
+        // marker), only show it if:
         // 1. Its parent adventure step is active (so user can start it), OR
         // 2. The sub-quest itself is the active quest activity (so it stays visible while working)
-        if (q.templateId.startsWith('dynamic_') && q.templateId !== 'dynamic_adventure') {
+        if (parseDynamicTemplateId(q.templateId)) {
             // Find the parent adventure quest
             const parentAdventure = state.quests.find(parent =>
                 parent.adventureSteps?.some(step => step.subQuestId === q.id)
@@ -320,8 +322,11 @@ export function QuestView({ state, content, dispatch }: Props) {
                 ) : (
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         {activeQuests.map(q => {
-                            // Dynamic sub-quests don't have templates in questTemplatesById
-                            const tmpl = q.templateId.startsWith('dynamic_') && q.templateId !== 'dynamic_adventure'
+                            // Parse once; non-null = adventure sub-quest of one of
+                            // the per-step kinds. dynamic_adventure parent doesn't
+                            // parse — it's checked separately via isAdventure.
+                            const parsed = parseDynamicTemplateId(q.templateId);
+                            const tmpl = parsed
                                 ? null
                                 : content?.questTemplatesById?.[q.templateId];
                             const questName = tmpl?.name || q.aiNarrative?.title || q.templateId.replace('qt_', '').replace(/_/g, ' ').toUpperCase();
@@ -350,8 +355,9 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         // Check if this is a gather/explore quest with matching activity
                                         const subQuest = state.quests.find(sq => sq.id === step.subQuestId);
                                         if (subQuest) {
+                                            const subParsed = parseDynamicTemplateId(subQuest.templateId);
                                             // For gather quests, check if we're in a gathering activity at the quest location
-                                            if (subQuest.templateId.startsWith('dynamic_gather_') &&
+                                            if (subParsed?.kind === 'gather' &&
                                                 (state.activity.params.type === 'mine' ||
                                                     state.activity.params.type === 'woodcut' ||
                                                     state.activity.params.type === 'forage') &&
@@ -360,7 +366,7 @@ export function QuestView({ state, content, dispatch }: Props) {
                                                 return true;
                                             }
                                             // For explore quests, check if we're exploring at the quest location
-                                            if (subQuest.templateId === 'dynamic_explore' &&
+                                            if (subParsed?.kind === 'explore' &&
                                                 state.activity.params.type === 'explore' &&
                                                 'locationId' in state.activity.params &&
                                                 state.activity.params.locationId === subQuest.locationId) {
@@ -378,35 +384,40 @@ export function QuestView({ state, content, dispatch }: Props) {
                                     'questId' in state.activity.params &&
                                     state.activity.params.questId === q.id;
 
-                                // For dynamic gather quests, also check if we're in the corresponding gathering activity
-                                if (!isQuestActivity && q.templateId.startsWith('dynamic_gather_')) {
-                                    isQuestActivity = (state.activity.params.type === 'mine' ||
-                                        state.activity.params.type === 'woodcut' ||
-                                        state.activity.params.type === 'forage') &&
-                                        'locationId' in state.activity.params &&
-                                        state.activity.params.locationId === q.locationId;
-                                }
-
-                                // For dynamic explore quests, check if we're exploring at the quest location
-                                if (!isQuestActivity && q.templateId === 'dynamic_explore') {
-                                    isQuestActivity = state.activity.params.type === 'explore' &&
-                                        'locationId' in state.activity.params &&
-                                        state.activity.params.locationId === q.locationId;
-                                }
-
-                                // For dynamic kill quests, check if we're in combat (hunt activity)
-                                if (!isQuestActivity && q.templateId.startsWith('dynamic_kill_')) {
-                                    isQuestActivity = state.activity.params.type === 'hunt' &&
-                                        'locationId' in state.activity.params &&
-                                        state.activity.params.locationId === q.locationId;
-                                }
-
-                                // For dynamic craft quests, check if we're in crafting activity with target recipe
-                                if (!isQuestActivity && q.templateId.startsWith('dynamic_craft_')) {
-                                    const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
-                                    isQuestActivity = state.activity.params.type === 'craft' &&
-                                        'recipeId' in state.activity.params &&
-                                        state.activity.params.recipeId === targetRecipeId;
+                                // For sub-quests, also check if the player is in the
+                                // matching ambient activity (e.g. mining at the quest
+                                // location counts as "working on" a gather sub-quest).
+                                if (!isQuestActivity && parsed) {
+                                    switch (parsed.kind) {
+                                        case 'gather':
+                                            isQuestActivity = (state.activity.params.type === 'mine' ||
+                                                state.activity.params.type === 'woodcut' ||
+                                                state.activity.params.type === 'forage') &&
+                                                'locationId' in state.activity.params &&
+                                                state.activity.params.locationId === q.locationId;
+                                            break;
+                                        case 'explore':
+                                            isQuestActivity = state.activity.params.type === 'explore' &&
+                                                'locationId' in state.activity.params &&
+                                                state.activity.params.locationId === q.locationId;
+                                            break;
+                                        case 'kill':
+                                            isQuestActivity = state.activity.params.type === 'hunt' &&
+                                                'locationId' in state.activity.params &&
+                                                state.activity.params.locationId === q.locationId;
+                                            break;
+                                        case 'craft':
+                                            isQuestActivity = state.activity.params.type === 'craft' &&
+                                                'recipeId' in state.activity.params &&
+                                                state.activity.params.recipeId === parsed.targetId;
+                                            break;
+                                        case 'travel':
+                                        case 'deliver':
+                                            // No ambient-activity equivalent; player has
+                                            // to explicitly switch to a 'quest' activity
+                                            // or travel/deliver via TRAVEL command.
+                                            break;
+                                    }
                                 }
                             }
 
@@ -601,8 +612,12 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         );
                                     })()}
 
-                                    {/* Show if this is a sub-quest */}
-                                    {q.templateId.startsWith('dynamic_') && (
+                                    {/* Show if this is an adventure sub-quest. The
+                                        'dynamic_adventure' parent isn't "part of an
+                                        adventure" — it IS the adventure — so
+                                        parseDynamicTemplateId (which rejects the
+                                        parent) is the right test. */}
+                                    {parsed && (
                                         <div style={{
                                             marginTop: '0.5rem',
                                             padding: '0.5rem',
