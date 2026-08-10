@@ -6,9 +6,13 @@
  * subscribe to connectivity changes via `onGatewayStatusChange`.
  */
 
+// Fall back to the local dev gateway only in dev builds. In production,
+// no VITE_GATEWAY_URL means no gateway: an empty URL makes gatewayFetch
+// short-circuit instead of hitting localhost from a public origin (which
+// triggers the browser's local-network-access permission prompt).
 const GATEWAY_URL =
     import.meta.env.VITE_GATEWAY_URL?.replace(/\/+$/, '') ||
-    'http://localhost:8787';
+    (import.meta.env.DEV ? 'http://localhost:8787' : '');
 
 let gatewayAvailable: boolean | null = null; // null = unknown
 type StatusListener = (available: boolean) => void;
@@ -45,6 +49,10 @@ export async function gatewayFetch(
     path: string,
     init?: RequestInit
 ): Promise<Response> {
+    if (!GATEWAY_URL) {
+        setAvailable(false);
+        throw new Error('No gateway configured (VITE_GATEWAY_URL unset)');
+    }
     const url = `${GATEWAY_URL}${path}`;
     try {
         const controller = new AbortController();
