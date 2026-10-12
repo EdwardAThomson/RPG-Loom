@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getAuthState, onAuthChange, signInDev, signOut, type AuthState } from '../services/auth';
+import {
+    getAuthState, onAuthChange, signInDev, signInOctonion, signOut,
+    isOctonionConfigured, type AuthState
+} from '../services/auth';
 import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 import type { CloudSyncStatus } from '../hooks/useGameEngine';
 
@@ -75,7 +78,32 @@ export function CloudSaveSection({ cloudStatus, onSyncNow }: Props) {
                 </Banner>
             )}
 
-            {auth.status === 'signed-out' && gatewayUp !== false && (
+            {auth.status === 'signing-in' && (
+                <p style={{ fontSize: '0.9rem', color: '#aaa' }}>Signing in…</p>
+            )}
+
+            {(auth.status === 'signed-out' || auth.status === 'error') && gatewayUp !== false && auth.mode === 'octonion' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {isOctonionConfigured() ? (
+                        <>
+                            <label style={{ fontSize: '0.85rem', color: '#888' }}>
+                                Use your Octonion account (the same one as DungeonGPT).
+                            </label>
+                            <div>
+                                <button onClick={() => signInOctonion()} style={primaryBtn}>
+                                    Sign in with Octonion
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <Banner color="#ffa000">
+                            Octonion sign-in isn't configured in this build.
+                        </Banner>
+                    )}
+                </div>
+            )}
+
+            {(auth.status === 'signed-out' || auth.status === 'error') && gatewayUp !== false && auth.mode === 'dev' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label style={{ fontSize: '0.85rem', color: '#888' }}>
                         Sign in (dev mode — any name works)
@@ -110,7 +138,7 @@ export function CloudSaveSection({ cloudStatus, onSyncNow }: Props) {
                         <button onClick={handleSync} disabled={busy} style={primaryBtn}>
                             Sync now
                         </button>
-                        <button onClick={() => signOut()} style={secondaryBtn}>
+                        <button onClick={() => void signOut()} style={secondaryBtn}>
                             Sign out
                         </button>
                     </div>
@@ -118,6 +146,7 @@ export function CloudSaveSection({ cloudStatus, onSyncNow }: Props) {
             )}
 
             {error && <Banner color="#d44">{error}</Banner>}
+            {!error && auth.status === 'error' && auth.error && <Banner color="#d44">{auth.error}</Banner>}
         </div>
     );
 }

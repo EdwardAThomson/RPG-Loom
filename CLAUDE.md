@@ -53,6 +53,10 @@ npm -w @rpg-loom/engine exec vitest -t "name"        # by test name
 
 Web → gateway URL comes from `VITE_GATEWAY_URL` (defaults to `http://localhost:8787`). Gateway listens on `PORT` (default `8787`).
 
+### Accounts (Octonion SSO)
+
+Cloud saves sign in through the Octonion account hub (octonion.io), the same SSO DungeonGPT-JS uses. Gateway: `AUTH_PROVIDER=octonion` + `OCTONION_SUPABASE_URL` (`gateway/src/auth/octonion.ts`, JWKS-verified). Web: `VITE_OCTONION_SUPABASE_URL` + `VITE_OCTONION_SUPABASE_ANON_KEY` switch `web/src/services/auth.ts` to octonion mode (hub redirect → `?token=` one-time token → hub `/auth/exchange` → supabase-js session, auth only). Without those vars both sides fall back to dev mode. Setup details: `gateway/src/persistence/README.md`.
+
 ### Deployed build env vars
 
 `VITE_SITE_URL` and `VITE_BASE_PATH` configure metadata/subpath for `npm run build:web`.
