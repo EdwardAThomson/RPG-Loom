@@ -42,3 +42,15 @@ create table if not exists narrative_blocks (
 );
 
 create index if not exists narrative_blocks_save on narrative_blocks(save_id);
+
+-- Fixed-window rate-limit counters, used by the Cloudflare Worker backend
+-- (worker/src/middleware/rateLimit.ts). One row per (user, bucket, window).
+-- Old windows are dead weight; prune occasionally with:
+--   delete from request_counters where window_start < now() - interval '2 days';
+create table if not exists request_counters (
+  user_key     text not null,
+  bucket       text not null,
+  window_start timestamptz not null,
+  count        int  not null default 0,
+  primary key (user_key, bucket, window_start)
+);

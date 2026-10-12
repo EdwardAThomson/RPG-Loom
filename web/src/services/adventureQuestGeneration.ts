@@ -6,7 +6,8 @@
 
 import type { ContentIndex, LocationId, AdventureStepTemplate } from '@rpg-loom/shared';
 import { getAISettings } from './aiSettings';
-import { gatewayFetch, isGatewayAvailable } from './gateway';
+import { isGatewayAvailable } from './gateway';
+import { llmGenerateFetch } from './llm';
 
 export interface AdventureQuestSpec {
     title: string;
@@ -42,7 +43,7 @@ export async function generateAdventureQuest(
     const settings = getAISettings();
     const prompt = buildAdventurePrompt(currentLocationId, playerLevel, content);
 
-    const response = await gatewayFetch('/api/llm/generate', {
+    const response = await llmGenerateFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

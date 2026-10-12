@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getAISettings } from '../services/aiSettings';
 import { gatewayFetch } from '../services/gateway';
+import { llmGenerateFetch } from '../services/llm';
 
 interface Props {
     onClose: () => void;
@@ -48,7 +49,7 @@ export function AIDebugModal({ onClose }: Props) {
 
         try {
             addLog('Sending request to gateway...');
-            const response = await gatewayFetch('/api/llm/generate', {
+            const response = await llmGenerateFetch({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

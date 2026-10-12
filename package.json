@@ -19,6 +19,8 @@
     "test": "npm -ws run test",
     "dev": "npx -y concurrently \"npm --workspace @rpg-loom/content run watch\" \"npm --workspace web run dev\"",
     "dev:web": "npm --workspace web run dev",
-    "dev:gateway": "npm --workspace gateway run dev"
+    "dev:gateway": "npm --workspace gateway run dev",
+    "dev:worker": "npm --prefix worker run dev",
+    "test:worker": "npm --prefix worker test"
   }
 }

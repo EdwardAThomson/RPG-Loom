@@ -1,0 +1,28 @@
+name = "rpg-loom-api"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+compatibility_flags = ["nodejs_compat"]
+
+# Free AI pool (Workers AI). Remote-only: `wrangler dev` needs `wrangler login`.
+[ai]
+binding = "AI"
+
+# RPG Loom's Postgres: the `rpg_loom` database on the Hetzner games box (same
+# server as DungeonGPT, separate database and role), reached via Hyperdrive.
+# Create once, then paste the id below (setup: worker/README.md):
+#   npx wrangler hyperdrive create rpg-loom-db \
+#     --connection-string="postgresql://rpg_loom:<pw>@<box-public-ip>:5432/rpg_loom" --sslmode require
+# Local dev: tunnel to the box (or use a local Postgres) and export
+#   WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="postgresql://rpg_loom:<pw>@localhost:5433/rpg_loom"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "REPLACE_WITH_HYPERDRIVE_ID"
+
+[vars]
+ENVIRONMENT = "production"
+# Octonion hub Supabase project (same value as DungeonGPT's OCTONION_SUPABASE_URL).
+OCTONION_SUPABASE_URL = "REPLACE_WITH_HUB_SUPABASE_URL"
+HUB_URL = "https://octonion.io"
+
+# Secrets (never in this file):
+#   npx wrangler secret put OPENROUTER_API_KEY   # optional; enables the members AI pool
