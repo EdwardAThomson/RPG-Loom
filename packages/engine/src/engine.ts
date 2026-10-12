@@ -1806,7 +1806,7 @@ function abandonAdventure(state: EngineState, adventureQuestId: string): void {
  * Level 3: 220 XP (100 + 120)
  * etc.
  */
-function getTotalXpForSkillLevel(level: number): number {
+export function getTotalXpForSkillLevel(level: number): number {
   let total = 0;
   for (let i = 1; i < level; i++) {
     total += Math.floor(100 * Math.pow(1.2, i - 1));

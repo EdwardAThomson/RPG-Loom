@@ -1,4 +1,4 @@
-import React from 'react';
+import { BookOpen, Compass, Hammer, Map as MapIcon, Backpack, ScrollText, User, Users, LucideIcon } from 'lucide-react';
 
 export type TabId = 'activity' | 'travel' | 'inventory' | 'crafting' | 'character' | 'quests' | 'journal' | 'npcs' | 'settings' | 'debug';
 
@@ -7,34 +7,30 @@ interface Props {
     onTabChange: (tab: TabId) => void;
 }
 
-export function Navigation({ activeTab, onTabChange }: Props) {
-    const tabs: { id: TabId; label: string }[] = [
-        { id: 'activity', label: 'Activity' },
-        { id: 'travel', label: 'Travel' },
-        { id: 'inventory', label: 'Inventory' },
-        { id: 'crafting', label: 'Crafting' },
-        { id: 'character', label: 'Character' },
-        { id: 'quests', label: 'Quests' },
-        { id: 'journal', label: 'Journal' },
-        { id: 'npcs', label: 'Folk' },
-        // { id: 'debug', label: 'Debug' },
-    ];
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+    { id: 'activity', label: 'Activity', icon: Compass },
+    { id: 'travel', label: 'Travel', icon: MapIcon },
+    { id: 'inventory', label: 'Inventory', icon: Backpack },
+    { id: 'crafting', label: 'Crafting', icon: Hammer },
+    { id: 'character', label: 'Character', icon: User },
+    { id: 'quests', label: 'Quests', icon: ScrollText },
+    { id: 'journal', label: 'Journal', icon: BookOpen },
+    { id: 'npcs', label: 'Folk', icon: Users },
+];
 
+export function Navigation({ activeTab, onTabChange }: Props) {
     return (
-        <nav style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: 'var(--bg-panel)', padding: '0.5rem', borderRadius: 'var(--radius-md) 0 0 var(--radius-md)' }}>
-            {tabs.map(tab => (
+        <nav className="hud-nav" aria-label="Main">
+            {TABS.map(({ id, label, icon: Icon }) => (
                 <button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    style={{
-                        flex: 1,
-                        background: activeTab === tab.id ? 'var(--color-gold)' : 'transparent',
-                        color: activeTab === tab.id ? '#000' : 'var(--text-muted)',
-                        border: activeTab === tab.id ? 'none' : '1px solid transparent',
-                        fontWeight: activeTab === tab.id ? 'bold' : 'normal'
-                    }}
+                    key={id}
+                    type="button"
+                    className={`nav-item${activeTab === id ? ' is-active' : ''}`}
+                    aria-current={activeTab === id ? 'page' : undefined}
+                    onClick={() => onTabChange(id)}
                 >
-                    {tab.label}
+                    <Icon size={16} strokeWidth={1.8} aria-hidden />
+                    <span>{label}</span>
                 </button>
             ))}
         </nav>
