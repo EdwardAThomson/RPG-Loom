@@ -47,7 +47,8 @@ function setAvailable(value: boolean) {
  */
 export async function gatewayFetch(
     path: string,
-    init?: RequestInit
+    init?: RequestInit,
+    opts: { timeoutMs?: number } = {}
 ): Promise<Response> {
     if (!GATEWAY_URL) {
         setAvailable(false);
@@ -56,7 +57,7 @@ export async function gatewayFetch(
     const url = `${GATEWAY_URL}${path}`;
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 5000);
         const res = await fetch(url, { ...init, signal: controller.signal });
         clearTimeout(timeout);
         setAvailable(true);

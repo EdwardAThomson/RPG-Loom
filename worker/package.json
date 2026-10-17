@@ -1,0 +1,24 @@
+{
+  "name": "rpg-loom-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "4.12.9",
+    "jose": "^6.2.3",
+    "postgres": "3.4.9",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "wrangler": "4.107.0"
+  }
+}

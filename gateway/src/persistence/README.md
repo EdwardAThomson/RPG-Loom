@@ -44,6 +44,7 @@ Without `DATABASE_URL` or `AUTH_PROVIDER`, `/api/saves/*` returns 503; the AI en
 ### Auth providers
 
 - `AUTH_PROVIDER=dev` — accepts any non-empty bearer token. The token text becomes the external id (`dev:alice` for `Authorization: Bearer alice`). Useful for local testing.
+- `AUTH_PROVIDER=octonion` — Octonion account hub (octonion.io) single sign-on, shared with DungeonGPT. Verifies the hub's ES256/RS256 access tokens against its JWKS; set `OCTONION_SUPABASE_URL` to the hub's Supabase project URL. External ids are `octonion:<sub>`. The web client must be built with `VITE_OCTONION_SUPABASE_URL` + `VITE_OCTONION_SUPABASE_ANON_KEY` (optionally `VITE_OCTONION_HUB_URL`, default `https://octonion.io`), and the site's root URL (e.g. `https://rpg-loom.octonion.io/`, `http://localhost:5173/`) must be a row in the hub's `game_callbacks` table.
 - `AUTH_PROVIDER=supabase` — verifies HS256 JWTs against `SUPABASE_JWT_SECRET`. Get this from your Supabase project's API settings.
 - `AUTH_PROVIDER=none` — disables save endpoints entirely (they return 503).
 - Unset — implicitly `dev` if `DATABASE_URL` is set, otherwise `none`.

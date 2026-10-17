@@ -6,7 +6,8 @@
 
 import type { QuestInstanceState, QuestTemplateDef, ContentIndex } from '@rpg-loom/shared';
 import { getAISettings } from './aiSettings';
-import { gatewayFetch, isGatewayAvailable } from './gateway';
+import { isGatewayAvailable } from './gateway';
+import { llmGenerateFetch } from './llm';
 
 export interface QuestNarrative {
     title?: string;
@@ -29,7 +30,7 @@ export async function enhanceQuest(
     const settings = getAISettings();
     const prompt = buildQuestEnhancementPrompt(quest, template, content);
 
-    const response = await gatewayFetch('/api/llm/generate', {
+    const response = await llmGenerateFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

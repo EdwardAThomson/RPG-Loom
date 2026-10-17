@@ -13,8 +13,9 @@
  */
 
 import type { ContentIndex, EngineState, GameEvent, NpcDef } from '@rpg-loom/shared';
-import { gatewayFetch, isGatewayAvailable } from './gateway';
+import { isGatewayAvailable } from './gateway';
 import { getAISettings } from './aiSettings';
+import { llmGenerateFetch } from './llm';
 
 export interface NpcGeneratedFlavor {
     description: string;
@@ -34,7 +35,7 @@ export async function generateNpcDialogue(
     const settings = getAISettings();
     const prompt = buildNpcDialoguePrompt(npc, state, content, recentEvents);
 
-    const response = await gatewayFetch('/api/llm/generate', {
+    const response = await llmGenerateFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

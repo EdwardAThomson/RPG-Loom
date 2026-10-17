@@ -36,7 +36,21 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose, clou
         // Fetch available providers
         gatewayFetch('/api/llm/providers')
             .then(res => res.json())
-            .then(data => setAvailableProviders(data.providers))
+            .then(data => {
+                setAvailableProviders(data.providers);
+                // The backend may not offer the saved provider (e.g. 'gemini-cli'
+                // from local dev against the Cloudflare Worker): snap to its first.
+                const providers = data.providers ?? {};
+                if (!providers[settings.provider]) {
+                    const [first] = Object.keys(providers);
+                    const model = first ? providers[first]?.models?.[0] : undefined;
+                    if (first && model) {
+                        setAiProvider(first);
+                        setAiModel(model);
+                        saveAISettings({ provider: first, model });
+                    }
+                }
+            })
             .catch(() => { /* gateway unavailable — handled by gatewayFetch */ });
 
         return unsub;

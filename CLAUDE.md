@@ -13,6 +13,7 @@ npm-workspaces monorepo (a `pnpm-workspace.yaml` also exists, but `package.json`
 - `web/` (`@rpg-loom/web`) — the actual React/Vite player UI.
 - `gateway/` (`@rpg-loom/gateway`) — Express server (port `8787`) that runs LLM tasks and streams results via SSE.
 - `sdk/` (`@rpg-loom/sdk`) — typed client for the gateway.
+- `worker/` (`rpg-loom-api`, **not** an npm workspace; own `package.json`/lockfile) — the production backend on Cloudflare Workers: Octonion sign-in, cloud saves + journal (Postgres on the Hetzner games box via Hyperdrive), AI via Workers AI / OpenRouter. Same HTTP contract as `gateway/`, which stays the local-dev backend (CLI AI providers etc.). See `worker/README.md`.
 
 TypeScript path aliases (`tsconfig.base.json`) map `@rpg-loom/*` to `packages/*/src`.
 
@@ -52,6 +53,10 @@ npm -w @rpg-loom/engine exec vitest -t "name"        # by test name
 ### Gateway URL override
 
 Web → gateway URL comes from `VITE_GATEWAY_URL` (defaults to `http://localhost:8787`). Gateway listens on `PORT` (default `8787`).
+
+### Accounts (Octonion SSO)
+
+Cloud saves sign in through the Octonion account hub (octonion.io), the same SSO DungeonGPT-JS uses. In production the backend is `worker/` (hub JWT verified in `worker/src/middleware/auth.ts`); `VITE_GATEWAY_URL` points the web client at it. Local gateway: `AUTH_PROVIDER=octonion` + `OCTONION_SUPABASE_URL` (`gateway/src/auth/octonion.ts`, JWKS-verified). Web: `VITE_OCTONION_SUPABASE_URL` + `VITE_OCTONION_SUPABASE_ANON_KEY` switch `web/src/services/auth.ts` to octonion mode (hub redirect → `?token=` one-time token → hub `/auth/exchange` → supabase-js session, auth only). Without those vars both sides fall back to dev mode. Setup details: `gateway/src/persistence/README.md`.
 
 ### Deployed build env vars
 
