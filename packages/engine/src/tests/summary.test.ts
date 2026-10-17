@@ -41,8 +41,9 @@ describe('summarizeEvents', () => {
       { id: 'e4', atMs: 0, type: 'ENCOUNTER_RESOLVED', payload: { locationId: 'loc_forest', enemyId: 'enemy_rat', enemyLevel: 1, outcome: 'loss' } },
       { id: 'e5', atMs: 0, type: 'LOOT_GAINED', payload: { items: [{ itemId: 'item_wood', qty: 3 }] } },
       { id: 'e6', atMs: 0, type: 'LOOT_GAINED', payload: { items: [{ itemId: 'item_wood', qty: 2 }] } },
-      { id: 'e7', atMs: 0, type: 'XP_GAINED', payload: { amount: 50, newTotal: 50 } },
-      { id: 'e8', atMs: 0, type: 'XP_GAINED', payload: { amount: 30, newTotal: 80 } },
+      { id: 'e7', atMs: 0, type: 'SKILL_XP_GAINED', payload: { skillId: 'mining', amount: 50, newXp: 50, level: 1 } },
+      { id: 'e8', atMs: 0, type: 'SKILL_XP_GAINED', payload: { skillId: 'mining', amount: 30, newXp: 80, level: 2 } },
+      { id: 'e8b', atMs: 0, type: 'XP_GAINED', payload: { amount: 5, newTotal: 80 } }, // nominal, not counted
       { id: 'e9', atMs: 0, type: 'GOLD_CHANGED', payload: { amount: 10, newTotal: 10 } },
       { id: 'e10', atMs: 0, type: 'GOLD_CHANGED', payload: { amount: -3, newTotal: 7 } },
       { id: 'e11', atMs: 0, type: 'QUEST_COMPLETED', payload: { questId: 'q1', templateId: 'tmpl1', rewards: { xp: 0, gold: 0 } } },
@@ -97,8 +98,9 @@ describe('simulateOffline cap', () => {
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     const res = simulateOffline(state, 0, sevenDays, MOCK_CONTENT);
 
-    const elapsedMs = res.state.lastTickAtMs - state.lastTickAtMs;
-    expect(elapsedMs).toBeLessThanOrEqual(MAX_OFFLINE_MS);
-    expect(elapsedMs).toBeGreaterThan(MAX_OFFLINE_MS - 1500); // within one tick of cap
+    const ticks = summarizeEvents(res.events, { durationMs: 0 }).ticksProcessed;
+    expect(ticks).toBe(MAX_OFFLINE_MS / 1000);
+    // The rest of the absence is forfeited: the clock is caught up to now.
+    expect(res.state.lastTickAtMs).toBe(sevenDays);
   });
 });

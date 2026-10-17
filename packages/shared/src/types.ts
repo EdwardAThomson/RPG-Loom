@@ -568,7 +568,8 @@ export type GameEvent =
   | BaseEvent<'XP_GAINED', { amount: number; newTotal: number }>
   | BaseEvent<'SKILL_XP_GAINED', { skillId: SkillId; amount: number; newXp: number; level: number }>
   | BaseEvent<'GOLD_CHANGED', { amount: number; newTotal: number }>
-  | BaseEvent<'LEVEL_UP', { newLevel: number }>
+  /** newLevel is the total level; skillId/skillLevel name the skill that levelled. */
+  | BaseEvent<'LEVEL_UP', { newLevel: number; skillId?: SkillId; skillLevel?: number }>
   | BaseEvent<'SKILL_PROCS', { skillId: SkillId; effect: string; value?: number }>
   | BaseEvent<'TACTICS_CHANGED', { tactics: TacticsPreset }>
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>

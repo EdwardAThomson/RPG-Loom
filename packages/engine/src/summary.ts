@@ -33,7 +33,10 @@ export function summarizeEvents(events: GameEvent[], opts: SummarizeOptions): Of
           summary.loot[item.itemId] = (summary.loot[item.itemId] ?? 0) + item.qty;
         }
         break;
-      case 'XP_GAINED':
+      // Skill XP is what persists (player.xp is their sum). XP_GAINED
+      // amounts are nominal and don't match it, e.g. combat grants skill
+      // XP every round but XP_GAINED only on a kill.
+      case 'SKILL_XP_GAINED':
         summary.xpGained += e.payload.amount;
         break;
       case 'GOLD_CHANGED':

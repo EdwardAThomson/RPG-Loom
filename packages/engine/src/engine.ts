@@ -608,7 +608,13 @@ export function simulateOffline(state: EngineState, fromMs: number, toMs: number
   const clampedFrom = Math.max(fromMs, state.lastTickAtMs);
   const requestedTo = Math.max(toMs, clampedFrom);
   const clampedTo = Math.min(requestedTo, clampedFrom + MAX_OFFLINE_MS);
-  return step({ ...state, lastTickAtMs: clampedFrom }, clampedTo, content, config);
+  const res = step({ ...state, lastTickAtMs: clampedFrom }, clampedTo, content, config);
+  // Time past the cap is forfeited, not deferred: without this the
+  // clock stays behind `toMs` and the next catch-up replays another
+  // full MAX_OFFLINE_MS, so the cap never actually applied.
+  // (res.state is never the caller's object: step got a spread copy.)
+  if (requestedTo > clampedTo) res.state.lastTickAtMs = requestedTo;
+  return res;
 }
 
 // ---- Tick resolution ----
@@ -1877,16 +1883,28 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
     } as any));
   }
 
-  let leveledUp = false;
+  const startLevel = s.level;
 
   // Total XP model, see getTotalXpForSkillLevel
   while (s.xp >= getTotalXpForSkillLevel(s.level + 1)) {
     s.level += 1;
-    leveledUp = true;
   }
 
   // Update total player XP and Level
   syncDerivedPlayerStats(state);
+
+  // One LEVEL_UP per skill level gained; newLevel is the resulting total level.
+  const levelsGained = s.level - startLevel;
+  if (events && atMs !== undefined) {
+    for (let i = 1; i <= levelsGained; i++) {
+      events.push(ev(state, atMs, 'LEVEL_UP', {
+        newLevel: state.player.level - levelsGained + i,
+        skillId,
+        skillLevel: startLevel + i
+      }));
+    }
+  }
+  const leveledUp = levelsGained > 0;
 
   return leveledUp;
 }
