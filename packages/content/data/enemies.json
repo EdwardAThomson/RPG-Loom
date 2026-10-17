@@ -52,7 +52,8 @@
           "maxQty": 3,
           "weight": 5
         }
-      ]
+      ],
+      "noDropWeight": 3
     }
   },
   {
@@ -83,7 +84,8 @@
           "maxQty": 2,
           "weight": 3
         }
-      ]
+      ],
+      "noDropWeight": 2
     }
   },
   {
@@ -153,7 +155,7 @@
     "lootTable": {
       "entries": [
         {
-          "itemId": "item_green_herb",
+          "itemId": "item_herb_green",
           "minQty": 1,
           "maxQty": 2,
           "weight": 1
@@ -206,7 +208,7 @@
           "itemId": "item_bone_fragment",
           "minQty": 2,
           "maxQty": 5,
-          "weight": 1
+          "weight": 6
         },
         {
           "itemId": "item_iron_sword",
@@ -214,7 +216,8 @@
           "maxQty": 1,
           "weight": 1
         }
-      ]
+      ],
+      "noDropWeight": 6
     }
   },
   {
@@ -240,7 +243,8 @@
           "weight": 1
         }
       ]
-    }
+    },
+    "damageType": "magic"
   },
   {
     "id": "enemy_yeti",
@@ -538,7 +542,8 @@
           "weight": 1
         }
       ]
-    }
+    },
+    "damageType": "magic"
   },
   {
     "id": "enemy_arcane_construct",
@@ -684,7 +689,8 @@
           "weight": 1
         }
       ]
-    }
+    },
+    "damageType": "magic"
   },
   {
     "id": "enemy_darksteel_golem",
@@ -767,7 +773,8 @@
           "weight": 3
         }
       ]
-    }
+    },
+    "damageType": "magic"
   },
   {
     "id": "enemy_coral_golem",
