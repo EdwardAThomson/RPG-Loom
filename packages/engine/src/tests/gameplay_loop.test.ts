@@ -140,6 +140,31 @@ describe('Gameplay Loop (Integration)', () => {
         expect(state.player.xp).toBeGreaterThan(xpBeforeTurnIn);
     });
 
+    it('a kill/gather quest only progresses while the player is at its location', () => {
+        // Accept Winter Supplies (gather wood in loc_forest) while in town.
+        let state = createNewState({ ...INIT_PARAMS, startLocationId: 'loc_haven' });
+        state = applyCommand(state, { type: 'ACCEPT_QUEST', templateId: 'qt_intro_gather', atMs: 1000000 }, C).state;
+        const q = state.quests.find(x => x.templateId === 'qt_intro_gather')!;
+        expect(q.locationId).toBe('loc_forest');
+
+        // Starting the quest activity from Haven's Cross must not gather
+        // anything or move the player.
+        state = applyCommand(state, { type: 'SET_ACTIVITY', params: { type: 'quest', questId: q.id }, atMs: 1000000 }, C).state;
+        let res = step(state, 1000000 + 20000, C);
+        state = res.state;
+        expect(state.currentLocationId).toBe('loc_haven');
+        expect(state.quests.find(x => x.id === q.id)?.progress.current).toBe(0);
+        expect(state.inventory.find(x => x.itemId === 'item_wood')).toBeUndefined();
+        expect(res.events.some(e => e.type === 'FLAVOR_TEXT' && /need to be at/i.test((e.payload as any).message))).toBe(true);
+
+        // Once there, the same activity progresses the quest.
+        state = applyCommand(state, { type: 'TRAVEL', locationId: 'loc_forest', atMs: state.lastTickAtMs }, C).state;
+        expect(state.currentLocationId).toBe('loc_forest');
+        state = applyCommand(state, { type: 'SET_ACTIVITY', params: { type: 'quest', questId: q.id }, atMs: state.lastTickAtMs }, C).state;
+        res = step(state, state.lastTickAtMs + 20000, C);
+        expect(res.state.quests.find(x => x.id === q.id)?.progress.current).toBeGreaterThan(0);
+    });
+
     it('quest-giver attribution: completing the gather parks at ready_to_turn_in; TURN_IN_QUEST bumps Aldric\'s affinity', () => {
         let state = createNewState(INIT_PARAMS);
 

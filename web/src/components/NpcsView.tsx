@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ContentIndex, EngineState, GameEvent, NpcDef, PlayerCommand } from '@rpg-loom/shared';
 import { NpcDialogueModal } from './NpcDialogueModal';
+import { humanize } from '../ui/labels';
 
 interface Props {
     state: EngineState;
@@ -10,11 +11,11 @@ interface Props {
 }
 
 /**
- * Phase 3b: NPC roster + per-NPC dialogue modal.
+ * NPC roster + per-NPC dialogue modal.
  *
- * Two sections — "here at <current location>" and "elsewhere" — so the
+ * Two sections, "here at <current location>" and "elsewhere", so the
  * player both sees who they can talk to right now and remembers who
- * they've met in other places. Click a row → opens the modal.
+ * they've met in other places. Click a row to open the modal.
  */
 export function NpcsView({ state, content, dispatch, events }: Props) {
     const [activeNpc, setActiveNpc] = useState<NpcDef | null>(null);
@@ -24,59 +25,44 @@ export function NpcsView({ state, content, dispatch, events }: Props) {
         const here: NpcDef[] = [];
         const elsewhere: NpcDef[] = [];
         for (const npc of all) {
-            if (npc.locationId === state.currentLocationId) {
-                here.push(npc);
-            } else {
-                elsewhere.push(npc);
-            }
+            (npc.locationId === state.currentLocationId ? here : elsewhere).push(npc);
         }
         // Sort: known-first within each section, then by name.
         const knowsThem = (id: string) => state.npcState?.[id]?.firstMetAtMs !== undefined;
-        here.sort((a, b) => Number(knowsThem(b.id)) - Number(knowsThem(a.id)) || a.name.localeCompare(b.name));
-        elsewhere.sort((a, b) => Number(knowsThem(b.id)) - Number(knowsThem(a.id)) || a.name.localeCompare(b.name));
+        const byKnown = (a: NpcDef, b: NpcDef) => Number(knowsThem(b.id)) - Number(knowsThem(a.id)) || a.name.localeCompare(b.name);
+        here.sort(byKnown);
+        elsewhere.sort(byKnown);
         return { hereNpcs: here, elsewhereNpcs: elsewhere };
     }, [content.npcsById, state.currentLocationId, state.npcState]);
 
     const currentLocationName = content.locationsById[state.currentLocationId]?.name ?? state.currentLocationId;
 
     return (
-        <div className="card">
-            <h2 style={{ marginTop: 0 }}>Folk</h2>
+        <section className="card">
+            <h2>Folk</h2>
 
-            <Section title={`Here at ${currentLocationName}`}>
+            <div className="section">
+                <div className="hud-label">Here at {currentLocationName}</div>
                 {hereNpcs.length === 0 ? (
-                    <p style={emptyStyle}>No one to speak with here.</p>
+                    <p className="empty">No one to speak with here.</p>
                 ) : (
-                    <div style={listStyle}>
+                    <div className="list">
                         {hereNpcs.map(npc => (
-                            <NpcRow
-                                key={npc.id}
-                                npc={npc}
-                                state={state}
-                                content={content}
-                                onClick={() => setActiveNpc(npc)}
-                                showLocation={false}
-                            />
+                            <NpcRow key={npc.id} npc={npc} state={state} content={content} onClick={() => setActiveNpc(npc)} showLocation={false} />
                         ))}
                     </div>
                 )}
-            </Section>
+            </div>
 
             {elsewhereNpcs.length > 0 && (
-                <Section title="Met elsewhere">
-                    <div style={listStyle}>
+                <div className="section">
+                    <div className="hud-label">Elsewhere</div>
+                    <div className="list">
                         {elsewhereNpcs.map(npc => (
-                            <NpcRow
-                                key={npc.id}
-                                npc={npc}
-                                state={state}
-                                content={content}
-                                onClick={() => setActiveNpc(npc)}
-                                showLocation={true}
-                            />
+                            <NpcRow key={npc.id} npc={npc} state={state} content={content} onClick={() => setActiveNpc(npc)} showLocation />
                         ))}
                     </div>
-                </Section>
+                </div>
             )}
 
             {activeNpc && (
@@ -89,13 +75,11 @@ export function NpcsView({ state, content, dispatch, events }: Props) {
                     recentEvents={events}
                 />
             )}
-        </div>
+        </section>
     );
 }
 
-function NpcRow({
-    npc, state, content, onClick, showLocation
-}: {
+function NpcRow({ npc, state, content, onClick, showLocation }: {
     npc: NpcDef;
     state: EngineState;
     content: ContentIndex;
@@ -105,62 +89,30 @@ function NpcRow({
     const entry = state.npcState?.[npc.id];
     const known = entry?.firstMetAtMs !== undefined;
     const affinity = entry?.affinity ?? 0;
-    const lastSeen = entry?.lastInteractionMs
-        ? formatAgo(Date.now() - entry.lastInteractionMs)
-        : null;
+    const lastSeen = entry?.lastInteractionMs ? formatAgo(Date.now() - entry.lastInteractionMs) : null;
     const location = content.locationsById[npc.locationId];
 
+    const sub = [
+        humanize(npc.role),
+        showLocation && location ? location.name : null,
+        known && lastSeen ? `seen ${lastSeen}` : null,
+        !known ? 'not yet met' : null,
+    ].filter(Boolean).join(' · ');
+
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                background: '#181818',
-                border: '1px solid #2a2a2a',
-                borderRadius: 4,
-                padding: '0.6rem 0.75rem',
-                color: 'inherit',
-                cursor: 'pointer',
-                font: 'inherit'
-            }}
-        >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    <span style={{ color: '#ddd', fontWeight: 500 }}>{npc.name}</span>
-                    <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                        {roleLabel(npc.role)}
-                        {showLocation && location ? ` · ${location.name}` : ''}
-                        {known && lastSeen ? ` · seen ${lastSeen}` : ''}
-                        {!known ? ' · not yet met' : ''}
-                    </span>
-                </div>
-                {known && (
-                    <div style={{ minWidth: 80, textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#888' }}>affinity</div>
-                        <div style={{ fontSize: '0.85rem', color: '#8fbc8f' }}>{affinity}</div>
-                    </div>
-                )}
+        <button type="button" className="row-card" onClick={onClick}>
+            <div className="grow">
+                <div className="list-title">{npc.name}</div>
+                <div className="list-sub">{sub}</div>
             </div>
+            {known && (
+                <div className="affinity">
+                    <span className="slot-label">Affinity</span>
+                    <span className="ok">{affinity}</span>
+                </div>
+            )}
         </button>
     );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-        <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.85rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.5rem 0' }}>
-                {title}
-            </h3>
-            {children}
-        </div>
-    );
-}
-
-function roleLabel(role: string): string {
-    return role.replace(/_/g, ' ');
 }
 
 function formatAgo(ms: number): string {
@@ -170,18 +122,5 @@ function formatAgo(ms: number): string {
     if (min < 60) return `${min}m ago`;
     const hr = Math.floor(min / 60);
     if (hr < 24) return `${hr}h ago`;
-    const day = Math.floor(hr / 24);
-    return `${day}d ago`;
+    return `${Math.floor(hr / 24)}d ago`;
 }
-
-const listStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.4rem'
-};
-
-const emptyStyle: React.CSSProperties = {
-    color: '#888',
-    fontStyle: 'italic',
-    margin: 0
-};

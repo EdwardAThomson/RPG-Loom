@@ -1,0 +1,22 @@
+/* Small additions for modal contents that index.css primitives don't cover. */
+
+/* Pre-wrapped monospace text inside a tinted callout (AI debug result/error). */
+.callout.mono {
+  white-space: pre-wrap;
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+/* Paragraphs and lists inside callouts: tighten browser default margins. */
+.callout p {
+  margin: 0 0 6px;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}

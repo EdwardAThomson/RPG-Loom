@@ -4,6 +4,7 @@
     "name": "Haven's Cross",
     "type": "town",
     "image": "/assets/locations/loc_haven.png",
+    "map": { "x": 9, "y": 44 },
     "description": "A bustling trading post at the crossroads.",
     "activities": [
       "recovery",
@@ -17,6 +18,7 @@
     "id": "loc_forest",
     "name": "Whispering Forest",
     "image": "/assets/locations/loc_forest.png",
+    "map": { "x": 18, "y": 26 },
     "activities": [
       "hunt",
       "woodcut",
@@ -75,6 +77,7 @@
     "id": "loc_quarry",
     "name": "Old Quarry",
     "image": "/assets/locations/loc_quarry.png",
+    "map": { "x": 29, "y": 40 },
     "requirements": {
       "minLevel": 5
     },
@@ -126,6 +129,7 @@
     "id": "loc_swamp",
     "name": "Misty Swamp",
     "image": "/assets/locations/loc_swamp.png",
+    "map": { "x": 39, "y": 18 },
     "requirements": {
       "minLevel": 10
     },
@@ -178,6 +182,7 @@
     "id": "loc_catacombs",
     "name": "Forgotten Catacombs",
     "image": "/assets/locations/loc_catacombs.png",
+    "map": { "x": 49, "y": 36 },
     "requirements": {
       "minLevel": 15
     },
@@ -224,6 +229,7 @@
     "id": "loc_peak",
     "name": "Jagged Peak",
     "image": "/assets/locations/loc_peak.png",
+    "map": { "x": 57, "y": 11 },
     "requirements": {
       "minLevel": 20
     },
@@ -269,6 +275,7 @@
     "id": "loc_volcanic",
     "name": "Volcanic Crags",
     "image": "/assets/locations/loc_volcanic.png",
+    "map": { "x": 64, "y": 30 },
     "description": "A scorched wasteland of ash and magma.",
     "requirements": {
       "minLevel": 25
@@ -331,6 +338,7 @@
     "id": "loc_crystal",
     "name": "Crystal Caverns",
     "image": "/assets/locations/loc_crystal.png",
+    "map": { "x": 71, "y": 47 },
     "description": "Glimmering caves deep beneath the earth.",
     "requirements": {
       "minLevel": 35
@@ -387,6 +395,7 @@
     "id": "loc_sunken",
     "name": "Sunken Ruins",
     "image": "/assets/locations/loc_sunken.png",
+    "map": { "x": 81, "y": 24 },
     "description": "Ancient flooded temples.",
     "requirements": {
       "minLevel": 40,
@@ -435,6 +444,7 @@
     "id": "loc_clockwork",
     "name": "Clockwork Enclave",
     "image": "/assets/locations/loc_clockwork.png",
+    "map": { "x": 86, "y": 11 },
     "description": "A city of gears and steam.",
     "requirements": {
       "minLevel": 50,
@@ -483,6 +493,7 @@
     "id": "loc_deep_mines",
     "name": "Darkiron Depths",
     "image": "/assets/locations/loc_deep_mines.png",
+    "map": { "x": 92, "y": 38 },
     "description": "Deep subterranean tunnels rich in dark minerals.",
     "requirements": {
       "minLevel": 60,
