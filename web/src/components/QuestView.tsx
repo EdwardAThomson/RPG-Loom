@@ -578,15 +578,35 @@ export function QuestView({ state, content, dispatch }: Props) {
                                                     {giver ? `Hand in to ${giver.name}` : 'Hand in'}
                                                 </button>
                                             );
-                                        })() : (
-                                            <button
-                                                type="button"
-                                                className={isQuestActivity ? 'btn-sm' : 'primary btn-sm'}
-                                                onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
-                                            >
-                                                {isQuestActivity ? 'Refocus' : 'Start quest'}
-                                            </button>
-                                        )}
+                                        })() : (() => {
+                                            // Kill and gather quests only progress at their
+                                            // location, so offer the trip instead of a start
+                                            // button that would spin with no effect.
+                                            const needsTravel = !!tmpl
+                                                && (tmpl.objectiveType === 'kill' || tmpl.objectiveType === 'gather')
+                                                && q.locationId !== state.currentLocationId;
+                                            const questLoc = content?.locationsById?.[q.locationId];
+                                            if (needsTravel) {
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        className="primary btn-sm"
+                                                        onClick={() => dispatch({ type: 'TRAVEL', locationId: q.locationId, atMs: Date.now() })}
+                                                    >
+                                                        <MapPin size={12} aria-hidden /> Travel to {questLoc?.name ?? q.locationId}
+                                                    </button>
+                                                );
+                                            }
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    className={isQuestActivity ? 'btn-sm' : 'primary btn-sm'}
+                                                    onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
+                                                >
+                                                    {isQuestActivity ? 'Refocus' : 'Start quest'}
+                                                </button>
+                                            );
+                                        })()}
                                         <button
                                             type="button"
                                             className="btn-sm"
