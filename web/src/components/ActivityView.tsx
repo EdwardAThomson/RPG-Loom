@@ -106,7 +106,7 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                 </section>
             )}
 
-            <section className="hud-panel dock" aria-label="Current activity">
+            <section className={`hud-panel dock${type === 'idle' ? ' is-idle' : ''}`} aria-label="Current activity">
                 <div className="dock-head">
                     <div>
                         <h2 className="dock-title">
@@ -131,6 +131,7 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                 </div>
                 {progress && <span className="bar bar-xp"><i style={{ width: `${progress.pct}%` }} /></span>}
 
+                <div className="hud-label dock-section">{type === 'idle' ? 'What will you do?' : 'Switch to'}</div>
                 <div className="action-grid">
                     {actions.map(a => (
                         <button
