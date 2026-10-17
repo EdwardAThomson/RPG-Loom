@@ -311,7 +311,8 @@ export interface QuestInstanceState {
 
 export type ActivityParams =
   | { type: 'idle' }
-  | { type: 'recovery'; durationMs: number }
+  /** `resume`: activity to restart once recovered (set when knocked out mid-activity). */
+  | { type: 'recovery'; durationMs: number; resume?: ActivityParams }
   | { type: 'hunt'; locationId: LocationId }
   | { type: 'mine'; locationId: LocationId }
   | { type: 'woodcut'; locationId: LocationId }

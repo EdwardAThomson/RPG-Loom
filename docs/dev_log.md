@@ -1,5 +1,13 @@
 # Developer Log
 
+## 2026-10-17
+
+### Early-Game Pacing (Closed)
+
+*   **Front-loaded first levels**: skill steps 1→5 now cost 30/60/100/140 XP (was 100/120/144/172); the `floor(100 * 1.2^(L-1))` curve is unchanged from level 5 on. At 1 XP/tick a gathering skill hits L2 in 30s (was 1.7m), L5 in 5.5m (was 8.9m); later levels arrive ~3.4 minutes sooner, so AFK/offline pacing is effectively unchanged. Thresholds only went down, so existing saves level up on their next XP gain with no migration. `getTotalXpForSkillLevel` is now exported and `DebugView` uses it instead of a copy.
+*   **Enemy level scales off combat skills**: encounters rolled at `player.level ± 1`, but `player.level` is the total across all ten skills (10 for a fresh character), so every starting-zone enemy spawned at its `levelMax` and gathering made combat harder. Now uses the average combat-skill level (`combatTier`).
+*   **AFK combat resumes after a knockout**: a loss parked the player in `recovery` and then `idle`, so AFK/offline hunting stopped at the first death (about 26s into a fresh character). Knockout recovery now carries `resume` (the interrupted activity) and restarts it; a manual rest still ends in idle.
+
 ## 2026-05-19
 
 ### AI Gateway Fixes (Closed)

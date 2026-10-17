@@ -91,7 +91,7 @@ describe('Leveling Stats', () => {
         expect(nextState.player.level).toBe(10);
 
         // To test level up stats, we need to push a skill to Lv 2.
-        state.player.skills.defense.xp = 99;
+        state.player.skills.defense.xp = 29; // L2 at 30 xp
         const res2 = step(state, now + 2000, mockContent);
         const state2 = res2.state;
 
