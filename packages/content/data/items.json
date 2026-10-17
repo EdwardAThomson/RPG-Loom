@@ -312,7 +312,11 @@
     "value": 50,
     "type": "tool",
     "rarity": "common",
-    "description": "Better than using your hands."
+    "description": "Better than using your hands.",
+    "tags": [
+      "mining"
+    ],
+    "gatherBonus": 1
   },
   {
     "id": "item_iron_pickaxe",
@@ -321,7 +325,11 @@
     "value": 150,
     "type": "tool",
     "rarity": "uncommon",
-    "description": "Strikes true against hard rock."
+    "description": "Strikes true against hard rock.",
+    "tags": [
+      "mining"
+    ],
+    "gatherBonus": 2
   },
   {
     "id": "item_obsidian",
@@ -459,7 +467,9 @@
     "value": 1800,
     "type": "weapon",
     "rarity": "rare",
-    "tags": ["wand"],
+    "tags": [
+      "wand"
+    ],
     "description": "Focuses arcane energy for devastating attacks.",
     "modifiers": {
       "atk": 25,
@@ -660,7 +670,9 @@
     "value": 15,
     "type": "weapon",
     "rarity": "common",
-    "tags": ["bow"],
+    "tags": [
+      "bow"
+    ],
     "description": "A short, springy bow. Better than throwing rocks.",
     "modifiers": {
       "atk": 2,
@@ -674,7 +686,9 @@
     "value": 50,
     "type": "weapon",
     "rarity": "common",
-    "tags": ["bow"],
+    "tags": [
+      "bow"
+    ],
     "description": "A serviceable hunter's bow.",
     "modifiers": {
       "atk": 5,
@@ -689,7 +703,9 @@
     "value": 150,
     "type": "weapon",
     "rarity": "uncommon",
-    "tags": ["bow"],
+    "tags": [
+      "bow"
+    ],
     "description": "A composite bow strengthened with iron limbs.",
     "modifiers": {
       "atk": 9,
@@ -704,7 +720,9 @@
     "value": 400,
     "type": "weapon",
     "rarity": "rare",
-    "tags": ["bow"],
+    "tags": [
+      "bow"
+    ],
     "description": "A tall longbow carved from seasoned yew.",
     "modifiers": {
       "atk": 16,
@@ -719,7 +737,9 @@
     "value": 1000,
     "type": "weapon",
     "rarity": "epic",
-    "tags": ["bow"],
+    "tags": [
+      "bow"
+    ],
     "description": "A masterwork bow that hums with quiet electricity.",
     "modifiers": {
       "atk": 22,
@@ -734,7 +754,9 @@
     "value": 15,
     "type": "weapon",
     "rarity": "common",
-    "tags": ["staff"],
+    "tags": [
+      "staff"
+    ],
     "description": "A simple wooden staff with a faintly glowing tip.",
     "modifiers": {
       "atk": 2
@@ -747,7 +769,9 @@
     "value": 50,
     "type": "weapon",
     "rarity": "common",
-    "tags": ["staff"],
+    "tags": [
+      "staff"
+    ],
     "description": "Runic carvings amplify minor cantrips.",
     "modifiers": {
       "atk": 5,
@@ -761,7 +785,9 @@
     "value": 150,
     "type": "weapon",
     "rarity": "uncommon",
-    "tags": ["staff"],
+    "tags": [
+      "staff"
+    ],
     "description": "Channels arcane force through a banded iron head.",
     "modifiers": {
       "atk": 10,
@@ -775,7 +801,9 @@
     "value": 400,
     "type": "weapon",
     "rarity": "rare",
-    "tags": ["staff"],
+    "tags": [
+      "staff"
+    ],
     "description": "Silver runes catch the light and the eye.",
     "modifiers": {
       "atk": 18,
@@ -789,11 +817,22 @@
     "value": 1000,
     "type": "weapon",
     "rarity": "epic",
-    "tags": ["staff"],
+    "tags": [
+      "staff"
+    ],
     "description": "A masterwork stave, carved by an archmage's own hand.",
     "modifiers": {
       "atk": 25,
       "critChance": 0.1
     }
+  },
+  {
+    "id": "item_kraken_tentacle",
+    "name": "Kraken Tentacle",
+    "stackable": true,
+    "value": 400,
+    "type": "material",
+    "rarity": "rare",
+    "description": "A severed limb of the deep, still twitching. Prized by alchemists."
   }
 ]

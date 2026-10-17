@@ -319,9 +319,24 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_NOT_OWNED', message: `Item not in inventory: ${cmd.itemId}` }));
         break;
       }
+      const usedItem = content?.itemsById[cmd.itemId];
+      if (content && usedItem && usedItem.type !== 'consumable') {
+        // Gear and materials aren't "used"; without this, pressing Use
+        // on a sword silently deleted it.
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_NOT_CONSUMABLE', message: `${usedItem.name} can't be used.` }));
+        break;
+      }
       removeItem(next.inventory, cmd.itemId, 1);
-      events.push(ev(next, cmd.atMs, 'ITEM_CONSUMED', { itemId: cmd.itemId }));
-      // Actual effects are interpreted via content later.
+      // Consumables heal by their `modifiers.hp`. Before this the item was
+      // removed and nothing read the modifier, so potions did nothing.
+      const healAmount = usedItem?.modifiers?.hp ?? 0;
+      let healed = 0;
+      if (healAmount > 0) {
+        const before = next.player.baseStats.hp;
+        next.player.baseStats.hp = Math.min(next.player.baseStats.hpMax, before + healAmount);
+        healed = next.player.baseStats.hp - before;
+      }
+      events.push(ev(next, cmd.atMs, 'ITEM_CONSUMED', { itemId: cmd.itemId, healed }));
       break;
     }
     case 'SET_TACTICS': {
@@ -950,6 +965,7 @@ function performWoodcutTick(state: EngineState, locationId: string, tickAtMs: nu
     const loot = rollLoot(loc.woodcuttingTable, `wc:${next.saveId}:${next.tickIndex}`);
     if (loot.length) {
       events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You chop some wood.` }));
+      applyGatherSkillBonus(next, 'woodcutting', loot, events, tickAtMs, content);
       for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
       events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
       if (gainSkillXp(next, 'woodcutting', 1, events, tickAtMs) && content) recalculateStats(next, content);
@@ -981,6 +997,7 @@ function performMineTick(state: EngineState, locationId: string, tickAtMs: numbe
     const loot = rollLoot(loc.miningTable, `mine:${next.saveId}:${next.tickIndex}`);
     if (loot.length) {
       events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You swing your pickaxe.` }));
+      applyGatherSkillBonus(next, 'mining', loot, events, tickAtMs, content);
       for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
       events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
       if (gainSkillXp(next, 'mining', 1, events, tickAtMs) && content) recalculateStats(next, content);
@@ -1012,6 +1029,7 @@ function performForageTick(state: EngineState, locationId: string, tickAtMs: num
     const loot = rollLoot(loc.foragingTable, `forage:${next.saveId}:${next.tickIndex}`);
     if (loot.length) {
       events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You scour the area.` }));
+      applyGatherSkillBonus(next, 'foraging', loot, events, tickAtMs, content);
       for (const it of loot) addItem(next.inventory, it.itemId, it.qty);
       events.push(ev(next, tickAtMs, 'LOOT_GAINED', { items: loot }));
       if (gainSkillXp(next, 'foraging', 1, events, tickAtMs) && content) recalculateStats(next, content);
@@ -1022,6 +1040,35 @@ function performForageTick(state: EngineState, locationId: string, tickAtMs: num
     }
   }
   return { state: next, events };
+}
+
+/**
+ * Gathering scales with the skill and the tool: each skill level is a +1%
+ * chance (cap 50%) to double the haul, and an equipped tool tagged for
+ * this skill (e.g. a pickaxe with `gatherBonus`) adds flat extra units.
+ * Before this, skill 50 yielded exactly what skill 1 did.
+ */
+function applyGatherSkillBonus(
+  state: EngineState,
+  skillId: SkillId,
+  loot: Array<{ itemId: ItemId; qty: number }>,
+  events: GameEvent[],
+  atMs: number,
+  content: ContentIndex
+) {
+  const skillLevel = state.player.skills[skillId]?.level ?? 1;
+  const doubleChance = Math.min(0.5, Math.max(0, skillLevel - 1) * 0.01);
+  if (doubleChance > 0 && hashFloat(`dbl:${state.saveId}:${skillId}:${state.tickIndex}`) < doubleChance) {
+    for (const it of loot) it.qty *= 2;
+    events.push(ev(state, atMs, 'SKILL_PROCS', { skillId, effect: 'double_yield' } as any));
+  }
+  const toolId = state.equipment.accessory1 && content.itemsById[state.equipment.accessory1]?.tags?.includes(skillId)
+    ? state.equipment.accessory1
+    : state.equipment.accessory2 && content.itemsById[state.equipment.accessory2]?.tags?.includes(skillId)
+      ? state.equipment.accessory2
+      : undefined;
+  const bonus = toolId ? content.itemsById[toolId]?.gatherBonus ?? 0 : 0;
+  if (bonus > 0) for (const it of loot) it.qty += bonus;
 }
 
 function performCraftTick(state: EngineState, recipeId: string, tickAtMs: number, content?: ContentIndex): StepResult {
@@ -1141,10 +1188,35 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
 
     // Damage Formula: Percentage Mitigation
     // dmg = atk * (100 / (100 + def))
-    const damageMultiplier = 100 / (100 + scaledDef);
-    const rawDmgToEnemy = (pStats.atk * playerAtkMult) * damageMultiplier;
-    const dmgToEnemy = Math.max(1, Math.floor(rawDmgToEnemy));
+    // Arcana weapons deal magic damage: the enemy's `res` replaces its
+    // def as the mitigation, so staves punch through armoured golems
+    // and fizzle against wisps and ghosts.
+    const playerDealsMagic = offensiveSkill === 'arcana';
+    const damageMultiplier = playerDealsMagic
+      ? 1 - clamp(enemy.baseStats.res ?? 0, 0, RES_CAP)
+      : 100 / (100 + scaledDef);
+    const combatSeed = `cmb:${next.saveId}:${next.tickIndex}`;
+    const playerStrikes = strikeCount(pStats.spd, enemy.baseStats.spd ?? 0, `${combatSeed}:pspd`);
+    let dmgToEnemy = 0;
+    let playerCrit = false;
+    for (let i = 0; i < playerStrikes; i++) {
+      let raw = (pStats.atk * playerAtkMult) * damageMultiplier;
+      if (hashFloat(`${combatSeed}:pcrit:${i}`) < clamp(pStats.critChance ?? 0, 0, 1)) {
+        raw *= Math.max(1, pStats.critMult ?? 1.5);
+        playerCrit = true;
+      }
+      dmgToEnemy += Math.max(1, Math.floor(raw));
+    }
     next.activeEncounter.enemyHp -= dmgToEnemy;
+    if (playerCrit || playerStrikes > 1) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+        message: playerCrit && playerStrikes > 1
+          ? `A flurry of ${playerStrikes} strikes, one of them critical, for ${dmgToEnemy} damage!`
+          : playerCrit
+            ? `Critical hit! ${dmgToEnemy} damage.`
+            : `You outpace the ${enemy.name} and strike ${playerStrikes} times for ${dmgToEnemy} damage.`
+      }));
+    }
 
     // Gain Offense XP
     if (gainSkillXp(next, offensiveSkill, 1, events, tickAtMs) && content) recalculateStats(next, content);
@@ -1176,12 +1248,38 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     const enemyAtk = scaledAtk * (currentAtkMult);
     // Defense Skill
     const defSkillLevel = next.player.skills.defense.level;
-    const mitigationPct = Math.min(0.2, defSkillLevel * 0.002); // 0.2% per level, cap 20%
+    let mitigationPct = Math.min(0.2, defSkillLevel * 0.002); // 0.2% per level, cap 20%
+    // Tactics cut both ways: Defensive gives up damage for -20% taken,
+    // Aggressive gains damage but takes +20%. (Defensive used to be a
+    // pure downside: it only lowered the player's own damage.)
+    if (next.player.tactics === 'defensive') mitigationPct = 1 - (1 - mitigationPct) * 0.8;
+    if (next.player.tactics === 'aggressive') mitigationPct = 1 - (1 - mitigationPct) * 1.2;
 
-    // Damage Formula: Percentage Mitigation
-    const mitigationMult = 100 / (100 + pStats.def);
-    const dmgToPlayer = Math.floor(enemyAtk * mitigationMult);
+    // Damage Formula: Percentage Mitigation. Casters (`damageType:
+    // 'magic'`) are resisted by the player's `res`, not armour.
+    const enemyDealsMagic = enemy.damageType === 'magic';
+    const mitigationMult = enemyDealsMagic
+      ? 1 - clamp(pStats.res ?? 0, 0, RES_CAP)
+      : 100 / (100 + pStats.def);
+    const enemyStrikes = strikeCount(enemy.baseStats.spd ?? 0, pStats.spd, `${combatSeed}:espd`);
+    let dmgToPlayer = 0;
+    let enemyCrit = false;
+    for (let i = 0; i < enemyStrikes; i++) {
+      let raw = enemyAtk * mitigationMult;
+      if (hashFloat(`${combatSeed}:ecrit:${i}`) < clamp(enemy.baseStats.critChance ?? 0, 0, 1)) {
+        raw *= Math.max(1, enemy.baseStats.critMult ?? 1.5);
+        enemyCrit = true;
+      }
+      dmgToPlayer += Math.floor(raw);
+    }
     const mitigatedDmg = Math.floor(dmgToPlayer * (1 - mitigationPct));
+    if (mitigatedDmg > 0 && (enemyCrit || enemyStrikes > 1)) {
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', {
+        message: enemyCrit
+          ? `The ${enemy.name} lands a critical hit for ${mitigatedDmg} damage!`
+          : `The ${enemy.name} is quicker than you and strikes ${enemyStrikes} times for ${mitigatedDmg} damage.`
+      }));
+    }
 
     // Apply Damage
     next.player.baseStats.hp = Math.max(0, next.player.baseStats.hp - mitigatedDmg);
@@ -1255,6 +1353,19 @@ const COMBAT_SKILLS: SkillId[] = ['swordsmanship', 'marksmanship', 'arcana', 'de
 function combatTier(state: EngineState): number {
   const total = COMBAT_SKILLS.reduce((sum, id) => sum + (state.player.skills[id]?.level ?? 1), 0);
   return Math.max(1, Math.round(total / COMBAT_SKILLS.length));
+}
+
+/** Resistance never fully nullifies magic damage. */
+const RES_CAP = 0.8;
+
+/**
+ * Strikes landed this round. Every 10 points of speed advantage over the
+ * opponent is a +10% chance of a second strike (capped at 50%). Speed used
+ * to be tracked on gear and marksmanship but never read in combat.
+ */
+function strikeCount(spd: number, opponentSpd: number, seed: string): number {
+  const extraChance = clamp((spd - opponentSpd) * 0.01, 0, 0.5);
+  return extraChance > 0 && hashFloat(seed) < extraChance ? 2 : 1;
 }
 
 // ---- Quest helpers ----
@@ -1912,9 +2023,12 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
 // ---- Loot helpers ----
 function rollLoot(table: LootTable | undefined, seed: string): Array<{ itemId: ItemId; qty: number }> {
   if (!table || !table.entries || table.entries.length === 0) return [];
-  // MVP: roll exactly 1 entry per tick/fight
-  const totalW = table.entries.reduce((s, e) => s + e.weight, 0);
+  // Roll exactly 1 entry per tick/fight. `noDropWeight` is the weight of
+  // the empty outcome, so gear tables can be rare instead of every kill
+  // dropping something.
+  const totalW = table.entries.reduce((s, e) => s + e.weight, 0) + (table.noDropWeight ?? 0);
   let r = hashFloat(`${seed}:pick`) * totalW;
+  if (r > table.entries.reduce((s, e) => s + e.weight, 0)) return [];
   for (const e of table.entries) {
     r -= e.weight;
     if (r <= 0) {
@@ -2242,6 +2356,9 @@ export function recalculateStats(state: EngineState, content: ContentIndex) {
       if (item.modifiers.hpMax) effective.hpMax += item.modifiers.hpMax;
       if (item.modifiers.spd) effective.spd += item.modifiers.spd;
       if (item.modifiers.critChance) effective.critChance += item.modifiers.critChance;
+      // critMult on gear is the multiplier itself (e.g. 2.0), not a bonus.
+      if (item.modifiers.critMult) effective.critMult = Math.max(effective.critMult, item.modifiers.critMult);
+      if (item.modifiers.res) effective.res += item.modifiers.res;
     }
   }
 

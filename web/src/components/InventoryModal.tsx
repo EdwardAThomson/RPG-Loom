@@ -12,14 +12,17 @@ interface Props {
 export function InventoryModal({ state, itemStack, content, dispatch, onClose }: Props) {
     const def = content?.itemsById?.[itemStack.itemId];
     const itemType = def?.type || 'unknown';
-    const isEquippable = itemType === 'weapon' || itemType === 'armor' || itemType === 'accessory';
+    const isEquippable = itemType === 'weapon' || itemType === 'armor' || itemType === 'accessory' || itemType === 'tool';
     const isConsumable = itemType === 'consumable';
     const isEquipped = Object.values(state.equipment).includes(itemStack.itemId);
 
     const handleEquip = () => {
         let slot: keyof EquipmentState = 'weapon';
         if (itemType === 'armor') slot = 'armor';
-        if (itemType === 'accessory') slot = 'accessory1';
+        if (itemType === 'accessory' || itemType === 'tool') {
+            // Tools ride in the accessory slots; take the first free one.
+            slot = state.equipment.accessory1 && !state.equipment.accessory2 ? 'accessory2' : 'accessory1';
+        }
 
         dispatch({ type: 'EQUIP_ITEM', itemId: itemStack.itemId, slot, atMs: Date.now() });
         onClose();

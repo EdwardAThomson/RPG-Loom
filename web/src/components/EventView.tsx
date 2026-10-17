@@ -53,6 +53,14 @@ function formatEvent(ev: any, content: any) {
         return `${ev.payload.outcome === 'win' ? 'Defeated' : 'Lost to'} ${enemyName}`;
     }
     if (ev.type === 'FLAVOR_TEXT') return ev.payload.message;
+    if (ev.type === 'ITEM_CONSUMED') {
+        const name = content?.itemsById?.[ev.payload.itemId]?.name || ev.payload.itemId;
+        return ev.payload.healed ? `Used ${name}: +${ev.payload.healed} HP` : `Used ${name}`;
+    }
+    if (ev.type === 'SKILL_PROCS') {
+        if (ev.payload.effect === 'double_yield') return 'Skilled hands: double yield!';
+        if (ev.payload.effect === 'material_save') return 'Deft work: materials saved';
+    }
     if (ev.type === 'ERROR') {
         if (ev.payload.code === 'INSUFFICIENT_GOLD') return `Stopped: ${ev.payload.message}`;
         return `Error: ${ev.payload.message}`;

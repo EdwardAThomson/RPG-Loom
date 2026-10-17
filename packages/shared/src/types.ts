@@ -77,6 +77,8 @@ export interface ItemDef {
   value: number; // gold
   // Gameplay effects are deterministic and interpreted by engine
   modifiers?: Partial<CombatStats>;
+  /** Tools: extra units per gather tick when equipped, for the skill named in `tags`. */
+  gatherBonus?: number;
   onUse?: {
     kind: 'heal' | 'buff' | 'cleanse';
     amount?: number;
@@ -102,6 +104,9 @@ export interface EnemyDef {
   levelMax: number;
   baseStats: CombatStats;
   lootTable: LootTable;
+  /** Magic attackers are mitigated by the player's `res`, not `def`. Default physical. */
+  damageType?: 'physical' | 'magic';
+  description?: string;
 }
 
 export interface LocationDef {
@@ -227,7 +232,7 @@ export interface CombatStats {
   spd: number;
   critChance: number; // 0..1
   critMult: number; // e.g. 1.5
-  res: number; // 0..1 (status resist)
+  res: number; // 0..1 magic resistance: fraction of magic damage ignored
 }
 
 export interface SkillState {
@@ -543,6 +548,8 @@ export interface LootEntry {
 
 export interface LootTable {
   entries: LootEntry[];
+  /** Weight of the "nothing drops" outcome, rolled alongside `entries`. */
+  noDropWeight?: number;
 }
 
 export interface EncounterEntry {
@@ -572,7 +579,7 @@ export type GameEvent =
   | BaseEvent<'LEVEL_UP', { newLevel: number; skillId?: SkillId; skillLevel?: number }>
   | BaseEvent<'SKILL_PROCS', { skillId: SkillId; effect: string; value?: number }>
   | BaseEvent<'TACTICS_CHANGED', { tactics: TacticsPreset }>
-  | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
+  | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId; healed?: number }>
   | BaseEvent<'ERROR', { code: string; message: string }>
   | BaseEvent<'FLAVOR_TEXT', { message: string }>
   | BaseEvent<'NPC_INTERACTED', { npcId: NpcId; affinity: number; firstMeet: boolean }>
