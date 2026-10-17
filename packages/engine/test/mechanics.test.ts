@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNewState, gainSkillXp, recalculateStats, applyCommand, syncDerivedPlayerStats } from '../src/engine.js';
+import { createNewState, gainSkillXp, recalculateStats, applyCommand, syncDerivedPlayerStats, getTotalXpForSkillLevel } from '../src/engine.js';
 import type { ContentIndex, LocationDef } from '@rpg-loom/shared';
 
 // Mock Content
@@ -45,20 +45,25 @@ describe('Balance Mechanics', () => {
             const state = createNewState({ saveId: 't', playerId: 'p', playerName: 'n', nowMs: 0, startLocationId: 'loc_easy' });
             const skillId = 'swordsmanship';
 
-            // Level 1 -> 2
-            // Req: floor(100 * 1.1^0) = 100
+            // Level 1 -> 2: 30 (front-loaded early steps 30/60/100/140)
             expect(state.player.skills[skillId].level).toBe(1);
-            gainSkillXp(state, skillId, 50);
+            gainSkillXp(state, skillId, 20);
             expect(state.player.skills[skillId].level).toBe(1); // Not enough
-            gainSkillXp(state, skillId, 50);
+            gainSkillXp(state, skillId, 10);
             expect(state.player.skills[skillId].level).toBe(2); // Ding!
 
-            // Level 2 -> 3
-            // Req: floor(100 * 1.2^1) = 120
-            // Total for Lvl 2: 100. Total for Lvl 3: 220.
-            gainSkillXp(state, skillId, 125); // 100 + 125 = 225
+            // Level 2 -> 3: 60. Total for Lvl 3: 90.
+            gainSkillXp(state, skillId, 65); // 30 + 65 = 95
             expect(state.player.skills[skillId].level).toBe(3);
-            expect(state.player.skills[skillId].xp).toBe(225);
+            expect(state.player.skills[skillId].xp).toBe(95);
+
+            // Each step costs more than the last, through the switch to the 1.2x curve
+            let prevStep = 0;
+            for (let lvl = 1; lvl < 30; lvl++) {
+                const stepXp = getTotalXpForSkillLevel(lvl + 1) - getTotalXpForSkillLevel(lvl);
+                expect(stepXp).toBeGreaterThan(prevStep);
+                prevStep = stepXp;
+            }
         });
     });
 
@@ -139,16 +144,16 @@ describe('Balance Mechanics', () => {
             const skillId = 'foraging';
 
             // Give specific XP using the helper (New Curve 1.2)
-            // Lvl 1->2 (100), Lvl 2->3 (120). Total 220.
+            // Lvl 1->2 (30), 2->3 (60), 3->4 (100). Total 190.
             gainSkillXp(state, skillId, 225);
-            expect(state.player.skills[skillId].level).toBe(3);
+            expect(state.player.skills[skillId].level).toBe(4);
             expect(state.player.skills[skillId].xp).toBe(225); // Total XP is sacrosanct
 
             // Run Reset
             const res = applyCommand(state, { type: 'RESET_SKILLS', atMs: 100 }, mockContent);
 
             // Should remain exactly the same
-            expect(res.state.player.skills[skillId].level).toBe(3);
+            expect(res.state.player.skills[skillId].level).toBe(4);
             expect(res.state.player.skills[skillId].xp).toBe(225);
         });
 

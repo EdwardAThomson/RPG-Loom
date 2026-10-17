@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EngineState, ContentIndex, PlayerCommand, SkillId } from '@rpg-loom/shared';
-import { step } from '@rpg-loom/engine';
+import { step, getTotalXpForSkillLevel } from '@rpg-loom/engine';
 
 interface Props {
     state: EngineState;
@@ -12,15 +12,7 @@ interface Props {
     onResetSkills: () => void;
 }
 
-// Helper: Calculate expected level for given XP (matches engine logic)
-function getTotalXpForSkillLevel(level: number): number {
-    let total = 0;
-    for (let i = 1; i < level; i++) {
-        total += Math.floor(100 * Math.pow(1.2, i - 1));
-    }
-    return total;
-}
-
+// Expected level for given XP (uses the engine's curve)
 function getExpectedLevel(xp: number): number {
     let level = 1;
     while (xp >= getTotalXpForSkillLevel(level + 1)) {

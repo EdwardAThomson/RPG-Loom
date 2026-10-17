@@ -608,7 +608,13 @@ export function simulateOffline(state: EngineState, fromMs: number, toMs: number
   const clampedFrom = Math.max(fromMs, state.lastTickAtMs);
   const requestedTo = Math.max(toMs, clampedFrom);
   const clampedTo = Math.min(requestedTo, clampedFrom + MAX_OFFLINE_MS);
-  return step({ ...state, lastTickAtMs: clampedFrom }, clampedTo, content, config);
+  const res = step({ ...state, lastTickAtMs: clampedFrom }, clampedTo, content, config);
+  // Time past the cap is forfeited, not deferred: without this the
+  // clock stays behind `toMs` and the next catch-up replays another
+  // full MAX_OFFLINE_MS, so the cap never actually applied.
+  // (res.state is never the caller's object: step got a spread copy.)
+  if (requestedTo > clampedTo) res.state.lastTickAtMs = requestedTo;
+  return res;
 }
 
 // ---- Tick resolution ----
@@ -693,12 +699,15 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
   if (a.type === 'recovery') {
     // Check if recovery is done
     if (tickAtMs >= next.activity.startedAtMs + a.durationMs) {
+      // A knockout remembers what the player was doing so AFK/offline
+      // play picks back up instead of sitting idle until they return.
+      const resume: ActivityParams = a.resume ?? { type: 'idle' };
       next.activity = {
-        id: `act_idle_${next.tickIndex}`,
-        params: { type: 'idle' },
+        id: `act_${resume.type}_${next.tickIndex}`,
+        params: resume,
         startedAtMs: tickAtMs
       };
-      events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: { type: 'idle' } }));
+      events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: resume }));
       events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: 'You have recovered.' }));
     }
     return { state: next, events };
@@ -1190,7 +1199,7 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
       next.player.baseStats.hp = 1;
       next.activity = {
         id: `act_rec_${next.tickIndex}`,
-        params: { type: 'recovery', durationMs: 10000 },
+        params: { type: 'recovery', durationMs: 10000, resume: next.activity.params },
         startedAtMs: tickAtMs
       };
       events.push(ev(next, tickAtMs, 'ACTIVITY_SET', { activity: next.activity.params }));
@@ -1209,7 +1218,11 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
     return { state: next, events };
   }
 
-  const enemyLevel = clamp(next.player.level + randIntDet(`elvl:${next.saveId}:${enemyId}:${next.tickIndex}`, -1, 1), enemy.levelMin ?? 1, enemy.levelMax ?? 100);
+  // Scale off the average combat skill, not player.level: that is the
+  // total level across all ten skills (10 for a fresh character), which
+  // pinned every early enemy at its levelMax and let gathering make
+  // combat harder.
+  const enemyLevel = clamp(combatTier(next) + randIntDet(`elvl:${next.saveId}:${enemyId}:${next.tickIndex}`, -1, 1), enemy.levelMin ?? 1, enemy.levelMax ?? 100);
 
   // Initialize Combat State
   let hpScale = 1 + (enemyLevel * 0.1);
@@ -1234,6 +1247,14 @@ function resolveEncounterTick(state: EngineState, tickAtMs: number, locationId: 
   events.push(ev(next, tickAtMs, 'ENCOUNTER_STARTED', { locationId: loc.id, enemyId, enemyLevel }));
 
   return { state: next, events };
+}
+
+const COMBAT_SKILLS: SkillId[] = ['swordsmanship', 'marksmanship', 'arcana', 'defense'];
+
+/** Average combat skill level, rounded (1 for a fresh character). */
+function combatTier(state: EngineState): number {
+  const total = COMBAT_SKILLS.reduce((sum, id) => sum + (state.player.skills[id]?.level ?? 1), 0);
+  return Math.max(1, Math.round(total / COMBAT_SKILLS.length));
 }
 
 // ---- Quest helpers ----
@@ -1800,16 +1821,26 @@ function abandonAdventure(state: EngineState, adventureQuestId: string): void {
 
 // ---- XP/Leveling ----
 /**
+ * XP to go from level i to i+1 for the first few levels. Front-loaded so a
+ * new player levels inside their first session (30s, 1.5m, 3m, 5.5m at
+ * 1 XP/tick); from level 5 on the 1.2x exponential curve takes over, so
+ * AFK/offline pacing past the opening minutes is essentially unchanged.
+ * Only ever lower these: levels are derived upwards from stored xp, so a
+ * cheaper threshold just levels old saves up on their next gain.
+ */
+const EARLY_LEVEL_STEPS = [30, 60, 100, 140];
+
+/**
  * Returns the TOTAL XP required to REACH the start of the given level.
  * Level 1: 0 XP
- * Level 2: 100 XP
- * Level 3: 220 XP (100 + 120)
- * etc.
+ * Level 2: 30 XP
+ * Level 3: 90 XP (30 + 60)
+ * Level 5 onwards: each level L -> L+1 costs floor(100 * 1.2^(L-1)).
  */
-function getTotalXpForSkillLevel(level: number): number {
+export function getTotalXpForSkillLevel(level: number): number {
   let total = 0;
   for (let i = 1; i < level; i++) {
-    total += Math.floor(100 * Math.pow(1.2, i - 1));
+    total += EARLY_LEVEL_STEPS[i - 1] ?? Math.floor(100 * Math.pow(1.2, i - 1));
   }
   return total;
 }
@@ -1852,18 +1883,28 @@ export function gainSkillXp(state: EngineState, skillId: SkillId, amount: number
     } as any));
   }
 
-  let leveledUp = false;
+  const startLevel = s.level;
 
-  // Exponential XP Curve (Total XP model)
-  // Lvl 1 -> 100 (Total) -> Lvl 2
-  // Lvl 2 -> 220 (Total) -> Lvl 3
+  // Total XP model, see getTotalXpForSkillLevel
   while (s.xp >= getTotalXpForSkillLevel(s.level + 1)) {
     s.level += 1;
-    leveledUp = true;
   }
 
   // Update total player XP and Level
   syncDerivedPlayerStats(state);
+
+  // One LEVEL_UP per skill level gained; newLevel is the resulting total level.
+  const levelsGained = s.level - startLevel;
+  if (events && atMs !== undefined) {
+    for (let i = 1; i <= levelsGained; i++) {
+      events.push(ev(state, atMs, 'LEVEL_UP', {
+        newLevel: state.player.level - levelsGained + i,
+        skillId,
+        skillLevel: startLevel + i
+      }));
+    }
+  }
+  const leveledUp = levelsGained > 0;
 
   return leveledUp;
 }

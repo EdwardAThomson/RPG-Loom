@@ -44,13 +44,13 @@ describe('XP and Level Summation', () => {
         expect(state.player.level).toBe(10);
         const initialLevel = state.player.level;
 
-        // Level up mining (requires 100 XP for Level 2)
-        gainSkillXp(state, 'mining', 100);
+        // Level up mining (requires 30 XP for Level 2)
+        gainSkillXp(state, 'mining', 30);
         expect(state.player.skills.mining.level).toBe(2);
         expect(state.player.level).toBe(initialLevel + 1);
 
         // Level up woodcutting
-        gainSkillXp(state, 'woodcutting', 100);
+        gainSkillXp(state, 'woodcutting', 30);
         expect(state.player.skills.woodcutting.level).toBe(2);
         expect(state.player.level).toBe(initialLevel + 2);
     });
