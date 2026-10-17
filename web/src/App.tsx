@@ -39,10 +39,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 20, color: '#ff4444', background: '#222' }}>
-          <h2>Application Crashed</h2>
-          <pre>{this.state.error?.message}</pre>
-          <pre>{this.state.error?.stack}</pre>
+        <div className="crash">
+          <h2>Something went wrong</h2>
+          <pre className="code-block">{this.state.error?.message}</pre>
+          <pre className="code-block">{this.state.error?.stack}</pre>
         </div>
       );
     }

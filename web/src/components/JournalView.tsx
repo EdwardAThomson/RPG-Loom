@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { fetchJournal, type JournalEntry } from '../services/journal';
 import { getAuthState, onAuthChange, type AuthState } from '../services/auth';
+import { humanize } from '../ui/labels';
 
 const CLOUD_SLOT = 0;
 
@@ -37,115 +39,55 @@ export function JournalView() {
 
     if (auth.status !== 'signed-in') {
         return (
-            <div className="card">
-                <h2 style={{ marginTop: 0 }}>Journal</h2>
-                <p style={{ color: '#aaa' }}>
-                    Sign in (Settings → Cloud Save) to keep a journal of completed quests,
-                    rumors, and other narrative moments. Entries persist across devices.
+            <section className="card">
+                <h2>Journal</h2>
+                <p className="prose">
+                    Sign in under Settings → Cloud save to keep a journal of completed quests,
+                    rumours and other moments. Entries follow you across devices.
                 </p>
-            </div>
+            </section>
         );
     }
 
     return (
-        <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <h2 style={{ margin: 0 }}>Journal</h2>
-                <button
-                    onClick={load}
-                    disabled={loading}
-                    style={{
-                        padding: '0.4rem 0.75rem',
-                        background: '#2a2a2a',
-                        border: '1px solid #555',
-                        borderRadius: 4,
-                        color: '#fff',
-                        cursor: loading ? 'wait' : 'pointer',
-                        fontSize: '0.85rem'
-                    }}
-                >
-                    {loading ? 'Loading…' : 'Refresh'}
+        <section className="card">
+            <div className="panel-head">
+                <h2>Journal</h2>
+                <button type="button" className="btn-ghost" onClick={load} disabled={loading}>
+                    <RefreshCw size={12} aria-hidden /> {loading ? 'Loading…' : 'Refresh'}
                 </button>
             </div>
 
-            {error && (
-                <div style={{
-                    padding: '0.6rem 0.75rem',
-                    background: 'rgba(212, 68, 68, 0.1)',
-                    border: '1px solid #d44',
-                    borderRadius: 4,
-                    color: '#d44',
-                    fontSize: '0.85rem',
-                    marginBottom: '0.75rem'
-                }}>
-                    {error}
-                </div>
-            )}
+            {error && <div className="callout callout-warn">{error}</div>}
 
-            {entries === null && !loading && (
-                <p style={{ color: '#888' }}>No journal data yet.</p>
-            )}
+            {entries === null && !loading && <p className="empty">No journal data yet.</p>}
 
             {entries !== null && entries.length === 0 && (
-                <p style={{ color: '#888', fontStyle: 'italic' }}>
-                    Your journal is empty. Complete a quest and a new entry will be
-                    recorded.
-                </p>
+                <p className="empty">Your journal is empty. Complete a quest and a new entry will be recorded.</p>
             )}
 
             {entries !== null && entries.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {entries.map(entry => (
-                        <EntryRow key={entry.id} entry={entry} />
-                    ))}
+                <div className="list journal">
+                    {entries.map(entry => <EntryRow key={entry.id} entry={entry} />)}
                 </div>
             )}
-        </div>
+        </section>
     );
 }
 
 function EntryRow({ entry }: { entry: JournalEntry }) {
-    const when = new Date(entry.createdAt).toLocaleString();
-    const title = entry.block.title ?? prettifyType(entry.type);
+    const when = new Date(entry.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    const title = entry.block.title ?? humanize(entry.type);
     const lines = entry.block.lines ?? [];
 
     return (
-        <div style={{
-            background: '#181818',
-            border: '1px solid #2a2a2a',
-            borderRadius: 4,
-            padding: '0.6rem 0.75rem'
-        }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.25rem', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                    <span style={{ color: '#ddd', fontWeight: 500 }}>{title}</span>
-                    <TypeBadge type={entry.type} />
-                </div>
-                <span style={{ color: '#666', fontSize: '0.75rem' }}>{when}</span>
-            </div>
-            {lines.map((line, i) => (
-                <div key={i} style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.4 }}>{line}</div>
-            ))}
-        </div>
+        <article className="journal-entry">
+            <header>
+                <h3>{title}</h3>
+                <span className="chip chip-muted">{humanize(entry.type)}</span>
+                <time className="small faint">{when}</time>
+            </header>
+            {lines.map((line, i) => <p key={i} className="quote">{line}</p>)}
+        </article>
     );
-}
-
-function TypeBadge({ type }: { type: string }) {
-    return (
-        <span style={{
-            fontSize: '0.7rem',
-            padding: '1px 6px',
-            background: '#2a2a2a',
-            borderRadius: 3,
-            color: '#888',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-        }}>
-            {type.replace(/_/g, ' ')}
-        </span>
-    );
-}
-
-function prettifyType(type: string): string {
-    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }

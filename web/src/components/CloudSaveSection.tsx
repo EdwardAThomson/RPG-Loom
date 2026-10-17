@@ -16,12 +16,12 @@ const STATUS_LABEL: Record<CloudSyncStatus, string> = {
     error: 'Error'
 };
 
-const STATUS_COLOR: Record<CloudSyncStatus, string> = {
-    idle: '#888',
-    syncing: '#ffa000',
-    synced: '#4a8',
-    offline: '#888',
-    error: '#d44'
+const STATUS_CLASS: Record<CloudSyncStatus, string> = {
+    idle: 'muted',
+    syncing: 'gold',
+    synced: 'ok',
+    offline: 'muted',
+    error: 'warn'
 };
 
 export function CloudSaveSection({ cloudStatus, onSyncNow }: Props) {
@@ -63,111 +63,71 @@ export function CloudSaveSection({ cloudStatus, onSyncNow }: Props) {
     };
 
     return (
-        <div style={{ marginBottom: '2rem' }}>
-            <h3>Cloud Save</h3>
-            <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
+        <div className="modal-section">
+            <h3>Cloud save</h3>
+            <p className="prose">
                 Sync your save across devices. Local saves continue to work either way.
             </p>
 
-            {gatewayUp === false && (
-                <Banner color="#ffa000">
-                    Gateway is not reachable — cloud saves are disabled, but the game keeps running.
-                </Banner>
-            )}
+            <div className="stack">
+                {gatewayUp === false && (
+                    <div className="callout callout-warn">
+                        Gateway is not reachable — cloud saves are disabled, but the game keeps running.
+                    </div>
+                )}
 
-            {auth.status === 'signed-out' && gatewayUp !== false && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ fontSize: '0.85rem', color: '#888' }}>
-                        Sign in (dev mode — any name works)
-                    </label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input
-                            type="text"
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            placeholder="e.g. alice"
-                            disabled={busy}
-                            style={inputStyle}
-                            onKeyDown={(e) => { if (e.key === 'Enter') void handleSignIn(); }}
+                {auth.status === 'signed-out' && gatewayUp !== false && (
+                    <div className="field">
+                        <label htmlFor="cloud-save-name">Sign in (dev mode — any name works)</label>
+                        <div className="stack">
+                            <input
+                                id="cloud-save-name"
+                                className="input"
+                                type="text"
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder="e.g. alice"
+                                disabled={busy}
+                                onKeyDown={(e) => { if (e.key === 'Enter') void handleSignIn(); }}
+                            />
+                            <button type="button" className="primary" onClick={handleSignIn} disabled={busy || !token.trim()}>
+                                {busy ? '…' : 'Sign in'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {auth.status === 'signed-in' && auth.user && (
+                    <div>
+                        <Row label="Signed in as" value={auth.user.displayName ?? auth.user.externalId} />
+                        <Row label="User ID" value={auth.user.id.slice(0, 8) + '…'} />
+                        <Row
+                            label="Sync status"
+                            value={STATUS_LABEL[cloudStatus]}
+                            valueClass={STATUS_CLASS[cloudStatus]}
                         />
-                        <button onClick={handleSignIn} disabled={busy || !token.trim()} style={primaryBtn}>
-                            {busy ? '…' : 'Sign in'}
-                        </button>
+                        <div className="btn-row section">
+                            <button type="button" className="primary" onClick={handleSync} disabled={busy}>
+                                Sync now
+                            </button>
+                            <button type="button" onClick={() => signOut()}>
+                                Sign out
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {auth.status === 'signed-in' && auth.user && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <Row label="Signed in as" value={auth.user.displayName ?? auth.user.externalId} />
-                    <Row label="User ID" value={auth.user.id.slice(0, 8) + '…'} />
-                    <Row
-                        label="Sync status"
-                        value={STATUS_LABEL[cloudStatus]}
-                        valueColor={STATUS_COLOR[cloudStatus]}
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <button onClick={handleSync} disabled={busy} style={primaryBtn}>
-                            Sync now
-                        </button>
-                        <button onClick={() => signOut()} style={secondaryBtn}>
-                            Sign out
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {error && <Banner color="#d44">{error}</Banner>}
+                {error && <div className="callout callout-danger">{error}</div>}
+            </div>
         </div>
     );
 }
 
-function Row({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+function Row({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '0.9rem' }}>
-            <span style={{ color: '#888' }}>{label}</span>
-            <span style={{ color: valueColor ?? '#ddd' }}>{value}</span>
+        <div className="kv">
+            <span className="k">{label}</span>
+            <span className={valueClass ? `v ${valueClass}` : 'v'}>{value}</span>
         </div>
     );
 }
-
-function Banner({ children, color }: { children: React.ReactNode; color: string }) {
-    return (
-        <div style={{
-            padding: '0.6rem 0.75rem',
-            background: `${color}1a`,
-            border: `1px solid ${color}`,
-            borderRadius: 4,
-            fontSize: '0.85rem',
-            color,
-            marginTop: '0.5rem'
-        }}>
-            {children}
-        </div>
-    );
-}
-
-const inputStyle: React.CSSProperties = {
-    flex: 1,
-    padding: '0.5rem 0.75rem',
-    background: '#111',
-    border: '1px solid #333',
-    borderRadius: 4,
-    color: '#fff',
-    fontSize: '0.9rem'
-};
-
-const primaryBtn: React.CSSProperties = {
-    padding: '0.5rem 1rem',
-    background: '#2a2a2a',
-    border: '1px solid #555',
-    borderRadius: 4,
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-};
-
-const secondaryBtn: React.CSSProperties = {
-    ...primaryBtn,
-    background: 'transparent'
-};
