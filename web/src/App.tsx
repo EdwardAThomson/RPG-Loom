@@ -4,7 +4,7 @@ import './index.css';
 import { probeGateway } from './services/gateway';
 import { initAuth } from './services/auth';
 import { getNextGoals } from '@rpg-loom/engine';
-import { Heart, Settings } from 'lucide-react';
+import { CircleHelp, Heart, Settings } from 'lucide-react';
 
 // Components
 import { Navigation, TabId } from './components/Navigation';
@@ -17,6 +17,8 @@ import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
 // import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
+import { HelpModal } from './components/HelpModal';
+import { Tour, hasSeenTour } from './components/Tour';
 import { AIDebugModal } from './components/AIDebugModal';
 import { OfflineSummaryModal } from './components/OfflineSummaryModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
@@ -68,6 +70,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  // First-run coach marks: shown once, replayable from How to play.
+  const [showTour, setShowTour] = useState(() => !hasSeenTour());
 
   // Re-hydrate auth state from localStorage (fire-and-forget, sync).
   useEffect(() => { initAuth(); }, []);
@@ -170,6 +175,9 @@ function AppContent() {
               <div><dt>XP/hr</dt><dd>{xpRate.toLocaleString()}</dd></div>
               <div className="stat-gold"><dt>Gold</dt><dd>{player.gold.toLocaleString()}</dd></div>
             </dl>
+            <button type="button" className="icon-button" onClick={() => setShowHelp(true)} title="How to play" aria-label="How to play" data-tour="help">
+              <CircleHelp size={18} strokeWidth={1.8} />
+            </button>
             <button type="button" className="icon-button" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
               <Settings size={18} strokeWidth={1.8} />
             </button>
@@ -222,6 +230,12 @@ function AppContent() {
       }
 
       {showAIDebug && <AIDebugModal onClose={() => setShowAIDebug(false)} />}
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} onReplayTour={() => setShowTour(true)} />}
+
+      {showTour && !pendingOfflineSummary && !pendingConflict && (
+        <Tour onTabChange={setActiveTab} onClose={() => setShowTour(false)} />
+      )}
 
       {pendingOfflineSummary && (
         <OfflineSummaryModal

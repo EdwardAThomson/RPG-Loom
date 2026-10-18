@@ -8,7 +8,7 @@ interface Props {
 
 export function NextGoalsPanel({ goals, onJumpTo }: Props) {
     return (
-        <section className="hud-panel goals" aria-label="Next goals">
+        <section className="hud-panel goals" aria-label="Next goals" data-tour="goals">
             <div className="hud-label">Next goals</div>
             {goals.length === 0 ? (
                 <p className="goals-empty">Nothing pressing. Explore, train, or pick up a quest.</p>
