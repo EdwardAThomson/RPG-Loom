@@ -1,82 +1,84 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { EngineState, PlayerCommand, InventoryStack } from '@rpg-loom/shared';
 import { InventoryModal } from './InventoryModal';
 import { EquipSlot } from './EquipSlot';
+import { ItemIcon } from './ItemIcon';
+import { itemName } from '../ui/labels';
 
 interface Props {
     state: EngineState;
     dispatch: (cmd: PlayerCommand) => void;
-    content: any; // TODO: Strict types
+    content: any;
 }
 
-export function InventoryView({ state, dispatch, content }: Props) {
-    const [selectedStack, setSelectedStack] = useState<InventoryStack | null>(null);
+const SLOTS = [
+    ['weapon', 'Weapon'],
+    ['armor', 'Armour'],
+    ['accessory1', 'Accessory 1'],
+    ['accessory2', 'Accessory 2'],
+] as const;
 
-    // Helper to get item name from content (fallback to ID)
-    const getName = (id: string) => content?.itemsById?.[id]?.name || id.replace('item_', '');
+export function InventoryView({ state, dispatch, content }: Props) {
+    const [selected, setSelected] = useState<InventoryStack | null>(null);
+    const equipped = new Set(Object.values(state.equipment).filter(Boolean));
 
     return (
         <>
-            <section className="card full-height">
+            <section className="card">
                 <h2>Equipment</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.8rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #333' }}>
-                    <EquipSlot label="Weapon" itemId={state.equipment.weapon} content={content} onClick={() => state.equipment.weapon && setSelectedStack({ itemId: state.equipment.weapon, qty: 1 })} />
-                    <EquipSlot label="Armor" itemId={state.equipment.armor} content={content} onClick={() => state.equipment.armor && setSelectedStack({ itemId: state.equipment.armor, qty: 1 })} />
-                    <EquipSlot label="Acc 1" itemId={state.equipment.accessory1} content={content} onClick={() => state.equipment.accessory1 && setSelectedStack({ itemId: state.equipment.accessory1, qty: 1 })} />
-                    <EquipSlot label="Acc 2" itemId={state.equipment.accessory2} content={content} onClick={() => state.equipment.accessory2 && setSelectedStack({ itemId: state.equipment.accessory2, qty: 1 })} />
+                <div className="slot-grid">
+                    {SLOTS.map(([slot, label]) => {
+                        const id = state.equipment[slot];
+                        return (
+                            <EquipSlot
+                                key={slot}
+                                label={label}
+                                itemId={id}
+                                content={content}
+                                onClick={() => id && setSelected({ itemId: id, qty: 1 })}
+                            />
+                        );
+                    })}
                 </div>
 
-                <h2>Inventory</h2>
-                <div className="inventory-grid">
-                    {state.inventory.map((item: any) => (
-                        <div
-                            key={item.itemId}
-                            className="inventory-item"
-                            title={getName(item.itemId)} // Better title for hover
-                            onClick={() => setSelectedStack(item)}
-                        >
-                            <div style={{ fontSize: '1.2rem', marginBottom: '2px' }}>
-                                {/* Basic icon mapping */}
-                                {content?.itemsById?.[item.itemId]?.type === 'weapon' ? '⚔️' :
-                                    content?.itemsById?.[item.itemId]?.type === 'armor' ? '🛡️' :
-                                        content?.itemsById?.[item.itemId]?.type === 'consumable' ? '🧪' : '📦'}
-                            </div>
-                            <div className="name">
-                                {getName(item.itemId)}
-                            </div>
-                            <div className="qty">x{item.qty}</div>
-
-                            {/* Equipped Indicator Badge */}
-                            {Object.values(state.equipment).includes(item.itemId) && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    background: 'var(--color-gold)',
-                                    color: '#000',
-                                    fontSize: '0.55rem',
-                                    fontWeight: 'bold',
-                                    padding: '1px 4px',
-                                    borderRadius: '0 0 0 4px',
-                                    boxShadow: '-1px 1px 4px rgba(0,0,0,0.5)'
-                                }}>
-                                    EQP
-                                </div>
-                            )}
+                <div className="section">
+                    <div className="panel-head">
+                        <span className="hud-label">Pack</span>
+                        <span className="small muted">{state.inventory.length} kinds of item</span>
+                    </div>
+                    {state.inventory.length === 0 ? (
+                        <p className="empty">Your pack is empty. Gather, hunt or buy something.</p>
+                    ) : (
+                        <div className="inventory-grid">
+                            {state.inventory.map(stack => {
+                                const def = content?.itemsById?.[stack.itemId];
+                                return (
+                                    <button
+                                        key={stack.itemId}
+                                        type="button"
+                                        className={`inventory-item rarity-${def?.rarity ?? 'common'}`}
+                                        title={itemName(content, stack.itemId)}
+                                        onClick={() => setSelected(stack)}
+                                    >
+                                        <ItemIcon type={def?.type} size={20} />
+                                        <span className="name">{itemName(content, stack.itemId)}</span>
+                                        <span className="qty">×{stack.qty}</span>
+                                        {equipped.has(stack.itemId) && <span className="equipped-badge">Worn</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
-                    ))}
-                    {state.inventory.length === 0 && <div className="empty" style={{ gridColumn: '1/-1', textAlign: 'center', color: '#666', padding: '2rem' }}>Empty</div>}
+                    )}
                 </div>
-
             </section>
 
-            {selectedStack && (
+            {selected && (
                 <InventoryModal
                     state={state}
-                    itemStack={selectedStack}
+                    itemStack={selected}
                     content={content}
                     dispatch={dispatch}
-                    onClose={() => setSelectedStack(null)}
+                    onClose={() => setSelected(null)}
                 />
             )}
         </>

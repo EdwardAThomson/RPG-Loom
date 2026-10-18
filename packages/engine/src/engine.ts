@@ -832,7 +832,17 @@ function runOneTick(state: EngineState, tickAtMs: number, content?: ContentIndex
     // objectives. Routing on the parsed kind gives us exhaustiveness:
     // any future adventure step kind has to be handled here or fail at
     // typecheck.
+    // Kill and gather objectives happen at the quest's location, so the
+    // player has to actually be there: the quest activity must not act as
+    // a remote-gathering or teleport shortcut. Crafting is location-free.
     const parsed = parseDynamicTemplateId(q.templateId);
+    const kind = parsed ? parsed.kind : content.questTemplatesById[q.templateId]?.objectiveType;
+    if ((kind === 'kill' || kind === 'gather') && next.currentLocationId !== q.locationId) {
+      const locName = content.locationsById[q.locationId]?.name || q.locationId;
+      events.push(ev(next, tickAtMs, 'FLAVOR_TEXT', { message: `You need to be at ${locName} for this quest.` }));
+      return { state: next, events };
+    }
+
     if (parsed) {
       switch (parsed.kind) {
         case 'kill':
