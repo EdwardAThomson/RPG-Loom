@@ -1,6 +1,6 @@
 import { ActivityParams, EngineState, GameEvent, NpcDef, PlayerCommand, SkillId } from '@rpg-loom/shared';
 import { useMemo, useState } from 'react';
-import { Axe, BedDouble, Coins, Crosshair, Leaf, Pickaxe, Shield, Sparkles, Square, Swords, Target, LucideIcon } from 'lucide-react';
+import { Axe, BedDouble, Coins, Leaf, Pickaxe, Shield, Sparkles, Square, Swords, Target, LucideIcon } from 'lucide-react';
 import { TacticsSelector } from './TacticsSelector';
 import { MarketView } from './MarketView';
 import { NpcDialogueModal } from './NpcDialogueModal';
@@ -59,7 +59,7 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
             { key: 'woodcut', label: 'Woodcut', icon: Axe, skill: 'woodcutting' },
             { key: 'mine', label: 'Mine', icon: Pickaxe, skill: 'mining' },
             { key: 'forage', label: 'Forage', icon: Leaf, skill: 'foraging' },
-            { key: 'hunt', label: 'Hunt', icon: Crosshair, skill: null },
+            { key: 'hunt', label: 'Hunt', icon: Swords, skill: null },
         ] as const)
             .filter(a => location?.activities?.includes(a.key))
             .map(a => ({
