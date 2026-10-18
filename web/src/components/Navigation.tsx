@@ -27,6 +27,7 @@ export function Navigation({ activeTab, onTabChange }: Props) {
                     type="button"
                     className={`nav-item${activeTab === id ? ' is-active' : ''}`}
                     aria-current={activeTab === id ? 'page' : undefined}
+                    data-tour={`nav-${id}`}
                     onClick={() => onTabChange(id)}
                 >
                     <Icon size={16} strokeWidth={1.8} aria-hidden />

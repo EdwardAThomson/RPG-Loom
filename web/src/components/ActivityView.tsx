@@ -132,7 +132,7 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                 {progress && <span className="bar bar-xp"><i style={{ width: `${progress.pct}%` }} /></span>}
 
                 <div className="hud-label dock-section">{type === 'idle' ? 'What will you do?' : 'Switch to'}</div>
-                <div className="action-grid">
+                <div className="action-grid" data-tour="actions">
                     {actions.map(a => (
                         <button
                             key={a.key}
