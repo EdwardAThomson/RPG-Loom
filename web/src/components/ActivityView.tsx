@@ -1,34 +1,46 @@
-import { EngineState, GameEvent, NpcDef, PlayerCommand } from '@rpg-loom/shared';
+import { ActivityParams, EngineState, GameEvent, NpcDef, PlayerCommand, SkillId } from '@rpg-loom/shared';
+import { useMemo, useState } from 'react';
+import { Axe, BedDouble, Coins, Leaf, Pickaxe, Shield, Sparkles, Square, Swords, Target, LucideIcon } from 'lucide-react';
 import { TacticsSelector } from './TacticsSelector';
-import { useMemo, useRef, useState } from 'react';
 import { MarketView } from './MarketView';
 import { NpcDialogueModal } from './NpcDialogueModal';
-
-// We need a way to know location names, assuming content is passed or we map it.
-// Since we are creating a generic engine, ideally we use the content index.
-// But for now, let's assume 'content' is passed inProps if we updated App.tsx, or we use a hardcoded list if not.
-// The user prompt implied we should just "do it", so I'll try to use the content object if available.
-// I'll update the interface to accept content.
+import { activityLabel, activitySkill, enemyName, humanize, skillName, skillProgress } from '../ui/labels';
 
 interface Props {
     state: EngineState;
     dispatch: (cmd: PlayerCommand) => void;
-    content: any; // MVP: generic type for now to avoid deep type imports in web if not set up
+    content: any;
     events?: GameEvent[];
 }
 
+type Action = {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    params: ActivityParams;
+    active: boolean;
+    disabled?: boolean;
+    note?: string;
+};
+
+const TRAINING: { skillId: SkillId; label: string; icon: LucideIcon }[] = [
+    { skillId: 'swordsmanship', label: 'Sword', icon: Swords },
+    { skillId: 'defense', label: 'Shield', icon: Shield },
+    { skillId: 'marksmanship', label: 'Archery', icon: Target },
+    { skillId: 'arcana', label: 'Magic', icon: Sparkles },
+];
+
 export function ActivityView({ state, dispatch, content, events }: Props) {
     const { activity, player } = state;
-    const [isExpanded, setIsExpanded] = useState(false);
     const [activeNpc, setActiveNpc] = useState<NpcDef | null>(null);
 
-    const currentLocName = content?.locationsById?.[state.currentLocationId]?.name || state.currentLocationId;
-    const isTown = content?.locationsById?.[state.currentLocationId]?.type === 'town';
+    const location = content?.locationsById?.[state.currentLocationId];
+    const locName = location?.name || state.currentLocationId;
+    const isTown = location?.type === 'town';
+    const type = activity.params.type;
 
-    // NPCs at this location — shown in a small "Folk here" panel so the
-    // player can talk without leaving the Activity tab. Engine enforces
-    // the location check too (TALK_TO_NPC errors otherwise), but the
-    // panel just won't surface anyone who isn't here.
+    // NPCs at this location, so the player can talk without leaving the
+    // Activity tab. The engine enforces the location check too.
     const npcsHere: NpcDef[] = useMemo(() => {
         const all = Object.values(content?.npcsById ?? {}) as NpcDef[];
         return all
@@ -36,351 +48,154 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [content?.npcsById, state.currentLocationId]);
 
+    const set = (params: ActivityParams) => dispatch({ type: 'SET_ACTIVITY', params, atMs: Date.now() });
+
+    const actions: Action[] = isTown
+        ? [
+            { key: 'recovery', label: 'Rest at the inn', icon: BedDouble, params: { type: 'recovery', durationMs: 10000 }, active: type === 'recovery', note: 'Heal' },
+            { key: 'trade', label: 'Visit market', icon: Coins, params: { type: 'trade', locationId: state.currentLocationId }, active: type === 'trade' },
+        ]
+        : ([
+            { key: 'woodcut', label: 'Woodcut', icon: Axe, skill: 'woodcutting' },
+            { key: 'mine', label: 'Mine', icon: Pickaxe, skill: 'mining' },
+            { key: 'forage', label: 'Forage', icon: Leaf, skill: 'foraging' },
+            { key: 'hunt', label: 'Hunt', icon: Swords, skill: null },
+        ] as const)
+            .filter(a => location?.activities?.includes(a.key))
+            .map(a => ({
+                key: a.key,
+                label: a.label,
+                icon: a.icon,
+                params: { type: a.key, locationId: state.currentLocationId } as ActivityParams,
+                active: type === a.key,
+                note: a.skill ? `Lv ${player.skills[a.skill]?.level ?? 1}` : 'Fight',
+            }));
+
+    const skill = activitySkill(activity.params, state, content);
+    const skillState = skill ? (player.skills[skill] ?? { id: skill, level: 1, xp: 0 }) : null;
+    const progress = skillState ? skillProgress(skillState.xp, skillState.level) : null;
+    const focusedQuest = findFocusedQuest(state, content);
+    const inCombatActivity = !!state.activeEncounter || type === 'hunt';
+
     return (
         <>
-            <section className="card">
-                <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span>Current Activity</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-gold)', textTransform: 'none', fontWeight: 'normal', opacity: 0.8, letterSpacing: '0.5px' }}>
-                        {currentLocName}
-                    </span>
-                </h2>
-                <div className="activity-status">
-                    <div className="current-action">{activity.params.type.toUpperCase()}</div>
-                    {'locationId' in activity.params && (
-                        <div className="location">
-                            {content?.locationsById?.[(activity.params as any).locationId]?.name || (activity.params as any).locationId}
-                        </div>
-                    )}
-
-                    {(() => {
-                        const activeQuests = state.quests.filter(q => q.status === 'active');
-                        const focusedQuest = activeQuests.find(q => {
-                            if (q.templateId.startsWith('dynamic_gather_') && activity.params.type === (
-                                content?.locationsById?.[q.locationId]?.miningTable?.entries.some((e: any) => e.itemId === q.templateId.replace('dynamic_gather_', '')) ? 'mine' :
-                                    content?.locationsById?.[q.locationId]?.woodcuttingTable?.entries.some((e: any) => e.itemId === q.templateId.replace('dynamic_gather_', '')) ? 'woodcut' : 'forage'
-                            ) && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
-
-                            if (q.templateId === 'dynamic_explore' && activity.params.type === 'explore' && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
-
-                            if (q.templateId.startsWith('dynamic_kill_')) {
-                                const targetEnemyId = q.templateId.replace('dynamic_kill_', '');
-                                if (activity.params.type === 'hunt' && 'locationId' in activity.params && activity.params.locationId === q.locationId) return true;
-                            }
-
-                            if (q.templateId.startsWith('dynamic_craft_')) {
-                                const targetRecipeId = q.templateId.replace('dynamic_craft_', '');
-                                if (activity.params.type === 'craft' && 'recipeId' in activity.params && activity.params.recipeId === targetRecipeId) return true;
-                            }
-
-                            if (activity.params.type === 'quest' && 'questId' in activity.params && activity.params.questId === q.id) return true;
-
-                            return false;
-                        });
-
-                        if (focusedQuest) {
-                            return (
-                                <div style={{
-                                    marginTop: '0.25rem',
-                                    fontSize: '0.7rem',
-                                    color: 'var(--color-primary)',
-                                    fontWeight: 'bold',
-                                    letterSpacing: '1px',
-                                    background: 'rgba(52, 152, 219, 0.1)',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    display: 'inline-block',
-                                    border: '1px solid rgba(52, 152, 219, 0.3)'
-                                }}>
-                                    ✨ QUEST FOCUS: {focusedQuest.aiNarrative?.title || focusedQuest.templateId.replace('dynamic_', '').replace('_', ' ').toUpperCase()}
-                                </div>
-                            );
-                        }
-                        return null;
-                    })()}
-
-                    <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: player.baseStats.hp < player.baseStats.hpMax * 0.3 ? '#ff4444' : 'var(--color-gold)' }}>
-                        Player HP: {player.baseStats.hp} / {player.baseStats.hpMax}
-                    </div>
-
-                    {content?.locationsById?.[state.currentLocationId]?.image && (
-                        <div
-                            style={{
-                                width: '100%',
-                                margin: '0.5rem 0',
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                border: '1px solid #333',
-                                maxHeight: '300px',
-                                cursor: 'zoom-in',
-                                position: 'relative',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                            }}
-                            onClick={() => setIsExpanded(true)}
-                            title="Click to expand"
-                        >
-                            <img
-                                src={content.locationsById[state.currentLocationId].image}
-                                alt={content.locationsById[state.currentLocationId].name}
-                                style={{ width: '100%', height: '300px', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-                            />
-                            <div style={{
-                                position: 'absolute',
-                                bottom: '12px',
-                                right: '12px',
-                                background: 'rgba(0,0,0,0.7)',
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                fontSize: '0.75rem',
-                                color: '#eee',
-                                border: '1px solid #555',
-                                backdropFilter: 'blur(4px)',
-                                pointerEvents: 'none'
-                            }}>
-                                🔍 Click to Expand
+            {inCombatActivity && (
+                <section className="hud-panel combat">
+                    {state.activeEncounter ? (
+                        <>
+                            <div className="combat-head">
+                                <span className="hud-label">Fighting</span>
+                                <span className="combat-level">Lv {state.activeEncounter.enemyLevel}</span>
                             </div>
-                        </div>
+                            <div className="combat-name">{enemyName(content, state.activeEncounter.enemyId)}</div>
+                            <span className="bar bar-enemy">
+                                <i style={{ width: `${(state.activeEncounter.enemyHp / Math.max(1, state.activeEncounter.enemyMaxHp)) * 100}%` }} />
+                            </span>
+                            <div className="combat-hp">{state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}</div>
+                        </>
+                    ) : (
+                        <>
+                            <span className="hud-label">Hunting</span>
+                            <div className="combat-name is-searching">Searching for foes…</div>
+                        </>
                     )}
-
-                    {/* Combat widget — kept mounted whenever the player is
-                        in a fight-capable activity, so layout doesn't jump
-                        between encounters. Shows a "searching" state in the
-                        gap; the real fight content when an encounter is
-                        actually active. */}
-                    {(state.activeEncounter || activity.params.type === 'hunt') && (() => {
-                        // Mirror the engine's weapon-skill mapping (engine.ts
-                        // resolveEncounterTick): wand/staff → Arcana, bow →
-                        // Marksmanship, anything else → Swordsmanship. Helps
-                        // the player see which skill their current weapon is
-                        // actually training.
-                        const weaponId = state.equipment.weapon;
-                        const tags: string[] = (weaponId && content?.itemsById?.[weaponId]?.tags) || [];
-                        const weaponSkill =
-                            tags.includes('bow') ? 'Marksmanship' :
-                            (tags.includes('wand') || tags.includes('staff')) ? 'Arcana' :
-                            'Swordsmanship';
-                        return (
-                            <div className="combat-widget">
-                                {state.activeEncounter ? (
-                                    <>
-                                        <h3 style={{ color: '#ff4444', marginBottom: '0.5rem' }}>⚔️ Combat ⚔️</h3>
-                                        <div style={{ fontSize: '1.1rem' }}>
-                                            {content?.enemiesById?.[state.activeEncounter.enemyId]?.name || state.activeEncounter.enemyId}
-                                        </div>
-                                        <div style={{ color: '#888', fontSize: '0.9rem' }}>Lvl {state.activeEncounter.enemyLevel}</div>
-                                        <div style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                            HP: {state.activeEncounter.enemyHp} / {state.activeEncounter.enemyMaxHp}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <h3 style={{ color: '#888', marginBottom: '0.5rem' }}>🔍 Searching</h3>
-                                        <div style={{ color: '#888', fontStyle: 'italic' }}>Scanning for foes…</div>
-                                        <div style={{ color: '#444', fontSize: '0.85rem', marginTop: '0.5rem' }}>—</div>
-                                        <div style={{ color: '#444', fontSize: '0.9rem', marginTop: '0.25rem' }}>HP: — / —</div>
-                                    </>
-                                )}
-                                <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.4rem' }}>
-                                    Weapon skill: <span style={{ color: '#ddd' }}>{weaponSkill}</span>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-
-                {(state.activeEncounter || activity.params.type === 'hunt') && (
-                    <section style={{ marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Combat Stance</h3>
+                    <div className="combat-stance">
+                        <span className="hud-label">Stance</span>
                         <TacticsSelector player={player} dispatch={dispatch} />
-                    </section>
-                )}
-
-                <div className="actions">
-                    <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                        Actions in {currentLocName}
                     </div>
+                </section>
+            )}
 
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        {isTown ? (
-                            <>
-                                {/* Inn / Recovery */}
-                                <button
-                                    style={activity.params.type === 'recovery' ? { borderColor: '#4caf50', background: 'rgba(76, 175, 80, 0.1)', flex: 1 } : { flex: 1 }}
-                                    onClick={() => dispatch({
-                                        type: 'SET_ACTIVITY',
-                                        params: { type: 'recovery', durationMs: 10000 }, // 10s rest block
-                                        atMs: Date.now()
-                                    })}
-                                >
-                                    Rest at Inn (Heal)
-                                </button>
-
-                                {/* Market */}
-                                <button
-                                    style={activity.params.type === 'trade' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)', flex: 1 } : { flex: 1 }}
-                                    onClick={() => dispatch({
-                                        type: 'SET_ACTIVITY',
-                                        params: { type: 'trade', locationId: state.currentLocationId },
-                                        atMs: Date.now()
-                                    })}
-                                >
-                                    Visit Market
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                {/* Wild Actions */}
-                                {content?.locationsById?.[state.currentLocationId]?.activities?.includes('woodcut') && (
-                                    <button
-                                        style={activity.params.type === 'woodcut' ? { borderColor: '#8b4513', background: 'rgba(139, 69, 19, 0.1)', flex: 1 } : { flex: 1 }}
-                                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'woodcut', locationId: state.currentLocationId }, atMs: Date.now() })}
-                                    >
-                                        🪓 Woodcut
-                                    </button>
-                                )}
-
-                                {content?.locationsById?.[state.currentLocationId]?.activities?.includes('mine') && (
-                                    <button
-                                        style={activity.params.type === 'mine' ? { borderColor: '#777', background: 'rgba(119, 119, 119, 0.1)', flex: 1 } : { flex: 1 }}
-                                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'mine', locationId: state.currentLocationId }, atMs: Date.now() })}
-                                    >
-                                        ⛏️ Mine
-                                    </button>
-                                )}
-
-                                {content?.locationsById?.[state.currentLocationId]?.activities?.includes('forage') && (
-                                    <button
-                                        style={activity.params.type === 'forage' ? { borderColor: '#4caf50', background: 'rgba(76, 175, 80, 0.1)', flex: 1 } : { flex: 1 }}
-                                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'forage', locationId: state.currentLocationId }, atMs: Date.now() })}
-                                    >
-                                        🌿 Forage
-                                    </button>
-                                )}
-
-                                {content?.locationsById?.[state.currentLocationId]?.activities?.includes('hunt') && (
-                                    <button
-                                        style={activity.params.type === 'hunt' ? { borderColor: 'var(--color-crimson)', background: 'rgba(166, 28, 28, 0.1)', flex: 1 } : { flex: 1 }}
-                                        onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'hunt', locationId: state.currentLocationId }, atMs: Date.now() })}
-                                    >
-                                        ⚔️ Hunt
-                                    </button>
-                                )}
-                            </>
+            <section className={`hud-panel dock${type === 'idle' ? ' is-idle' : ''}`} aria-label="Current activity">
+                <div className="dock-head">
+                    <div>
+                        <h2 className="dock-title">
+                            {activityLabel(activity.params, content)}
+                            {skillState && (
+                                <span className="dock-level">
+                                    {' · '}{activityLabel(activity.params, content).includes(skillName(skillState.id)) ? '' : `${skillName(skillState.id)} `}Lv {skillState.level}
+                                </span>
+                            )}
+                        </h2>
+                        {type === 'idle' && <p className="dock-sub">Choose something to do in {locName}.</p>}
+                        {focusedQuest && <span className="chip chip-quest">Quest: {focusedQuest}</span>}
+                    </div>
+                    <div className="dock-meta">
+                        {progress && <span>{progress.into} / {progress.span} XP</span>}
+                        {type !== 'idle' && (
+                            <button type="button" className="btn-ghost" onClick={() => set({ type: 'idle' })}>
+                                <Square size={12} aria-hidden /> Stop
+                            </button>
                         )}
                     </div>
                 </div>
+                {progress && <span className="bar bar-xp"><i style={{ width: `${progress.pct}%` }} /></span>}
 
-                {activity.params.type === 'trade' && <MarketView state={state} dispatch={dispatch} content={content} />}
-
+                <div className="hud-label dock-section">{type === 'idle' ? 'What will you do?' : 'Switch to'}</div>
+                <div className="action-grid" data-tour="actions">
+                    {actions.map(a => (
+                        <button
+                            key={a.key}
+                            type="button"
+                            className={`action${a.active ? ' is-active' : ''}`}
+                            aria-pressed={a.active}
+                            onClick={() => set(a.params)}
+                        >
+                            <a.icon size={16} strokeWidth={1.8} aria-hidden />
+                            <span>{a.label}</span>
+                            {a.note && <small>{a.note}</small>}
+                        </button>
+                    ))}
+                </div>
 
                 {isTown && (
-                    <div className="training-section">
-                        <div className="divider" style={{ width: '100%', height: '1px', background: '#333', margin: '1rem 0' }}></div>
-                        <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                            Training Grounds
+                    <>
+                        <div className="hud-label dock-section">Training grounds · 1 gold per session</div>
+                        <div className="action-grid">
+                            {TRAINING.map(t => {
+                                const active = type === 'train' && (activity.params as { skillId: SkillId }).skillId === t.skillId;
+                                return (
+                                    <button
+                                        key={t.skillId}
+                                        type="button"
+                                        className={`action${active ? ' is-active' : ''}`}
+                                        aria-pressed={active}
+                                        disabled={player.gold < 1}
+                                        onClick={() => set({ type: 'train', skillId: t.skillId })}
+                                    >
+                                        <t.icon size={16} strokeWidth={1.8} aria-hidden />
+                                        <span>{t.label}</span>
+                                        <small>Lv {player.skills[t.skillId]?.level ?? 1}</small>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                            <button
-                                disabled={player.gold < 1}
-                                style={{
-                                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                                    ...(activity.params.type === 'train' && (activity.params as any).skillId === 'swordsmanship' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                                }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'swordsmanship' }, atMs: Date.now() })}
-                            >
-                                Train Sword (1g)
-                            </button>
-                            <button
-                                disabled={player.gold < 1}
-                                style={{
-                                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                                    ...(activity.params.type === 'train' && (activity.params as any).skillId === 'defense' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                                }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'defense' }, atMs: Date.now() })}
-                            >
-                                Train Shield (1g)
-                            </button>
-                            <button
-                                disabled={player.gold < 1}
-                                style={{
-                                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                                    ...(activity.params.type === 'train' && (activity.params as any).skillId === 'marksmanship' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                                }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'marksmanship' }, atMs: Date.now() })}
-                            >
-                                Train Archery (1g)
-                            </button>
-                            <button
-                                disabled={player.gold < 1}
-                                style={{
-                                    ...(player.gold < 1 ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
-                                    ...(activity.params.type === 'train' && (activity.params as any).skillId === 'arcana' ? { borderColor: 'var(--color-gold)', background: 'rgba(255, 215, 0, 0.1)' } : {})
-                                }}
-                                onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'train', skillId: 'arcana' }, atMs: Date.now() })}
-                            >
-                                Train Magic (1g)
-                            </button>
-                        </div>
-                    </div>
+                    </>
                 )}
-
-                {/* Stop */}
-                <button
-                    className="primary"
-                    style={activity.params.type === 'idle' ? { opacity: 0.5, marginTop: '1rem' } : { marginTop: '1rem' }}
-                    onClick={() => dispatch({ type: 'SET_ACTIVITY', params: { type: 'idle' }, atMs: Date.now() })}
-                >
-                    Stop Activity
-                </button>
             </section>
 
+            {type === 'trade' && <MarketView state={state} dispatch={dispatch} content={content} />}
+
             {npcsHere.length > 0 && (
-                <section className="card" style={{ marginTop: '1rem' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Folk here
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        {npcsHere.map(npc => {
-                            const entry = state.npcState?.[npc.id];
-                            const known = entry?.firstMetAtMs !== undefined;
-                            return (
-                                <div
-                                    key={npc.id}
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        background: '#181818',
-                                        border: '1px solid #2a2a2a',
-                                        borderRadius: 4,
-                                        padding: '0.5rem 0.75rem'
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                                        <span style={{ color: '#ddd', fontWeight: 500 }}>{npc.name}</span>
-                                        <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                                            {npc.role.replace(/_/g, ' ')}
-                                            {known ? ` · affinity ${entry?.affinity ?? 0}` : ' · not yet met'}
-                                        </span>
+                <section className="hud-panel folk-here">
+                    <div className="hud-label">Folk here</div>
+                    {npcsHere.map(npc => {
+                        const entry = state.npcState?.[npc.id];
+                        const known = entry?.firstMetAtMs !== undefined;
+                        return (
+                            <div key={npc.id} className="list-row">
+                                <div>
+                                    <div className="list-title">{npc.name}</div>
+                                    <div className="list-sub">
+                                        {humanize(npc.role)}{known ? ` · affinity ${entry?.affinity ?? 0}` : ' · not yet met'}
                                     </div>
-                                    <button
-                                        onClick={() => setActiveNpc(npc)}
-                                        style={{
-                                            padding: '0.4rem 0.9rem',
-                                            background: '#2a2a2a',
-                                            color: '#fff',
-                                            border: '1px solid #8fbc8f',
-                                            borderRadius: 4,
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem'
-                                        }}
-                                    >
-                                        {known ? 'Talk' : 'Greet'}
-                                    </button>
                                 </div>
-                            );
-                        })}
-                    </div>
+                                <button type="button" className="btn-secondary" onClick={() => setActiveNpc(npc)}>
+                                    {known ? 'Talk' : 'Greet'}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </section>
             )}
 
@@ -394,94 +209,28 @@ export function ActivityView({ state, dispatch, content, events }: Props) {
                     recentEvents={events}
                 />
             )}
-
-            {/* Fullscreen Expansion Modal - Rendered outside the card to avoid stacking context issues */}
-            {isExpanded && content?.locationsById?.[state.currentLocationId]?.image && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0,0,0,0.95)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        zIndex: 9999,
-                        cursor: 'zoom-out',
-                        backdropFilter: 'blur(12px)',
-                        padding: '2rem'
-                    }}
-                    onClick={() => setIsExpanded(false)}
-                >
-                    <div style={{ position: 'relative', maxWidth: '100%', maxHeight: '100%', display: 'flex', justifyContent: 'center' }}>
-                        <img
-                            src={content.locationsById[state.currentLocationId].image}
-                            alt={content.locationsById[state.currentLocationId].name}
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '90vh',
-                                objectFit: 'contain',
-                                boxShadow: '0 0 60px rgba(0,0,0,1)',
-                                borderRadius: '8px',
-                                border: '1px solid #444'
-                            }}
-                        />
-                        <div style={{
-                            position: 'absolute',
-                            top: '-50px',
-                            width: '100%',
-                            textAlign: 'center',
-                            color: 'var(--color-gold)',
-                            fontFamily: 'Cinzel, serif',
-                            fontSize: '1.5rem',
-                            textShadow: '0 2px 10px rgba(0,0,0,1)'
-                        }}>
-                            {content.locationsById[state.currentLocationId].name}
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
-                        className="close-button-expanded"
-                        style={{
-                            position: 'absolute',
-                            top: '40px',
-                            right: '40px',
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#fff',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '50%',
-                            width: '56px',
-                            height: '56px',
-                            fontSize: '1.8rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                            backdropFilter: 'blur(8px)',
-                            zIndex: 10000
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-                            e.currentTarget.style.borderColor = 'var(--color-gold)';
-                            e.currentTarget.style.color = 'var(--color-gold)';
-                            e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                            e.currentTarget.style.color = '#fff';
-                            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-                        }}
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
         </>
     );
+}
+
+/** Name of the active quest the current activity is advancing, if any. */
+function findFocusedQuest(state: EngineState, content: any): string | null {
+    const params = state.activity.params;
+    const here = 'locationId' in params ? params.locationId : null;
+    const quest = state.quests.filter(q => q.status === 'active').find(q => {
+        const t = q.templateId;
+        if (t.startsWith('dynamic_gather_') && here === q.locationId) {
+            const itemId = t.replace('dynamic_gather_', '');
+            const loc = content?.locationsById?.[q.locationId];
+            const kind = loc?.miningTable?.entries.some((e: any) => e.itemId === itemId) ? 'mine'
+                : loc?.woodcuttingTable?.entries.some((e: any) => e.itemId === itemId) ? 'woodcut' : 'forage';
+            return params.type === kind;
+        }
+        if (t === 'dynamic_explore') return params.type === 'explore' && here === q.locationId;
+        if (t.startsWith('dynamic_kill_')) return params.type === 'hunt' && here === q.locationId;
+        if (t.startsWith('dynamic_craft_')) return params.type === 'craft' && params.recipeId === t.replace('dynamic_craft_', '');
+        return params.type === 'quest' && params.questId === q.id;
+    });
+    if (!quest) return null;
+    return quest.aiNarrative?.title || content?.questTemplatesById?.[quest.templateId]?.name || humanize(quest.templateId.replace('dynamic_', ''));
 }

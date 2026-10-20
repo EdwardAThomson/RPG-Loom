@@ -114,6 +114,8 @@ export interface LocationDef {
   name: string;
   type?: 'town' | 'wild';
   image?: string;
+  /** Position on the world map, as percentages of a 100x60 canvas. */
+  map?: { x: number; y: number };
   description: string;
   requirements?: {
     minLevel?: number;

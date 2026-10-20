@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { EngineState, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
 import { getAvailableQuests, parseDynamicTemplateId } from '@rpg-loom/engine';
+import { ArrowRight, Check, Lock, MapPin, Sparkles, Star } from 'lucide-react';
 import { enhanceQuest } from '../services/questEnhancement';
 import { generateAdventureQuest } from '../services/adventureQuestGeneration';
+import '../styles/quests.css';
 
 interface Props {
     state: EngineState;
@@ -159,23 +161,27 @@ export function QuestView({ state, content, dispatch }: Props) {
         }
     };
 
-    const getDifficultyStars = (difficulty: number) => {
-        return '⭐'.repeat(difficulty);
-    };
+    const renderDifficulty = (difficulty: number) => (
+        <span className="stars" aria-label={`Difficulty ${difficulty}`} title={`Difficulty ${difficulty}`}>
+            {Array.from({ length: difficulty }, (_, i) => (
+                <Star key={i} size={12} fill="currentColor" />
+            ))}
+        </span>
+    );
 
     const getObjectiveText = (tmpl: QuestTemplateDef) => {
-        const qty = `${tmpl.qtyMin}${tmpl.qtyMin !== tmpl.qtyMax ? `-${tmpl.qtyMax}` : ''} `;
+        const qty = `${tmpl.qtyMin}${tmpl.qtyMin !== tmpl.qtyMax ? `-${tmpl.qtyMax}` : ''}`;
 
         switch (tmpl.objectiveType) {
             case 'kill':
                 const enemyName = content?.enemiesById?.[tmpl.targetEnemyId || '']?.name || tmpl.targetEnemyId;
-                return `Kill ${qty} ${enemyName} `;
+                return `Kill ${qty} ${enemyName}`;
             case 'gather':
                 const itemName = content?.itemsById?.[tmpl.targetItemId || '']?.name || tmpl.targetItemId;
-                return `Gather ${qty} ${itemName} `;
+                return `Gather ${qty} ${itemName}`;
             case 'craft':
                 const recipeName = content?.recipesById?.[tmpl.targetRecipeId || '']?.name || tmpl.targetRecipeId;
-                return `Craft ${qty} ${recipeName} `;
+                return `Craft ${qty} ${recipeName}`;
             default:
                 return tmpl.objectiveType;
         }
@@ -188,7 +194,7 @@ export function QuestView({ state, content, dispatch }: Props) {
         if (rewards.items?.length) {
             rewards.items.forEach((item: any) => {
                 const itemName = content?.itemsById?.[item.itemId]?.name || item.itemId;
-                parts.push(`${item.qty}x ${itemName} `);
+                parts.push(`${item.qty}x ${itemName}`);
             });
         }
         return parts.join(', ');
@@ -199,113 +205,76 @@ export function QuestView({ state, content, dispatch }: Props) {
     const locationName = currentLocation?.name || state.currentLocationId;
 
     return (
-        <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <div className="stack">
             {/* Quest Board - Available Quests */}
             <section className="card">
-                <h2>Quest Board</h2>
-                <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                    Current Location: <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{locationName}</span>
-                </div>
+                <h2>Quest board</h2>
+                <p className="small muted">
+                    Current location: <span className="quest-title">{locationName}</span>
+                </p>
                 {availableQuests.length === 0 ? (
-                    <div style={{ color: '#666', fontStyle: 'italic' }}>
-                        No quests available at this location. Try exploring other areas!
-                    </div>
+                    <p className="empty">
+                        No quests available at this location. Try exploring other areas.
+                    </p>
                 ) : (
-                    <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div className="list">
                         {availableQuests.map(tmpl => (
-                            <div
-                                key={tmpl.id}
-                                style={{
-                                    padding: '1rem',
-                                    background: 'rgba(0,0,0,0.3)',
-                                    border: '1px solid #444',
-                                    borderRadius: '8px'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                                    <div style={{ fontSize: '1.1rem', color: 'var(--color-gold)', fontWeight: 'bold' }}>
-                                        {tmpl.name || tmpl.id}
-                                    </div>
-                                    <div style={{ fontSize: '0.9rem', color: '#ffa500' }}>
-                                        {getDifficultyStars(tmpl.difficulty)}
-                                    </div>
+                            <div key={tmpl.id} className="callout quest-card">
+                                <div className="quest-head">
+                                    <span className="quest-title">{tmpl.name || tmpl.id}</span>
+                                    {renderDifficulty(tmpl.difficulty)}
                                 </div>
 
-                                <div style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '0.5rem' }}>
+                                <p className="prose">
                                     {tmpl.description || 'No description available.'}
-                                </div>
+                                </p>
 
                                 {tmpl.questGiverNpcId && content?.npcsById?.[tmpl.questGiverNpcId] && (() => {
                                     const giver = content.npcsById[tmpl.questGiverNpcId];
                                     const giverLoc = content.locationsById?.[giver.locationId];
                                     return (
-                                        <div style={{ fontSize: '0.8rem', color: '#8fbc8f', marginBottom: '0.5rem' }}>
+                                        <div className="small muted">
                                             From {giver.name}{giverLoc ? ` · ${giverLoc.name}` : ''}
                                         </div>
                                     );
                                 })()}
 
-                                <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
-                                    <strong>Objective:</strong> {getObjectiveText(tmpl)}
+                                <div className="small muted">
+                                    Objective: {getObjectiveText(tmpl)}
                                 </div>
 
-                                <div style={{ fontSize: '0.85rem', color: 'var(--color-success)', marginBottom: '0.75rem' }}>
-                                    <strong>Rewards:</strong> {formatRewards(tmpl.rewardPack)}
+                                <div className="small">
+                                    <span className="muted">Rewards: </span>
+                                    <span className="gold">{formatRewards(tmpl.rewardPack)}</span>
                                 </div>
 
-                                <button
-                                    onClick={() => handleAcceptQuest(tmpl.id)}
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        background: 'var(--color-primary)',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        color: '#fff',
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    Accept Quest
-                                </button>
+                                <div className="btn-row">
+                                    <button
+                                        type="button"
+                                        className="primary btn-sm"
+                                        onClick={() => handleAcceptQuest(tmpl.id)}
+                                    >
+                                        Accept quest
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
                 )}
 
                 {/* Generate AI Adventure Button */}
-                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #444' }}>
+                <div className="quest-divider">
                     <button
+                        type="button"
+                        className="btn-ai btn-block"
                         onClick={handleGenerateAdventure}
                         disabled={generatingAdventure}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem 1.5rem',
-                            background: generatingAdventure
-                                ? '#555'
-                                : 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            color: '#fff',
-                            cursor: generatingAdventure ? 'not-allowed' : 'pointer',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            opacity: generatingAdventure ? 0.6 : 1,
-                            transition: 'all 0.2s'
-                        }}
                     >
-                        {generatingAdventure ? '✨ Generating Adventure...' : '✨ Generate AI Adventure Quest'}
+                        <Sparkles size={14} />
+                        {generatingAdventure ? 'Generating adventure…' : 'Generate AI adventure'}
                     </button>
                     {adventureError && (
-                        <div style={{
-                            marginTop: '0.5rem',
-                            padding: '0.5rem',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid #ef4444',
-                            borderRadius: '4px',
-                            color: '#ef4444',
-                            fontSize: '0.85rem'
-                        }}>
+                        <div className="callout callout-warn section">
                             {adventureError}
                         </div>
                     )}
@@ -314,13 +283,18 @@ export function QuestView({ state, content, dispatch }: Props) {
 
             {/* Active Quests */}
             <section className="card">
-                <h2>Active Quests</h2>
-                {activeQuests.length === 0 ? (
-                    <div style={{ color: '#666', fontStyle: 'italic' }}>
-                        No active quests. Visit the Quest Board above to accept one!
+                <h2>Active quests</h2>
+                {enhanceError && (
+                    <div className="callout callout-warn">
+                        {enhanceError}
                     </div>
+                )}
+                {activeQuests.length === 0 ? (
+                    <p className="empty">
+                        No active quests. Visit the quest board above to accept one.
+                    </p>
                 ) : (
-                    <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div className="list">
                         {activeQuests.map(q => {
                             // Parse once; non-null = adventure sub-quest of one of
                             // the per-step kinds. dynamic_adventure parent doesn't
@@ -421,53 +395,48 @@ export function QuestView({ state, content, dispatch }: Props) {
                                 }
                             }
 
+                            const pct = Math.min(100, (q.progress.current / q.progress.required) * 100);
+
                             return (
                                 <div
                                     key={q.id}
-                                    style={{
-                                        padding: '1rem',
-                                        background: 'rgba(0,0,0,0.3)',
-                                        border: isQuestActivity ? '2px solid var(--color-primary)' : '1px solid #444',
-                                        borderRadius: '8px'
-                                    }}
+                                    className={`callout quest-card${isQuestActivity ? ' is-active' : ''}`}
                                 >
-                                    <div style={{ fontSize: '1.1rem', color: 'var(--color-gold)', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                                        {q.aiNarrative?.title || questName}
-                                        {q.aiNarrative && (
-                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#9333ea' }}>
-                                                ✨ AI
-                                            </span>
-                                        )}
-                                        {isQuestActivity && q.status === 'active' && (
-                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--color-primary)' }}>
-                                                (Active)
-                                            </span>
-                                        )}
-                                        {q.status === 'ready_to_turn_in' && (
-                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#8fbc8f' }}>
-                                                (Ready to hand in)
-                                            </span>
-                                        )}
+                                    <div className="quest-head">
+                                        <span className="quest-title">
+                                            {q.aiNarrative?.title || questName}
+                                            {q.aiNarrative && (
+                                                <span className="chip chip-ai">
+                                                    <Sparkles size={10} /> AI
+                                                </span>
+                                            )}
+                                            {isQuestActivity && q.status === 'active' && (
+                                                <span className="chip">Active</span>
+                                            )}
+                                            {q.status === 'ready_to_turn_in' && (
+                                                <span className="chip chip-ok">Ready to hand in</span>
+                                            )}
+                                        </span>
                                     </div>
 
                                     {q.aiNarrative?.description && (
-                                        <div style={{ fontSize: '0.9rem', color: '#ccc', marginBottom: '0.5rem', fontStyle: 'italic' }}>
+                                        <p className="prose">
                                             {q.aiNarrative.description}
-                                        </div>
+                                        </p>
                                     )}
 
                                     {q.npcId && content.npcsById?.[q.npcId] && (() => {
                                         const npc = content.npcsById[q.npcId];
                                         const npcLoc = content.locationsById[npc.locationId];
                                         return (
-                                            <div style={{ fontSize: '0.8rem', color: '#8fbc8f', marginBottom: '0.5rem' }}>
+                                            <div className="small muted">
                                                 Given by {npc.name}{npcLoc ? ` · ${npcLoc.name}` : ''}
                                             </div>
                                         );
                                     })()}
 
                                     {tmpl && (
-                                        <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
+                                        <div className="small muted">
                                             {getObjectiveText(tmpl)}
                                             {tmpl.objectiveType !== 'craft' && (() => {
                                                 const locName = content?.locationsById?.[q.locationId]?.name;
@@ -476,25 +445,13 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         </div>
                                     )}
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                                        <div style={{ flex: 1, height: '8px', background: '#222', borderRadius: '4px', overflow: 'hidden' }}>
-                                            <div style={{
-                                                width: `${Math.min(100, (q.progress.current / q.progress.required) * 100)}% `,
-                                                height: '100%',
-                                                background: 'var(--color-success)',
-                                                transition: 'width 0.3s ease'
-                                            }}></div>
-                                        </div>
-                                        <div style={{ fontSize: '0.9rem', minWidth: '60px', textAlign: 'right' }}>
-                                            {q.progress.current} / {q.progress.required}
-                                        </div>
+                                    <div className="progress-row">
+                                        <span className="bar bar-quest"><i style={{ width: `${pct}%` }} /></span>
+                                        <span>{q.progress.current} / {q.progress.required}</span>
                                     </div>
 
                                     {/* Adventure Steps Display */}
                                     {q.adventureSteps && q.adventureSteps.length > 0 && (() => {
-                                        // Debug logging
-                                        console.log('Adventure steps for quest:', q.id, q.adventureSteps);
-
                                         // Handle both old and new formats
                                         const stepsToDisplay = q.adventureSteps.map((step: any) => {
                                             // Old format: { stepNumber, description, locationId, completed }
@@ -524,89 +481,68 @@ export function QuestView({ state, content, dispatch }: Props) {
                                             return null;
                                         }).filter((step: any) => step !== null);
 
-                                        console.log('Steps to display:', stepsToDisplay.length);
-
                                         return (
-                                            <div style={{ marginTop: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #9333ea' }}>
-                                                <div style={{ fontSize: '0.85rem', color: '#9333ea', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                                                    Adventure Progress:
-                                                </div>
+                                            <div className="section">
+                                                <div className="hud-label ai">Adventure progress</div>
                                                 {stepsToDisplay.length === 0 ? (
-                                                    <div style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>
-                                                        ⚠️ Quest data is incomplete. Try abandoning and generating a new adventure.
+                                                    <div className="callout callout-warn">
+                                                        Quest data is incomplete. Try abandoning and generating a new adventure.
                                                     </div>
                                                 ) : (
-                                                    stepsToDisplay.map((step: any, idx: number) => {
-                                                        const statusIcon = step.status === 'completed' ? '✓' :
-                                                            step.status === 'active' ? '→' : '🔒';
-                                                        const statusColor = step.status === 'completed' ? '#4ade80' :
-                                                            step.status === 'active' ? '#fbbf24' : '#666';
+                                                    <ul className="steps">
+                                                        {stepsToDisplay.map((step: any) => {
+                                                            const StatusIcon = step.status === 'completed' ? Check :
+                                                                step.status === 'active' ? ArrowRight : Lock;
+                                                            const statusClass = step.status === 'completed' ? 'ok' :
+                                                                step.status === 'active' ? 'gold' : 'faint';
 
-                                                        // Get location for travel/explore/deliver steps
-                                                        let stepLocation = null;
-                                                        let targetLocationId: string | null = null;
-                                                        if (step.template?.type === 'travel') {
-                                                            targetLocationId = step.template.targetLocationId;
-                                                        } else if (step.template?.type === 'explore') {
-                                                            targetLocationId = step.template.targetLocationId;
-                                                        } else if (step.template?.type === 'deliver') {
-                                                            targetLocationId = step.template.targetLocationId;
-                                                        }
-                                                        if (targetLocationId) {
-                                                            stepLocation = content?.locationsById[targetLocationId];
-                                                        }
+                                                            // Get location for travel/explore/deliver steps
+                                                            let stepLocation = null;
+                                                            let targetLocationId: string | null = null;
+                                                            if (step.template?.type === 'travel') {
+                                                                targetLocationId = step.template.targetLocationId;
+                                                            } else if (step.template?.type === 'explore') {
+                                                                targetLocationId = step.template.targetLocationId;
+                                                            } else if (step.template?.type === 'deliver') {
+                                                                targetLocationId = step.template.targetLocationId;
+                                                            }
+                                                            if (targetLocationId) {
+                                                                stepLocation = content?.locationsById[targetLocationId];
+                                                            }
 
-                                                        // Get sub-quest if it exists
-                                                        const subQuest = step.subQuestId ?
-                                                            state.quests.find(sq => sq.id === step.subQuestId) : null;
+                                                            // Get sub-quest if it exists
+                                                            const subQuest = step.subQuestId ?
+                                                                state.quests.find(sq => sq.id === step.subQuestId) : null;
 
-                                                        return (
-                                                            <div key={step.stepNumber} style={{
-                                                                fontSize: '0.85rem',
-                                                                color: statusColor,
-                                                                marginBottom: '0.5rem',
-                                                                display: 'flex',
-                                                                alignItems: 'start',
-                                                                gap: '0.5rem'
-                                                            }}>
-                                                                <span style={{ minWidth: '20px' }}>
-                                                                    {statusIcon}
-                                                                </span>
-                                                                <div style={{ flex: 1 }}>
-                                                                    <div>{step.narrative?.description || 'Unknown step'}</div>
-                                                                    {step.narrative?.context && (
-                                                                        <div style={{
-                                                                            fontSize: '0.75rem',
-                                                                            color: '#888',
-                                                                            marginTop: '0.25rem',
-                                                                            fontStyle: 'italic'
-                                                                        }}>
-                                                                            {step.narrative.context}
-                                                                        </div>
-                                                                    )}
-                                                                    {stepLocation && targetLocationId && (
-                                                                        <div style={{
-                                                                            fontSize: '0.75rem',
-                                                                            color: state.currentLocationId === targetLocationId ? '#4ade80' : '#fbbf24',
-                                                                            marginTop: '0.25rem'
-                                                                        }}>
-                                                                            📍 {stepLocation.name}
-                                                                            {state.currentLocationId !== targetLocationId && ' (Travel required)'}
-                                                                        </div>
-                                                                    )}
-                                                                    {subQuest && (
-                                                                        <div style={{
-                                                                            fontSize: '0.75rem',
-                                                                            color: '#9333ea',
-                                                                            marginTop: '0.25rem'
-                                                                        }}>
-                                                                            Sub-quest: {subQuest.progress.current}/{subQuest.progress.required}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
+                                                            const isHere = state.currentLocationId === targetLocationId;
+
+                                                            return (
+                                                                <li key={step.stepNumber} className={`step ${statusClass}`}>
+                                                                    <StatusIcon size={14} />
+                                                                    <div className="step-body">
+                                                                        <div className="step-text">{step.narrative?.description || 'Unknown step'}</div>
+                                                                        {step.narrative?.context && (
+                                                                            <div className="small faint">
+                                                                                {step.narrative.context}
+                                                                            </div>
+                                                                        )}
+                                                                        {stepLocation && targetLocationId && (
+                                                                            <div className={`small step-loc ${isHere ? 'ok' : 'gold'}`}>
+                                                                                <MapPin size={12} />
+                                                                                {stepLocation.name}
+                                                                                {!isHere && ' (travel required)'}
+                                                                            </div>
+                                                                        )}
+                                                                        {subQuest && (
+                                                                            <div className="small ai">
+                                                                                Sub-quest: {subQuest.progress.current}/{subQuest.progress.required}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
                                                 )}
                                             </div>
                                         );
@@ -618,20 +554,12 @@ export function QuestView({ state, content, dispatch }: Props) {
                                         parseDynamicTemplateId (which rejects the
                                         parent) is the right test. */}
                                     {parsed && (
-                                        <div style={{
-                                            marginTop: '0.5rem',
-                                            padding: '0.5rem',
-                                            background: 'rgba(147, 51, 234, 0.1)',
-                                            border: '1px solid #9333ea',
-                                            borderRadius: '4px',
-                                            fontSize: '0.75rem',
-                                            color: '#9333ea'
-                                        }}>
-                                            ⚔️ Part of an Adventure Quest
+                                        <div className="small ai">
+                                            Part of an adventure quest
                                         </div>
                                     )}
 
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <div className="btn-row">
                                         {q.status === 'ready_to_turn_in' ? (() => {
                                             // Player has to be at the giver's location to hand in.
                                             // Engine enforces this too, but disabling the button
@@ -641,68 +569,59 @@ export function QuestView({ state, content, dispatch }: Props) {
                                             const canHandIn = !!giver && state.currentLocationId === giver.locationId;
                                             return (
                                                 <button
+                                                    type="button"
+                                                    className="primary btn-sm"
                                                     onClick={() => handleTurnInQuest(q.id)}
                                                     disabled={!canHandIn}
                                                     title={canHandIn ? undefined : (giverLoc ? `Travel to ${giverLoc.name} to hand this in.` : 'No giver to hand in to.')}
-                                                    style={{
-                                                        padding: '0.5rem 1rem',
-                                                        background: canHandIn ? '#8fbc8f' : '#2a2a2a',
-                                                        border: canHandIn ? 'none' : '1px solid #666',
-                                                        borderRadius: '4px',
-                                                        color: canHandIn ? '#0a0a0a' : '#888',
-                                                        cursor: canHandIn ? 'pointer' : 'not-allowed',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: canHandIn ? 'bold' : 'normal'
-                                                    }}
                                                 >
                                                     {giver ? `Hand in to ${giver.name}` : 'Hand in'}
                                                 </button>
                                             );
-                                        })() : (
-                                            <button
-                                                onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
-                                                style={{
-                                                    padding: '0.5rem 1rem',
-                                                    background: isQuestActivity ? '#444' : 'var(--color-primary)',
-                                                    border: isQuestActivity ? '1px solid #666' : 'none',
-                                                    borderRadius: '4px',
-                                                    color: isQuestActivity ? '#888' : '#fff',
-                                                    cursor: 'pointer',
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                {isQuestActivity ? 'Refocus' : 'Start Quest'}
-                                            </button>
-                                        )}
+                                        })() : (() => {
+                                            // Kill and gather quests only progress at their
+                                            // location, so offer the trip instead of a start
+                                            // button that would spin with no effect.
+                                            const needsTravel = !!tmpl
+                                                && (tmpl.objectiveType === 'kill' || tmpl.objectiveType === 'gather')
+                                                && q.locationId !== state.currentLocationId;
+                                            const questLoc = content?.locationsById?.[q.locationId];
+                                            if (needsTravel) {
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        className="primary btn-sm"
+                                                        onClick={() => dispatch({ type: 'TRAVEL', locationId: q.locationId, atMs: Date.now() })}
+                                                    >
+                                                        <MapPin size={12} aria-hidden /> Travel to {questLoc?.name ?? q.locationId}
+                                                    </button>
+                                                );
+                                            }
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    className={isQuestActivity ? 'btn-sm' : 'primary btn-sm'}
+                                                    onClick={() => isAdventure ? handleStartAdventure(q.id) : handleStartQuestActivity(q.id)}
+                                                >
+                                                    {isQuestActivity ? 'Refocus' : 'Start quest'}
+                                                </button>
+                                            );
+                                        })()}
                                         <button
+                                            type="button"
+                                            className="btn-sm"
                                             onClick={() => handleAbandonQuest(q.id)}
-                                            style={{
-                                                padding: '0.5rem 1rem',
-                                                background: 'transparent',
-                                                border: '1px solid #666',
-                                                borderRadius: '4px',
-                                                color: '#888',
-                                                cursor: 'pointer',
-                                                fontSize: '0.85rem'
-                                            }}
                                         >
                                             Abandon
                                         </button>
                                         <button
+                                            type="button"
+                                            className="btn-ai btn-sm"
                                             onClick={() => handleEnhanceQuest(q.id)}
                                             disabled={enhancingQuest === q.id || !!q.aiNarrative}
-                                            style={{
-                                                padding: '0.5rem 1rem',
-                                                background: q.aiNarrative ? '#4a1d7a' : '#9333ea',
-                                                border: 'none',
-                                                borderRadius: '4px',
-                                                color: '#fff',
-                                                cursor: (enhancingQuest === q.id || q.aiNarrative) ? 'not-allowed' : 'pointer',
-                                                fontSize: '0.85rem',
-                                                opacity: (enhancingQuest === q.id || q.aiNarrative) ? 0.6 : 1
-                                            }}
                                         >
-                                            {enhancingQuest === q.id ? '✨ Enhancing...' : q.aiNarrative ? '✨ Enhanced' : '✨ Enhance with AI'}
+                                            <Sparkles size={12} />
+                                            {enhancingQuest === q.id ? 'Enhancing…' : q.aiNarrative ? 'Enhanced' : 'Enhance with AI'}
                                         </button>
                                     </div>
                                 </div>
@@ -715,9 +634,9 @@ export function QuestView({ state, content, dispatch }: Props) {
             {/* Completed Quests */}
             <section className="card">
                 <h2>Completed</h2>
-                <div style={{ fontSize: '0.9rem', color: '#888' }}>
+                <p className="small muted">
                     {completedQuests.length} quest{completedQuests.length !== 1 ? 's' : ''} completed.
-                </div>
+                </p>
             </section>
         </div>
     );

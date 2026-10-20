@@ -1,5 +1,8 @@
-import React from 'react';
+import { useMemo, useState } from 'react';
+import { Lock, MapPin } from 'lucide-react';
 import { EngineState, PlayerCommand, LocationDef } from '@rpg-loom/shared';
+import { WorldMap, MapStop } from './WorldMap';
+import { enemyName, itemName } from '../ui/labels';
 
 interface Props {
     state: EngineState;
@@ -7,70 +10,82 @@ interface Props {
     content: any;
 }
 
+/** Mirrors the engine's TRAVEL checks; null when the player may go. */
+function lockReason(loc: LocationDef, state: EngineState): string | null {
+    const r = loc.requirements;
+    if (!r) return null;
+    const { player } = state;
+    if (r.minLevel && player.level < r.minLevel) return `Total level ${r.minLevel}`;
+    if (r.minCombatLevel && player.combatLevel < r.minCombatLevel) return `Combat level ${r.minCombatLevel}`;
+    if (r.minAtk && player.baseStats.atk < r.minAtk) return `Attack ${r.minAtk}`;
+    if (r.minDef && player.baseStats.def < r.minDef) return `Defence ${r.minDef}`;
+    return null;
+}
+
+function names(ids: string[], limit = 3): string {
+    const shown = ids.slice(0, limit).join(', ');
+    return ids.length > limit ? `${shown} and ${ids.length - limit} more` : shown;
+}
+
 export function TravelView({ state, dispatch, content }: Props) {
     const locations: LocationDef[] = content?.locationsById ? Object.values(content.locationsById) : [];
-    const { player, currentLocationId } = state;
+    const [selectedId, setSelectedId] = useState<string | null>(state.currentLocationId);
 
-    const canTravel = (loc: LocationDef) => {
-        if (!loc.requirements) return true;
-        if (loc.requirements.minLevel && player.level < loc.requirements.minLevel) return false;
-        return true;
-    };
+    // Progression order for the trail: by level requirement, then by the
+    // order the content pack lists them.
+    const ordered = useMemo(
+        () => [...locations].sort((a, b) => (a.requirements?.minLevel ?? 0) - (b.requirements?.minLevel ?? 0)),
+        [locations]
+    );
 
-    const handleTravel = (locId: string) => {
-        dispatch({ type: 'TRAVEL', locationId: locId, atMs: Date.now() });
-    };
+    const stops: MapStop[] = ordered
+        .filter(l => l.map)
+        .map(l => ({
+            loc: l,
+            x: l.map!.x,
+            y: l.map!.y,
+            locked: lockReason(l, state) !== null,
+            current: l.id === state.currentLocationId,
+        }));
+
+    const selected = ordered.find(l => l.id === selectedId) ?? null;
+    const travel = (id: string) => dispatch({ type: 'TRAVEL', locationId: id, atMs: Date.now() });
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="stack">
             <section className="card">
-                <h2>World Map</h2>
-                <div style={{ display: 'grid', gap: '1rem' }}>
-                    {locations.map(loc => {
-                        const isCurrent = currentLocationId === loc.id;
-                        const locked = !canTravel(loc);
-                        const minLevel = loc.requirements?.minLevel || 1;
+                <h2>World map</h2>
+                <WorldMap stops={stops} selectedId={selectedId} onSelect={setSelectedId} />
+                {selected && <LocationDetail loc={selected} state={state} content={content} onTravel={travel} />}
+            </section>
 
+            <section className="card">
+                <h2>All destinations</h2>
+                <div className="list">
+                    {ordered.map(loc => {
+                        const reason = lockReason(loc, state);
+                        const current = loc.id === state.currentLocationId;
                         return (
-                            <div key={loc.id} style={{
-                                background: isCurrent ? 'rgba(255, 215, 0, 0.1)' : 'rgba(0,0,0,0.2)',
-                                border: isCurrent ? '1px solid var(--color-gold)' : '1px solid #333',
-                                padding: '1rem',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                opacity: locked ? 0.6 : 1
-                            }}>
-                                <div>
-                                    <h3 style={{ margin: '0 0 0.5rem 0', color: isCurrent ? 'var(--color-gold)' : '#fff' }}>
-                                        {loc.name} {isCurrent && "(Current)"}
-                                    </h3>
-                                    <div style={{ fontSize: '0.9rem', color: '#aaa', fontStyle: 'italic', marginBottom: '0.5rem' }}>
-                                        {loc.description}
+                            <div
+                                key={loc.id}
+                                className={`row-card${current ? ' is-active' : ''}${reason ? ' is-locked' : ''}`}
+                            >
+                                <div className="grow">
+                                    <div className="list-title">
+                                        {loc.name}
+                                        {current && <span className="chip chip-ok">Here</span>}
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: locked ? '#f55' : '#888' }}>
-                                        Rec. Level: {minLevel}
-                                    </div>
-                                    <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>
-                                        Resources: {getDropNames(loc.miningTable || loc.woodcuttingTable || loc.foragingTable, content)} | Hazards: {getEnemyNames(loc.encounterTable, content)}
+                                    <div className="list-sub">
+                                        {reason ? `Needs ${reason.toLowerCase()}` : loc.type === 'town' ? 'Town' : `Level ${loc.requirements?.minLevel ?? 1} region`}
                                     </div>
                                 </div>
-
                                 <button
-                                    onClick={() => handleTravel(loc.id)}
-                                    disabled={isCurrent || locked}
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        background: isCurrent ? 'transparent' : (locked ? '#333' : '#444'),
-                                        border: '1px solid',
-                                        borderColor: isCurrent ? 'var(--color-gold)' : '#555',
-                                        color: isCurrent ? 'var(--color-gold)' : '#fff',
-                                        cursor: isCurrent || locked ? 'default' : 'pointer',
-                                        minWidth: '100px'
-                                    }}
+                                    type="button"
+                                    className="btn-sm"
+                                    disabled={current || !!reason}
+                                    onClick={() => { setSelectedId(loc.id); if (!reason && !current) travel(loc.id); }}
                                 >
-                                    {isCurrent ? 'Here' : (locked ? 'Locked' : 'Travel')}
+                                    {current ? 'Here' : reason ? <Lock size={12} aria-label="Locked" /> : 'Travel'}
                                 </button>
                             </div>
                         );
@@ -81,15 +96,45 @@ export function TravelView({ state, dispatch, content }: Props) {
     );
 }
 
-// Helpers for previewing drops/enemies
-function getDropNames(table: any, content: any): string {
-    if (!table?.entries) return "None";
-    const names = table.entries.slice(0, 3).map((e: any) => content.itemsById[e.itemId]?.name).filter(Boolean);
-    return names.join(", ") + (table.entries.length > 3 ? "..." : "");
-}
+function LocationDetail({ loc, state, content, onTravel }: {
+    loc: LocationDef;
+    state: EngineState;
+    content: any;
+    onTravel: (id: string) => void;
+}) {
+    const reason = lockReason(loc, state);
+    const current = loc.id === state.currentLocationId;
+    const resources = [loc.miningTable, loc.woodcuttingTable, loc.foragingTable]
+        .flatMap(t => t?.entries ?? [])
+        .map(e => itemName(content, e.itemId));
+    const hazards = (loc.encounterTable?.entries ?? []).map(e => enemyName(content, e.enemyId));
 
-function getEnemyNames(table: any, content: any): string {
-    if (!table?.entries) return "Safe";
-    const names = table.entries.slice(0, 3).map((e: any) => content.enemiesById[e.enemyId]?.name).filter(Boolean);
-    return names.join(", ") + (table.entries.length > 3 ? "..." : "");
+    return (
+        <div className="map-detail">
+            {loc.image && <div className="map-detail-art" style={{ backgroundImage: `url("${loc.image}")` }} />}
+            <div className="grow">
+                <div className="map-detail-head">
+                    <h3>{loc.name}</h3>
+                    {current ? (
+                        <span className="chip chip-ok"><MapPin size={11} aria-hidden /> You are here</span>
+                    ) : reason ? (
+                        <span className="chip chip-warn"><Lock size={11} aria-hidden /> Needs {reason.toLowerCase()}</span>
+                    ) : (
+                        <button type="button" className="primary btn-sm" onClick={() => onTravel(loc.id)}>Travel here</button>
+                    )}
+                </div>
+                {loc.description && <p className="prose">{loc.description}</p>}
+                <dl className="map-facts">
+                    {loc.type === 'town' ? (
+                        <div><dt>Services</dt><dd>Inn, market and training</dd></div>
+                    ) : (
+                        <>
+                            <div><dt>Resources</dt><dd>{resources.length ? names([...new Set(resources)]) : 'None'}</dd></div>
+                            <div><dt>Dangers</dt><dd>{hazards.length ? names([...new Set(hazards)]) : 'Safe'}</dd></div>
+                        </>
+                    )}
+                </dl>
+            </div>
+        </div>
+    );
 }

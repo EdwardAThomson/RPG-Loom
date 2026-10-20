@@ -1,5 +1,5 @@
-import React from 'react';
 import { ContentIndex } from '@rpg-loom/shared';
+import { ItemIcon } from './ItemIcon';
 
 interface Props {
     label: string;
@@ -10,33 +10,24 @@ interface Props {
 
 export function EquipSlot({ label, itemId, content, onClick }: Props) {
     const item = itemId ? content.itemsById[itemId] : null;
-    return (
-        <div
-            onClick={onClick}
-            style={{
-                background: 'rgba(0,0,0,0.2)',
-                padding: '0.5rem',
-                borderRadius: '4px',
-                border: '1px solid #333',
-                cursor: onClick ? 'pointer' : 'default',
-                ...(onClick && { transition: 'border-color 0.2s' })
-            }}
-            onMouseEnter={e => {
-                if (onClick) e.currentTarget.style.borderColor = 'var(--color-gold)';
-            }}
-            onMouseLeave={e => {
-                if (onClick) e.currentTarget.style.borderColor = '#333';
-            }}
-        >
-            <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>{label}</div>
-            <div style={{ color: item ? 'var(--color-gold)' : '#555' }}>
-                {item ? item.name : 'Empty'}
+    const mods = item?.modifiers
+        ? Object.entries(item.modifiers).map(([k, v]) => `${v >= 0 ? '+' : ''}${v} ${k.toUpperCase()}`).join(' · ')
+        : null;
+
+    const body = (
+        <>
+            <ItemIcon type={item?.type} size={20} />
+            <div className="slot-body">
+                <div className="slot-label">{label}</div>
+                <div>{item ? item.name : 'Empty'}</div>
+                {mods && <div className="slot-mods">{mods}</div>}
             </div>
-            {item && item.modifiers && (
-                <div style={{ fontSize: '0.7rem', color: '#aaa' }}>
-                    {Object.entries(item.modifiers).map(([k, v]) => `${v >= 0 ? '+' : ''}${v} ${k.toUpperCase()}`).join(', ')}
-                </div>
-            )}
-        </div>
+        </>
     );
+
+    const cls = `slot ${item ? 'is-filled' : 'is-empty'}`;
+    if (onClick && item) {
+        return <button type="button" className={cls} onClick={onClick}>{body}</button>;
+    }
+    return <div className={cls}>{body}</div>;
 }

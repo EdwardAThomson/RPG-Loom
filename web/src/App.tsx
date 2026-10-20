@@ -4,6 +4,7 @@ import './index.css';
 import { probeGateway } from './services/gateway';
 import { initAuth } from './services/auth';
 import { getNextGoals } from '@rpg-loom/engine';
+import { CircleHelp, Heart, Settings } from 'lucide-react';
 
 // Components
 import { Navigation, TabId } from './components/Navigation';
@@ -16,6 +17,8 @@ import { QuestView } from './components/QuestView';
 import { EventView } from './components/EventView';
 // import { DebugView } from './components/DebugView';
 import { SettingsModal } from './components/SettingsModal';
+import { HelpModal } from './components/HelpModal';
+import { Tour, hasSeenTour } from './components/Tour';
 import { AIDebugModal } from './components/AIDebugModal';
 import { OfflineSummaryModal } from './components/OfflineSummaryModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
@@ -38,10 +41,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 20, color: '#ff4444', background: '#222' }}>
-          <h2>Application Crashed</h2>
-          <pre>{this.state.error?.message}</pre>
-          <pre>{this.state.error?.stack}</pre>
+        <div className="crash">
+          <h2>Something went wrong</h2>
+          <pre className="code-block">{this.state.error?.message}</pre>
+          <pre className="code-block">{this.state.error?.stack}</pre>
         </div>
       );
     }
@@ -67,6 +70,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('activity');
   const [showSettings, setShowSettings] = useState(false);
   const [showAIDebug, setShowAIDebug] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  // First-run coach marks: shown once, replayable from How to play.
+  const [showTour, setShowTour] = useState(() => !hasSeenTour());
 
   // Re-hydrate auth state from localStorage (fire-and-forget, sync).
   useEffect(() => { initAuth(); }, []);
@@ -139,88 +145,48 @@ function AppContent() {
     return () => window.removeEventListener('openAIDebug', handleOpenAIDebug);
   }, []);
 
-  if (!state) return <div className="container">Loading Realm...</div>;
+  if (!state) return <div className="hud-loading">Loading the realm…</div>;
 
   const { player } = state;
+  const location = content?.locationsById?.[state.currentLocationId];
+  const hp = player.baseStats.hp;
+  const hpMax = player.baseStats.hpMax;
+  const isScene = activeTab === 'activity';
 
   return (
     <>
-    <div className="container">
-      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1 className="title">RPG Loom</h1>
-        </div>
+      <Scene image={location?.image} dim={!isScene} />
 
-        <div className="stats" style={{ flex: 1, justifyContent: 'center' }}>
-          <div className="stat">
-            <span style={{ fontSize: '1.2rem', color: '#fff' }}>{player.level}</span>
-            <span>TOTAL LEVEL</span>
+      <div className="hud">
+        <header className="hud-top">
+          <div className="hud-location">
+            <span className="hud-eyebrow">{location?.type === 'town' ? 'Town' : 'Wilds'} · RPG Loom</span>
+            <h1>{location?.name ?? state.currentLocationId}</h1>
           </div>
-          <div className="stat">
-            <span style={{ fontSize: '1.2rem', color: 'var(--color-combat)' }}>{player.combatLevel}</span>
-            <span>COMBAT LEVEL</span>
+
+          <div className="hud-vitals">
+            <div className="vital vital-hp" title={`Health ${hp} / ${hpMax}`}>
+              <span className="vital-label"><Heart size={13} aria-hidden /> {hp} / {hpMax}</span>
+              <span className={`bar bar-hp${hp < hpMax * 0.3 ? ' is-low' : ''}`}><i style={{ width: `${hpMax ? (hp / hpMax) * 100 : 0}%` }} /></span>
+            </div>
+            <dl className="hud-stats">
+              <div><dt>Total Lv</dt><dd>{player.level}</dd></div>
+              <div><dt>Combat</dt><dd>{player.combatLevel}</dd></div>
+              <div><dt>XP/hr</dt><dd>{xpRate.toLocaleString()}</dd></div>
+              <div className="stat-gold"><dt>Gold</dt><dd>{player.gold.toLocaleString()}</dd></div>
+            </dl>
+            <button type="button" className="icon-button" onClick={() => setShowHelp(true)} title="How to play" aria-label="How to play" data-tour="help">
+              <CircleHelp size={18} strokeWidth={1.8} />
+            </button>
+            <button type="button" className="icon-button" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
+              <Settings size={18} strokeWidth={1.8} />
+            </button>
           </div>
-          <div className="stat">
-            <span style={{ fontSize: '1.2rem', color: '#fff' }}>{Math.floor(player.xp).toLocaleString()}</span>
-            <span>TOTAL XP ({xpRate}/hr)</span>
-          </div>
-          <div className="stat">
-            <span style={{ fontSize: '1.2rem', color: 'var(--color-gold)' }}>{player.gold.toLocaleString()}</span>
-            <span>GOLD</span>
-          </div>
-        </div>
+        </header>
 
-        <button
-          onClick={() => setShowSettings(true)}
-          style={{
-            background: 'transparent',
-            border: '1px solid #444',
-            color: '#888',
-            cursor: 'pointer',
-            padding: '0.5rem',
-            borderRadius: '4px',
-            fontSize: '1.2rem'
-          }}
-          title="System Settings"
-        >
-          ⚙️
-        </button>
-      </header>
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {showSettings && <SettingsModal
-        exportSave={exportSave}
-        importSave={importSave}
-        hardReset={hardReset}
-        onClose={() => setShowSettings(false)}
-        cloudStatus={cloudStatus}
-        onSyncNow={syncNow}
-      />
-      }
-
-      {showAIDebug && <AIDebugModal onClose={() => setShowAIDebug(false)} />}
-
-      {pendingOfflineSummary && (
-        <OfflineSummaryModal
-          summary={pendingOfflineSummary}
-          content={content}
-          onClose={dismissOfflineSummary}
-        />
-      )}
-
-      {pendingConflict && (
-        <ConflictResolutionModal
-          conflict={pendingConflict}
-          onKeepLocal={resolveConflictKeepLocal}
-          onUseServer={resolveConflictUseServer}
-        />
-      )}
-
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <NextGoalsPanel goals={nextGoals} onJumpTo={setActiveTab} />
-
-      <main className="tab-layout">
-        <div className="tab-content" style={{ minHeight: 0, overflowY: 'auto' }}>
+        <main className={`hud-main${isScene ? ' is-scene' : ''}`}>
           {activeTab === 'activity' && <ActivityView state={state} dispatch={dispatch} content={content} events={events} />}
           {activeTab === 'travel' && <TravelView state={state} dispatch={dispatch} content={content} />}
           {activeTab === 'inventory' && <InventoryView state={state} dispatch={dispatch} content={content} />}
@@ -241,17 +207,64 @@ function AppContent() {
               }
             }}
           />} */}
-          {activeTab === 'settings' && <div className="card"><h2>Settings</h2><p>Coming soon...</p></div>}
-        </div>
+        </main>
 
-        <EventView events={events} content={content} />
-      </main>
+        <aside className="hud-side">
+          <NextGoalsPanel goals={nextGoals} onJumpTo={setActiveTab} />
+          <EventView events={events} content={content} />
+        </aside>
 
-    </div>
-    <footer style={{ textAlign: 'center', padding: '1rem 0', color: '#666', fontSize: '0.8rem', borderTop: '1px solid #333', marginTop: '1rem' }}>
-      &copy; 2026 Edward Thomson (<a href="https://octonion.io/" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>Octonion Software</a>)
-    </footer>
+        <footer className="hud-footer">
+          &copy; 2026 Edward Thomson (<a href="https://octonion.io/" target="_blank" rel="noopener noreferrer">Octonion Software</a>)
+        </footer>
+      </div>
+
+      {showSettings && <SettingsModal
+        exportSave={exportSave}
+        importSave={importSave}
+        hardReset={hardReset}
+        onClose={() => setShowSettings(false)}
+        cloudStatus={cloudStatus}
+        onSyncNow={syncNow}
+      />
+      }
+
+      {showAIDebug && <AIDebugModal onClose={() => setShowAIDebug(false)} />}
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} onReplayTour={() => setShowTour(true)} />}
+
+      {showTour && !pendingOfflineSummary && !pendingConflict && (
+        <Tour onTabChange={setActiveTab} onClose={() => setShowTour(false)} />
+      )}
+
+      {pendingOfflineSummary && (
+        <OfflineSummaryModal
+          summary={pendingOfflineSummary}
+          content={content}
+          onClose={dismissOfflineSummary}
+        />
+      )}
+
+      {pendingConflict && (
+        <ConflictResolutionModal
+          conflict={pendingConflict}
+          onKeepLocal={resolveConflictKeepLocal}
+          onUseServer={resolveConflictUseServer}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * Full-bleed location art behind the HUD. Keyed on the image so a
+ * travel cross-fades in the new place rather than snapping.
+ */
+function Scene({ image, dim }: { image?: string; dim: boolean }) {
+  return (
+    <div className={`scene${dim ? ' is-dim' : ''}`} aria-hidden>
+      {image && <div key={image} className="scene-art" style={{ backgroundImage: `url("${image}")` }} />}
+    </div>
   );
 }
 

@@ -1,0 +1,94 @@
+/* First-run tour: dim everything except the current target, and a card
+   beside it. Sits above every panel but below nothing that matters. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+}
+
+.tour-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tour-dim {
+  fill: rgba(4, 6, 5, 0.72);
+}
+
+.tour-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  animation: tour-ring 1.8s ease-in-out infinite;
+}
+
+@keyframes tour-ring {
+  0%, 100% { stroke-opacity: 1; }
+  50% { stroke-opacity: 0.45; }
+}
+
+.tour-card {
+  position: absolute;
+  background: var(--panel-solid);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 14px 16px 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.tour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tour-card h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+}
+
+.tour-card p {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tour-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tour-foot .btn-row {
+  margin: 0;
+}
+
+.tour-foot .btn-row>button {
+  flex: none;
+}
+
+.tour-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.tour-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.tour-dots i.is-on {
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring { animation: none; }
+}
