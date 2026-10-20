@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameEvent } from '@rpg-loom/shared';
-import { buildFeed } from './eventFeed';
+import { appendFeed, buildFeed, type FeedEntry } from './eventFeed';
 
 const content = {
     itemsById: { item_wood: { name: 'Wood' } },
@@ -55,5 +55,35 @@ describe('buildFeed', () => {
         ];
         const feed = buildFeed(events, content);
         expect(feed.map(f => f.text)).toEqual(['+1 Defense XP', 'Wood · +1 Woodcutting XP']);
+    });
+});
+
+describe('appendFeed', () => {
+    it('keeps counting a run across many ticks and keeps the previous activity', () => {
+        let feed: FeedEntry[] = [];
+        for (let t = 1; t <= 30; t++) feed = appendFeed(feed, woodTick(t * 1000), content);
+        feed = appendFeed(feed, [e(31_000, 'ACTIVITY_SET', { activity: { type: 'hunt', locationId: 'loc_forest' } })], content);
+        for (let t = 32; t <= 60; t++) {
+            feed = appendFeed(feed, [e(t * 1000, 'SKILL_XP_GAINED', { skillId: 'defense', amount: 1, newXp: t, level: 1 })], content);
+        }
+        expect(feed.map(f => f.text)).toEqual([
+            '+29 Defense XP',
+            'Started: hunting',
+            'Wood ×30 · +30 Woodcutting XP',
+        ]);
+    });
+
+    it('does not mutate the feed it was given', () => {
+        const before = appendFeed([], woodTick(1000), content);
+        const snapshot = JSON.parse(JSON.stringify(before));
+        appendFeed(before, woodTick(2000), content);
+        expect(before).toEqual(snapshot);
+    });
+
+    it('caps the number of entries', () => {
+        let feed: FeedEntry[] = [];
+        for (let t = 1; t <= 10; t++) feed = appendFeed(feed, [e(t, 'LEVEL_UP', { newLevel: t })], content, 5);
+        expect(feed).toHaveLength(5);
+        expect(feed[0].text).toBe('Total level 10');
     });
 });

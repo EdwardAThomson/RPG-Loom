@@ -37,7 +37,20 @@ const HIDDEN_TYPES = new Set(['TICK_PROCESSED', 'XP_GAINED']);
  * identical ticks fold into a single "Wood ×12 · +12 Woodcutting XP".
  */
 export function buildFeed(events: GameEvent[], content: any, limit = 40): FeedEntry[] {
-    const out: FeedEntry[] = [];
+    return appendFeed([], events, content, limit);
+}
+
+/**
+ * Fold new events onto an existing feed (newest first) and return a new
+ * feed. The log is kept this way, rather than rebuilt from a window of
+ * recent raw events, because each tick emits ~5 events: a 50-event
+ * window only covers ~10 seconds, so folded runs stopped growing and the
+ * previous activity scrolled away almost as soon as you switched.
+ *
+ * Never mutates `feed`. A tick's events must arrive in the same call.
+ */
+export function appendFeed(feed: FeedEntry[], events: GameEvent[], content: any, limit = 40): FeedEntry[] {
+    const out = feed.slice().reverse();
     const visible = events.filter(e => !HIDDEN_TYPES.has(e.type));
 
     let i = 0;
@@ -57,7 +70,7 @@ export function buildFeed(events: GameEvent[], content: any, limit = 40): FeedEn
             } else if (ev.type === 'FLAVOR_TEXT') {
                 flavor = ev.payload.message;
             } else {
-                push(out, single(ev, content));
+                push(out, single(ev, content), content);
             }
         }
 
@@ -66,32 +79,38 @@ export function buildFeed(events: GameEvent[], content: any, limit = 40): FeedEn
                 id: tick[0].id,
                 atMs,
                 tone: 'gain',
-                text: '',
+                text: describeGains(gains, content),
                 detail: flavor,
                 count: 1,
                 key: gainKey(gains),
                 gains
-            });
+            }, content);
         } else if (flavor) {
-            push(out, { id: tick[0].id + '_f', atMs, tone: 'muted', text: flavor, count: 1, key: 'flavor:' + flavor });
+            push(out, { id: tick[0].id + '_f', atMs, tone: 'muted', text: flavor, count: 1, key: 'flavor:' + flavor }, content);
         }
     }
 
-    for (const e of out) if (e.gains) e.text = describeGains(e.gains, content);
     return out.reverse().slice(0, limit);
 }
 
-function push(out: FeedEntry[], entry: FeedEntry) {
+function push(out: FeedEntry[], entry: FeedEntry, content: any) {
     const last = out[out.length - 1];
     if (last && entry.key && last.key === entry.key) {
-        last.count += entry.count;
-        last.atMs = entry.atMs;
-        last.detail = entry.detail ?? last.detail;
+        // Replace rather than mutate: `last` may belong to the previous feed.
+        const merged: FeedEntry = {
+            ...last,
+            count: last.count + entry.count,
+            atMs: entry.atMs,
+            detail: entry.detail ?? last.detail
+        };
         if (last.gains && entry.gains) {
-            for (const [k, v] of Object.entries(entry.gains.items)) last.gains.items[k] = (last.gains.items[k] ?? 0) + v;
-            for (const [k, v] of Object.entries(entry.gains.skills)) last.gains.skills[k] = (last.gains.skills[k] ?? 0) + v;
-            last.gains.gold += entry.gains.gold;
+            const gains: Gains = { items: { ...last.gains.items }, skills: { ...last.gains.skills }, gold: last.gains.gold + entry.gains.gold };
+            for (const [k, v] of Object.entries(entry.gains.items)) gains.items[k] = (gains.items[k] ?? 0) + v;
+            for (const [k, v] of Object.entries(entry.gains.skills)) gains.skills[k] = (gains.skills[k] ?? 0) + v;
+            merged.gains = gains;
+            merged.text = describeGains(gains, content);
         }
+        out[out.length - 1] = merged;
         return;
     }
     out.push(entry);
