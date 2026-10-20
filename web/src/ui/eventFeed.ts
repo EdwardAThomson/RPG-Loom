@@ -63,7 +63,11 @@ export function appendFeed(feed: FeedEntry[], events: GameEvent[], content: any,
         let hasGains = false;
         let flavor: string | undefined;
 
+        // A sale's entry already says how much gold it fetched.
+        const isSale = tick.some(ev => ev.type === 'ITEM_SOLD');
+
         for (const ev of tick) {
+            if (isSale && ev.type === 'GOLD_CHANGED') continue;
             if (GAIN_TYPES.has(ev.type)) {
                 hasGains = true;
                 addGain(gains, ev);
@@ -167,6 +171,8 @@ function single(ev: GameEvent, content: any): FeedEntry {
             return { ...base, tone: 'muted', text: `Stance: ${humanize(ev.payload.tactics).toLowerCase()}` };
         case 'ITEM_CONSUMED':
             return { ...base, tone: 'normal', text: `Used ${itemName(content, ev.payload.itemId)}` };
+        case 'ITEM_SOLD':
+            return { ...base, tone: 'gain', text: `Sold ${ev.payload.qty} ${itemName(content, ev.payload.itemId)} for ${ev.payload.gold} gold` };
         case 'SKILL_PROCS':
             return { ...base, tone: 'normal', text: `${skillName(ev.payload.skillId)}: ${humanize(ev.payload.effect).toLowerCase()}`, key: 'proc:' + ev.payload.skillId + ev.payload.effect };
         case 'NPC_INTERACTED': {

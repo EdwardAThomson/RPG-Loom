@@ -391,6 +391,10 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_MISSING', message: `Unknown item ${cmd.itemId}` }));
         break;
       }
+      if (!Number.isInteger(cmd.qty) || cmd.qty < 1) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INVALID_QTY', message: `Can't buy ${cmd.qty} ${item.name}` }));
+        break;
+      }
       const cost = item.value * cmd.qty;
       if (next.player.gold < cost) {
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INSUFFICIENT_GOLD', message: `Need ${cost} gold` }));
@@ -413,6 +417,10 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_MISSING', message: `Unknown item ${cmd.itemId}` }));
         break;
       }
+      if (!Number.isInteger(cmd.qty) || cmd.qty < 1) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INVALID_QTY', message: `Can't sell ${cmd.qty} ${item.name}` }));
+        break;
+      }
       if (!hasItem(next.inventory, cmd.itemId, cmd.qty)) {
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_NOT_OWNED', message: `Not enough ${item.name}` }));
         break;
@@ -422,7 +430,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       const val = Math.floor(item.value * 0.5) * cmd.qty;
       removeItem(next.inventory, cmd.itemId, cmd.qty);
       next.player.gold += val;
-      events.push(ev(next, cmd.atMs, 'ITEM_CONSUMED', { itemId: cmd.itemId }));
+      events.push(ev(next, cmd.atMs, 'ITEM_SOLD', { itemId: cmd.itemId, qty: cmd.qty, gold: val }));
       events.push(ev(next, cmd.atMs, 'GOLD_CHANGED', { amount: val, newTotal: next.player.gold }));
       break;
     }

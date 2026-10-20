@@ -87,3 +87,14 @@ describe('appendFeed', () => {
         expect(feed[0].text).toBe('Total level 10');
     });
 });
+
+describe('sales', () => {
+    it('shows one entry per sale without a duplicate gold line', () => {
+        const feed = buildFeed([
+            e(5000, 'ITEM_SOLD', { itemId: 'item_wood', qty: 12, gold: 6 }),
+            e(5000, 'GOLD_CHANGED', { amount: 6, newTotal: 6 }),
+        ], content);
+        expect(feed).toHaveLength(1);
+        expect(feed[0]).toMatchObject({ tone: 'gain', text: 'Sold 12 Wood for 6 gold' });
+    });
+});

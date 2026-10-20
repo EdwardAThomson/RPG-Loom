@@ -1673,6 +1673,89 @@ textarea.input {
   margin: 0 0 0 8px;
 }
 
+/* --- Market --- */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sell-junk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sell-junk .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.sell-row {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* Keep the name readable: the controls drop to their own line instead. */
+.sell-row>.grow {
+  min-width: 10em;
+}
+
+.sell-row .chip {
+  white-space: nowrap;
+}
+
+.sell-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sell-controls .btn-sm {
+  white-space: nowrap;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.stepper button {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+}
+
+.stepper button:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.stepper button:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.stepper .input {
+  width: 3.4em;
+  padding: 4px 2px;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.stepper .input::-webkit-outer-spin-button,
+.stepper .input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* --- Folk --- */
 .affinity {
   display: flex;
