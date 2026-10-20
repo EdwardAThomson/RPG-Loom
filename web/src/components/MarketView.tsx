@@ -15,6 +15,8 @@ export function MarketView({ state, dispatch, content }: Props) {
     const items: ItemDef[] = content?.itemsById ? Object.values(content.itemsById) : [];
     // How many of each stack the player has dialled up to sell.
     const [picked, setPicked] = useState<Record<string, number>>({});
+    // Selling junk clears several stacks at once, so it takes a second click.
+    const [confirmJunk, setConfirmJunk] = useState(false);
 
     // Items available for purchase: common consumables and basic gear.
     const shopItems = items.filter(item =>
@@ -35,6 +37,7 @@ export function MarketView({ state, dispatch, content }: Props) {
     const sellJunk = () => {
         const atMs = Date.now();
         for (const stack of junk) sell(stack.itemId, stack.qty, atMs);
+        setConfirmJunk(false);
     };
 
     return (
@@ -74,10 +77,22 @@ export function MarketView({ state, dispatch, content }: Props) {
                             <div className="list-title">Junk worth {junkValue.toLocaleString()} gold</div>
                             <div className="list-sub">No recipe or quest uses {junkNames}.</div>
                         </div>
-                        <button type="button" className="primary btn-icon" onClick={sellJunk}>
-                            <Coins size={16} strokeWidth={1.8} aria-hidden />
-                            Sell junk
-                        </button>
+                        {confirmJunk ? (
+                            <div className="sell-confirm">
+                                <button type="button" className="btn-sm" onClick={() => setConfirmJunk(false)}>
+                                    Cancel
+                                </button>
+                                <button type="button" className="primary btn-icon" onClick={sellJunk}>
+                                    <Coins size={16} strokeWidth={1.8} aria-hidden />
+                                    Sell for {junkValue.toLocaleString()} g
+                                </button>
+                            </div>
+                        ) : (
+                            <button type="button" className="primary btn-icon" onClick={() => setConfirmJunk(true)}>
+                                <Coins size={16} strokeWidth={1.8} aria-hidden />
+                                Sell junk
+                            </button>
+                        )}
                     </div>
                 )}
                 {inventory.length === 0 && <p className="empty">Nothing to sell.</p>}
@@ -121,7 +136,13 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         </div>
                                     )}
                                     {stack.qty > 1 && (
-                                        <button type="button" className="btn-sm" onClick={() => sell(stack.itemId, stack.qty)}>
+                                        <button
+                                            type="button"
+                                            className="btn-sm"
+                                            disabled={qty >= stack.qty}
+                                            title="Set the amount to the whole stack"
+                                            onClick={() => setQty(stack.qty)}
+                                        >
                                             All
                                         </button>
                                     )}

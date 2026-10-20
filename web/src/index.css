@@ -1690,9 +1690,24 @@ textarea.input {
   background: var(--accent-soft);
 }
 
+.sell-junk {
+  flex-wrap: wrap;
+}
+
 .sell-junk .grow {
   flex: 1;
-  min-width: 0;
+  min-width: 12em;
+}
+
+.sell-junk>button,
+.sell-confirm {
+  margin-left: auto;
+}
+
+.sell-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sell-row {
