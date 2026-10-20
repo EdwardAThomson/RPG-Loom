@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Coins, Minus, Plus } from 'lucide-react';
 import { EngineState, PlayerCommand, ItemDef } from '@rpg-loom/shared';
 import { ItemIcon } from './ItemIcon';
-import { junkStacks, sellPrice } from '../ui/market';
+import { BULK_FROM, junkStacks, sellPrice } from '../ui/market';
 
 interface Props {
     state: EngineState;
@@ -112,7 +112,11 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         {item.name} <span className="muted">×{stack.qty}</span>
                                         {junkIds.has(stack.itemId) && <span className="chip chip-muted">Junk</span>}
                                     </div>
-                                    <div className="list-sub">{sellPrice(item) > 0 ? `${sellPrice(item)} g each` : 'Merchants won\'t buy this'}</div>
+                                    <div className="list-sub">
+                                        {item.value <= 0
+                                            ? 'Merchants won\'t buy this'
+                                            : `${item.value / 2} g each${stack.qty > BULK_FROM ? `, less after ${BULK_FROM}` : ''}`}
+                                    </div>
                                 </div>
                                 <div className="sell-controls">
                                     {stack.qty > 1 && (

@@ -30,6 +30,7 @@ export type {
 };
 
 import { hashFloat, hashInt } from './rng.js';
+import { sellValue } from './market.js';
 
 // ---- Content Index (data pack) ----
 // ---- Content Index (data pack) ----
@@ -426,9 +427,8 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         break;
       }
 
-      // Merchants pay half value per item, rounded down, and never take
-      // items for nothing.
-      const val = Math.floor(item.value * 0.5) * cmd.qty;
+      // Bulk-discounted half value; never 0 for an item worth anything.
+      const val = sellValue(item.value, cmd.qty);
       if (val <= 0) {
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'NO_OFFER', message: `No merchant will pay for ${cmd.qty} ${item.name}` }));
         break;
