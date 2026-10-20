@@ -165,8 +165,12 @@ function AppContent() {
           </div>
 
           <div className="hud-vitals">
-            <div className="vital vital-hp" title={`Health ${hp} / ${hpMax}`}>
-              <span className="vital-label"><Heart size={13} aria-hidden /> {hp} / {hpMax}</span>
+            <div className={`vital vital-hp${hp < hpMax * 0.3 ? ' is-low' : ''}`} title={`Health ${hp} / ${hpMax}`} aria-label={`Health ${hp} of ${hpMax}`}>
+              <div className="vital-row">
+                <Heart size={20} fill="currentColor" aria-hidden />
+                <span className="vital-name">Health</span>
+                <span className="vital-value">{hp}<span className="vital-max"> / {hpMax}</span></span>
+              </div>
               <span className={`bar bar-hp${hp < hpMax * 0.3 ? ' is-low' : ''}`}><i style={{ width: `${hpMax ? (hp / hpMax) * 100 : 0}%` }} /></span>
             </div>
             <dl className="hud-stats">
