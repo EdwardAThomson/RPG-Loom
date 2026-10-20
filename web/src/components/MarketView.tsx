@@ -26,7 +26,7 @@ export function MarketView({ state, dispatch, content }: Props) {
 
     const junk = junkStacks(state, content);
     const junkIds = new Set(junk.map(s => s.itemId));
-    const junkValue = junk.reduce((sum, s) => sum + sellPrice(content.itemsById[s.itemId]) * s.qty, 0);
+    const junkValue = junk.reduce((sum, s) => sum + sellPrice(content.itemsById[s.itemId], s.qty), 0);
     const junkNames = junk.map(s => `${content.itemsById[s.itemId].name} ×${s.qty}`).join(', ');
 
     const buy = (item: ItemDef) => dispatch({ type: 'BUY_ITEM', itemId: item.id, qty: 1, atMs: Date.now() });
@@ -100,8 +100,8 @@ export function MarketView({ state, dispatch, content }: Props) {
                     {inventory.map(stack => {
                         const item = content.itemsById[stack.itemId];
                         if (!item) return null;
-                        const price = sellPrice(item);
                         const qty = Math.min(picked[stack.itemId] ?? 1, stack.qty);
+                        const total = sellPrice(item, qty);
                         const setQty = (n: number) =>
                             setPicked(p => ({ ...p, [stack.itemId]: Math.max(1, Math.min(stack.qty, n)) }));
                         return (
@@ -112,7 +112,7 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         {item.name} <span className="muted">×{stack.qty}</span>
                                         {junkIds.has(stack.itemId) && <span className="chip chip-muted">Junk</span>}
                                     </div>
-                                    <div className="list-sub">{price} g each</div>
+                                    <div className="list-sub">{item.value > 0 ? `${item.value / 2} g each` : 'Worthless'}</div>
                                 </div>
                                 <div className="sell-controls">
                                     {stack.qty > 1 && (
@@ -146,8 +146,16 @@ export function MarketView({ state, dispatch, content }: Props) {
                                             All
                                         </button>
                                     )}
-                                    <button type="button" className="btn-sm" onClick={() => sell(stack.itemId, qty)}>
-                                        Sell {qty > 1 ? `${qty} ` : ''}for {(price * qty).toLocaleString()} g
+                                    <button
+                                        type="button"
+                                        className="btn-sm"
+                                        disabled={total <= 0}
+                                        title={total > 0 ? undefined : item.value > 0 ? 'Sell more to fetch any gold' : 'Merchants won\'t buy this'}
+                                        onClick={() => sell(stack.itemId, qty)}
+                                    >
+                                        {total > 0
+                                            ? <>Sell {qty > 1 ? `${qty} ` : ''}for {total.toLocaleString()} g</>
+                                            : 'No offer'}
                                     </button>
                                 </div>
                             </div>

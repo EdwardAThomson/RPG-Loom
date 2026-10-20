@@ -3,9 +3,13 @@ import type { EngineState, ItemDef, InventoryStack } from '@rpg-loom/shared';
 /** Item types that are always worth keeping: gear, potions, tools, quest items. */
 const KEEP_TYPES = new Set(['weapon', 'armor', 'accessory', 'consumable', 'tool', 'quest']);
 
-/** What a merchant pays for one of `item`. Mirrors the engine's SELL_ITEM price. */
-export function sellPrice(item: ItemDef): number {
-    return Math.floor(item.value * 0.5);
+/**
+ * What a merchant pays for `qty` of `item`: half value, rounded down over
+ * the whole batch. Mirrors the engine's SELL_ITEM price; the engine refuses
+ * a sale that would pay 0.
+ */
+export function sellPrice(item: ItemDef, qty = 1): number {
+    return Math.floor(item.value * qty * 0.5);
 }
 
 /**
@@ -40,6 +44,6 @@ export function junkStacks(state: EngineState, content: any): InventoryStack[] {
     const useful = usefulItemIds(state, content);
     return state.inventory.filter(stack => {
         const item: ItemDef | undefined = content?.itemsById?.[stack.itemId];
-        return !!item && !KEEP_TYPES.has(item.type) && !useful.has(item.id) && sellPrice(item) > 0;
+        return !!item && !KEEP_TYPES.has(item.type) && !useful.has(item.id) && sellPrice(item, stack.qty) > 0;
     });
 }

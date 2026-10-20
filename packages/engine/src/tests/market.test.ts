@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { applyCommand, createNewState } from '../engine';
 
 const content: any = {
-  itemsById: { item_ore: { id: 'item_ore', name: 'Ore', type: 'material', value: 10 } },
+  itemsById: {
+    item_ore: { id: 'item_ore', name: 'Ore', type: 'material', value: 10 },
+    item_wood: { id: 'item_wood', name: 'Wood', type: 'resource', value: 1 }
+  },
   enemiesById: {},
   locationsById: {},
   questTemplatesById: {},
@@ -41,6 +44,23 @@ describe('SELL_ITEM', () => {
     expect(res.state.player.gold).toBe(0);
     expect(res.state.inventory).toEqual([{ itemId: 'item_ore', qty: 3 }]);
     expect(res.events[0]).toMatchObject({ type: 'ERROR', payload: { code: 'INVALID_QTY' } });
+  });
+
+  it('prices the whole batch, so cheap items still sell in bulk', () => {
+    const state = withOre(0);
+    state.inventory = [{ itemId: 'item_wood', qty: 37 }];
+    const res = applyCommand(state, { type: 'SELL_ITEM', itemId: 'item_wood', qty: 37, atMs: 2000 }, content);
+    expect(res.state.player.gold).toBe(18);
+    expect(res.state.inventory).toEqual([]);
+  });
+
+  it('refuses a sale that would pay nothing and keeps the item', () => {
+    const state = withOre(0);
+    state.inventory = [{ itemId: 'item_wood', qty: 5 }];
+    const res = applyCommand(state, { type: 'SELL_ITEM', itemId: 'item_wood', qty: 1, atMs: 2000 }, content);
+    expect(res.state.player.gold).toBe(0);
+    expect(res.state.inventory).toEqual([{ itemId: 'item_wood', qty: 5 }]);
+    expect(res.events[0]).toMatchObject({ type: 'ERROR', payload: { code: 'NO_OFFER' } });
   });
 });
 
