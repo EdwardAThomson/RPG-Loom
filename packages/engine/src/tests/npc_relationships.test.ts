@@ -192,3 +192,21 @@ describe('NPC content', () => {
         for (const [id, steps] of Object.entries(chains)) expect(steps.sort(), id).toEqual(steps.map((_, i) => i + 1));
     });
 });
+
+describe('Affinity survives a save round trip', () => {
+    it('talk, gift and tier state come back from JSON through migrateState', async () => {
+        const { migrateState } = await import('../engine.js');
+        let state = withItem(haven(), 'item_plank');
+        state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: 'npc_aldric', atMs: T0 }, C).state;
+        state = applyCommand(state, { type: 'GIVE_GIFT', npcId: 'npc_aldric', itemId: 'item_plank', atMs: T0 + 1 }, C).state;
+        const saved = JSON.stringify(state);
+        const loaded = migrateState(JSON.parse(saved), state.contentVersion);
+        expect(loaded.npcState.npc_aldric).toEqual(state.npcState.npc_aldric);
+        expect(loaded.npcState.npc_aldric.affinity).toBe(5);
+        expect(loaded.npcState.npc_aldric.lastAffinityTalkMs).toBe(T0);
+        expect(loaded.npcState.npc_aldric.lastGiftMs).toBe(T0 + 1);
+        // and the daily cap still holds after reload
+        const r = applyCommand(loaded, { type: 'TALK_TO_NPC', npcId: 'npc_aldric', atMs: T0 + 2 }, C);
+        expect(r.state.npcState.npc_aldric.affinity).toBe(5);
+    });
+});
