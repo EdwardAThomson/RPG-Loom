@@ -62,7 +62,7 @@ function App() {
 
 function AppContent() {
   const {
-    state, events, dispatch, content, exportSave, importSave, hardReset,
+    state, events, feed, dispatch, content, exportSave, importSave, hardReset,
     tickRate, setTickRate, pendingOfflineSummary, dismissOfflineSummary,
     cloudStatus, pendingConflict, syncNow,
     resolveConflictKeepLocal, resolveConflictUseServer
@@ -211,7 +211,7 @@ function AppContent() {
 
         <aside className="hud-side">
           <NextGoalsPanel goals={nextGoals} onJumpTo={setActiveTab} />
-          <EventView events={events} content={content} />
+          <EventView feed={feed} />
         </aside>
 
         <footer className="hud-footer">

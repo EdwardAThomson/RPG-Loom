@@ -4,6 +4,7 @@ import { createNewState, step, applyCommand, simulateOffline, summarizeEvents, m
 import content, { CONTENT_VERSION } from '@rpg-loom/content';
 import { fetchSave, pushSave, type CloudSave } from '../services/cloudSave';
 import { getAuthState, onAuthChange } from '../services/auth';
+import { appendFeed, type FeedEntry } from '../ui/eventFeed';
 
 // Simple tick rate for now (1000ms = 1 tick/sec)
 // Later we can go faster if needed, but 1s is good for idle pacing.
@@ -31,7 +32,11 @@ export function useGameEngine() {
 
     // React state for UI rendering
     const [uiState, setUiState] = useState<EngineState | null>(null);
+    // Raw recent events (fed to AI helpers) and the folded player log.
+    // The log is accumulated separately so it isn't limited by how many
+    // raw events we keep.
     const [events, setEvents] = useState<any[]>([]);
+    const [feed, setFeed] = useState<FeedEntry[]>([]);
     const [tickRate, setTickRate] = useState(1000);
     const [pendingOfflineSummary, setPendingOfflineSummary] = useState<OfflineSummary | null>(null);
 
@@ -46,6 +51,12 @@ export function useGameEngine() {
     const SAVE_KEY = 'rpg_loom_save_v1';
 
     // Helper: Save to local storage
+    const pushEvents = (newEvents: any[]) => {
+        if (newEvents.length === 0) return;
+        setEvents(prev => [...prev.slice(-50), ...newEvents]);
+        setFeed(prev => appendFeed(prev, newEvents, content));
+    };
+
     const saveState = (s: EngineState) => {
         try {
             localStorage.setItem(SAVE_KEY, JSON.stringify(s));
@@ -163,9 +174,7 @@ export function useGameEngine() {
             stateRef.current = res.state;
             saveState(res.state);
             setUiState(res.state);
-            if (res.events.length > 0) {
-                setEvents(prev => [...prev.slice(-50), ...res.events.slice(-15)]);
-            }
+            pushEvents(res.events.slice(-15));
             setPendingOfflineSummary(summarizeEvents(res.events, {
                 durationMs: Math.min(elapsed, MAX_OFFLINE_MS),
                 cappedAtMs
@@ -222,9 +231,7 @@ export function useGameEngine() {
             saveState(res.state);
 
             setUiState(res.state);
-            if (res.events.length > 0) {
-                setEvents(prev => [...prev.slice(-50), ...res.events]);
-            }
+            pushEvents(res.events);
         }, tickRate);
 
         // Tab visibility: when the player switches back to this tab after
@@ -293,9 +300,7 @@ export function useGameEngine() {
         stateRef.current = res.state;
         saveState(res.state);
         setUiState(stateRef.current);
-        if (res.events.length > 0) {
-            setEvents(prev => [...prev.slice(-50), ...res.events]);
-        }
+        pushEvents(res.events);
     };
 
     const hardReset = () => {
@@ -366,6 +371,7 @@ export function useGameEngine() {
     return {
         state: uiState,
         events,
+        feed,
         dispatch,
         content: content as unknown as ContentIndex,
         hardReset,
