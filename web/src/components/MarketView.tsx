@@ -112,7 +112,7 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         {item.name} <span className="muted">×{stack.qty}</span>
                                         {junkIds.has(stack.itemId) && <span className="chip chip-muted">Junk</span>}
                                     </div>
-                                    <div className="list-sub">{item.value > 0 ? `${item.value / 2} g each` : 'Worthless'}</div>
+                                    <div className="list-sub">{sellPrice(item) > 0 ? `${sellPrice(item)} g each` : 'Merchants won\'t buy this'}</div>
                                 </div>
                                 <div className="sell-controls">
                                     {stack.qty > 1 && (
@@ -150,7 +150,7 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         type="button"
                                         className="btn-sm"
                                         disabled={total <= 0}
-                                        title={total > 0 ? undefined : item.value > 0 ? 'Sell more to fetch any gold' : 'Merchants won\'t buy this'}
+                                        title={total > 0 ? undefined : 'Merchants won\'t buy this'}
                                         onClick={() => sell(stack.itemId, qty)}
                                     >
                                         {total > 0

@@ -4,12 +4,12 @@ import type { EngineState, ItemDef, InventoryStack } from '@rpg-loom/shared';
 const KEEP_TYPES = new Set(['weapon', 'armor', 'accessory', 'consumable', 'tool', 'quest']);
 
 /**
- * What a merchant pays for `qty` of `item`: half value, rounded down over
- * the whole batch. Mirrors the engine's SELL_ITEM price; the engine refuses
- * a sale that would pay 0.
+ * What a merchant pays for `qty` of `item`: half value per item, rounded
+ * down. Mirrors the engine's SELL_ITEM price; the engine refuses a sale
+ * that would pay 0.
  */
 export function sellPrice(item: ItemDef, qty = 1): number {
-    return Math.floor(item.value * qty * 0.5);
+    return Math.floor(item.value * 0.5) * qty;
 }
 
 /**

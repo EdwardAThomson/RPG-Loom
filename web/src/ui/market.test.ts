@@ -24,12 +24,7 @@ function state(quests: any[] = []): EngineState {
 
 describe('junkStacks', () => {
     it('keeps gear, potions, recipe inputs and quest targets', () => {
-        expect(junkStacks(state(), content).map(s => s.itemId)).toEqual(['item_wood', 'item_scale', 'item_gel']);
-    });
-
-    it('leaves out stacks too small to fetch any gold', () => {
-        const s = { inventory: [{ itemId: 'item_wood', qty: 1 }], quests: [] } as unknown as EngineState;
-        expect(junkStacks(s, content)).toEqual([]);
+        expect(junkStacks(state(), content).map(s => s.itemId)).toEqual(['item_scale', 'item_gel']);
     });
 
     it('keeps items an open adventure still needs', () => {
@@ -39,19 +34,19 @@ describe('junkStacks', () => {
                 { status: 'locked', template: { type: 'deliver', targetItemId: 'item_scale', targetLocationId: 'loc_x', qty: 1 } },
             ] },
         ];
-        expect(junkStacks(state(quests), content).map(s => s.itemId)).toEqual(['item_wood']);
+        expect(junkStacks(state(quests), content)).toEqual([]);
     });
 
     it('ignores finished quests', () => {
         const quests = [{ templateId: 'dynamic_gather_item_gel', status: 'completed' }];
-        expect(junkStacks(state(quests), content).map(s => s.itemId)).toEqual(['item_wood', 'item_scale', 'item_gel']);
+        expect(junkStacks(state(quests), content).map(s => s.itemId)).toEqual(['item_scale', 'item_gel']);
     });
 });
 
 describe('sellPrice', () => {
-    it('pays half value, rounded down over the whole batch', () => {
+    it('pays half value per item, rounded down', () => {
         expect(sellPrice(content.itemsById.item_gel as any)).toBe(5);
-        expect(sellPrice(content.itemsById.item_wood as any)).toBe(0);
-        expect(sellPrice(content.itemsById.item_wood as any, 37)).toBe(18);
+        expect(sellPrice(content.itemsById.item_gel as any, 3)).toBe(15);
+        expect(sellPrice(content.itemsById.item_wood as any, 37)).toBe(0);
     });
 });

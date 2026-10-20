@@ -426,9 +426,9 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         break;
       }
 
-      // Merchants pay half value, rounded down over the whole batch, and
-      // never take items for nothing.
-      const val = Math.floor(item.value * cmd.qty * 0.5);
+      // Merchants pay half value per item, rounded down, and never take
+      // items for nothing.
+      const val = Math.floor(item.value * 0.5) * cmd.qty;
       if (val <= 0) {
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'NO_OFFER', message: `No merchant will pay for ${cmd.qty} ${item.name}` }));
         break;
