@@ -575,6 +575,7 @@ export type GameEvent =
   | BaseEvent<'SKILL_PROCS', { skillId: SkillId; effect: string; value?: number }>
   | BaseEvent<'TACTICS_CHANGED', { tactics: TacticsPreset }>
   | BaseEvent<'ITEM_CONSUMED', { itemId: ItemId }>
+  | BaseEvent<'ITEM_SOLD', { itemId: ItemId; qty: number; gold: number }>
   | BaseEvent<'ERROR', { code: string; message: string }>
   | BaseEvent<'FLAVOR_TEXT', { message: string }>
   | BaseEvent<'NPC_INTERACTED', { npcId: NpcId; affinity: number; firstMeet: boolean }>
