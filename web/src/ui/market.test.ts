@@ -47,6 +47,6 @@ describe('sellPrice', () => {
     it('uses the engine price', () => {
         expect(sellPrice(content.itemsById.item_gel as any)).toBe(5);
         expect(sellPrice(content.itemsById.item_gel as any, 3)).toBe(15);
-        expect(sellPrice(content.itemsById.item_wood as any, 37)).toBe(14);
+        expect(sellPrice(content.itemsById.item_wood as any, 37)).toBe(28);
     });
 });

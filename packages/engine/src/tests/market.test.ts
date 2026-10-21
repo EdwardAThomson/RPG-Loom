@@ -52,7 +52,7 @@ describe('SELL_ITEM', () => {
     const state = withOre(0);
     state.inventory = [{ itemId: 'item_wood', qty: 37 }];
     const res = applyCommand(state, { type: 'SELL_ITEM', itemId: 'item_wood', qty: 37, atMs: 2000 }, content);
-    expect(res.state.player.gold).toBe(14);
+    expect(res.state.player.gold).toBe(28);
     expect(res.state.inventory).toEqual([]);
   });
 
@@ -83,12 +83,14 @@ describe('sellValue', () => {
   it('pays less per item for big batches', () => {
     expect(sellValue(10, 100)).toBe(300); // 20 full + 80 at half
     expect(sellValue(10, 200)).toBe(425); // + 100 at a quarter
-    expect(sellValue(1, 7200)).toBe(917);
+    expect(sellValue(1, 7200)).toBe(1835);
   });
 
-  it('always pays at least 1 gold for something with value', () => {
+  it('pays at least 1 gold per item before the bulk discount', () => {
     expect(sellValue(1, 1)).toBe(1);
-    expect(sellValue(1, 2)).toBe(1);
+    expect(sellValue(1, 20)).toBe(20);
+    expect(sellValue(1, 21)).toBe(20);
+    expect(sellValue(3, 2)).toBe(3);
     expect(sellValue(0, 50)).toBe(0);
   });
 

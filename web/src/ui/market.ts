@@ -1,5 +1,5 @@
 import type { EngineState, ItemDef, InventoryStack } from '@rpg-loom/shared';
-import { sellValue } from '@rpg-loom/engine';
+import { SELL_BULK_FROM, sellUnitPrice, sellValue } from '@rpg-loom/engine';
 
 /** Item types that are always worth keeping: gear, potions, tools, quest items. */
 const KEEP_TYPES = new Set(['weapon', 'armor', 'accessory', 'consumable', 'tool', 'quest']);
@@ -9,8 +9,13 @@ export function sellPrice(item: ItemDef, qty = 1): number {
     return sellValue(item.value, qty);
 }
 
+/** What a merchant pays for one `item`, before any bulk discount. */
+export function sellUnit(item: ItemDef): number {
+    return sellUnitPrice(item.value);
+}
+
 /** Bulk sales pay less per item after this many. */
-export const BULK_FROM = 20;
+export const BULK_FROM = SELL_BULK_FROM;
 
 /**
  * Item ids the player still has a use for: recipe inputs, quest-board

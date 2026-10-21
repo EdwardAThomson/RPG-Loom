@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Coins, Minus, Plus } from 'lucide-react';
 import { EngineState, PlayerCommand, ItemDef } from '@rpg-loom/shared';
 import { ItemIcon } from './ItemIcon';
-import { BULK_FROM, junkStacks, sellPrice } from '../ui/market';
+import { BULK_FROM, junkStacks, sellPrice, sellUnit } from '../ui/market';
 
 interface Props {
     state: EngineState;
@@ -102,6 +102,7 @@ export function MarketView({ state, dispatch, content }: Props) {
                         if (!item) return null;
                         const qty = Math.min(picked[stack.itemId] ?? 1, stack.qty);
                         const total = sellPrice(item, qty);
+                        const unit = sellUnit(item);
                         const setQty = (n: number) =>
                             setPicked(p => ({ ...p, [stack.itemId]: Math.max(1, Math.min(stack.qty, n)) }));
                         return (
@@ -112,11 +113,12 @@ export function MarketView({ state, dispatch, content }: Props) {
                                         {item.name} <span className="muted">×{stack.qty}</span>
                                         {junkIds.has(stack.itemId) && <span className="chip chip-muted">Junk</span>}
                                     </div>
-                                    <div className="list-sub">
-                                        {item.value <= 0
-                                            ? 'Merchants won\'t buy this'
-                                            : `${item.value / 2} g each${stack.qty > BULK_FROM ? `, less after ${BULK_FROM}` : ''}`}
-                                    </div>
+                                    <div className="list-sub">{unit > 0 ? `${unit} g each` : 'Merchants won\'t buy this'}</div>
+                                    {qty > BULK_FROM && (
+                                        <div className="list-sub warn">
+                                            Bulk rate past {BULK_FROM}: {total.toLocaleString()} g, not {Math.floor(unit * qty).toLocaleString()} g
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="sell-controls">
                                     {stack.qty > 1 && (

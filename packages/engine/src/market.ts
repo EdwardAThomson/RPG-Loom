@@ -1,9 +1,9 @@
 /**
- * Merchant pricing. Merchants pay half an item's value, but big batches
- * flood the market, so the rate per item drops in tiers: the first 20
- * sell at the full rate, the next 80 at half that, and the rest at a
- * quarter. A sale of anything with value always pays at least 1 gold, so
- * a stack of cheap materials is never sold for nothing.
+ * Merchant pricing. Merchants pay half an item's value, and at least 1
+ * gold, for each item. Big batches flood the market, so the rate per item
+ * drops in tiers: the first 20 sell at the full rate, the next 80 at half
+ * that, and the rest at a quarter. A sale of anything with value never
+ * pays 0, and selling more never pays less.
  */
 const SELL_RATE = 0.5;
 const SELL_TIERS: Array<{ upTo: number; rate: number }> = [
@@ -11,6 +11,14 @@ const SELL_TIERS: Array<{ upTo: number; rate: number }> = [
   { upTo: 100, rate: 0.5 },
   { upTo: Infinity, rate: 0.25 }
 ];
+
+/** Number of items in a batch that sell at the full rate. */
+export const SELL_BULK_FROM = SELL_TIERS[0].upTo;
+
+/** Gold a merchant pays for one item worth `value`, before any bulk discount. */
+export function sellUnitPrice(value: number): number {
+  return value > 0 ? Math.max(1, value * SELL_RATE) : 0;
+}
 
 /** Gold a merchant pays for `qty` items worth `value` each. 0 only when `value` or `qty` is 0. */
 export function sellValue(value: number, qty: number): number {
@@ -22,5 +30,5 @@ export function sellValue(value: number, qty: number): number {
     units += (Math.min(qty, tier.upTo) - from) * tier.rate;
     from = tier.upTo;
   }
-  return Math.max(1, Math.floor(value * SELL_RATE * units));
+  return Math.max(1, Math.floor(sellUnitPrice(value) * units));
 }
