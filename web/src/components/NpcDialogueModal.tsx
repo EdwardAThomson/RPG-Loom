@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
-import { getQuestsOfferedByNpc } from '@rpg-loom/engine';
+import type { AffinityTier, ContentIndex, EngineState, GameEvent, NpcDef, NpcStateEntry, PlayerCommand, QuestTemplateDef } from '@rpg-loom/shared';
+import { getQuestsOfferedByNpc, getLockedQuestsFromNpc, getAffinityTier, nextAffinityTier, npcLikesItem, pickNpcLine } from '@rpg-loom/engine';
 import { Star } from 'lucide-react';
 import { generateNpcDialogue } from '../services/npcDialogue';
 import { isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
@@ -49,7 +49,9 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
         //   never sees an error about AI generation.
         // - Skip if we're not at their location (engine would reject
         //   the TALK_TO_NPC anyway, no point spending the tokens).
-        if (entry?.generatedFlavor) return;
+        // Regenerate once the relationship changes tier so the voice
+        // moves with it, rather than being written once and frozen.
+        if (entry?.generatedFlavor && entry.generatedFlavor.affinityTier === tier) return;
         if (!isHere || gatewayUp === false) return;
         if (generationInFlightRef.current) return;
 
@@ -59,7 +61,7 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                 dispatch({
                     type: 'SET_NPC_FLAVOR',
                     npcId: npc.id,
-                    flavor,
+                    flavor: { ...flavor, affinityTier: tier },
                     atMs: Date.now()
                 });
             })
@@ -78,6 +80,36 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
     const flavor = entry?.generatedFlavor;
     const affinity = entry?.affinity ?? 0;
     const haveMet = entry?.firstMetAtMs !== undefined;
+    const tier = getAffinityTier(affinity);
+    const nextTier = nextAffinityTier(affinity);
+    const now = Date.now();
+    const talkedToday = entry?.lastAffinityTalkMs !== undefined && now - entry.lastAffinityTalkMs < DAY_MS;
+    const giftedToday = entry?.lastGiftMs !== undefined && now - entry.lastGiftMs < DAY_MS;
+    // The authored line for this moment: first meeting, quest state, or
+    // small talk by tier. Seeded on the last interaction, so it only
+    // changes when the player actually talks.
+    const line = pickNpcLine(npc, state, now);
+    // Once they know you, AI-written lines join the small-talk rotation.
+    const aiLine = flavor?.dialogueLines?.length && line.kind === 'idle' && tier !== 'stranger'
+        ? flavor.dialogueLines[(entry?.lastInteractionMs ?? 0) % flavor.dialogueLines.length]
+        : null;
+    const [giftOpen, setGiftOpen] = useState(false);
+    const [reaction, setReaction] = useState<string | null>(null);
+    const giftable = useMemo(() => state.inventory
+        .map(st => ({ stack: st, def: content.itemsById[st.itemId] }))
+        .filter(x => x.def && !Object.values(state.equipment).includes(x.stack.itemId))
+        .sort((a, b) => Number(npcLikesItem(npc, b.def)) - Number(npcLikesItem(npc, a.def)) || a.def.name.localeCompare(b.def.name)),
+    [state.inventory, state.equipment, content.itemsById, npc]);
+    const locked = useMemo(() => getLockedQuestsFromNpc(state, content, npc.id), [state, content, npc.id]);
+
+    const giveGift = (itemId: string) => {
+        const def = content.itemsById[itemId];
+        const liked = def ? npcLikesItem(npc, def) : false;
+        const pool = liked ? npc.dialogue?.giftLiked : npc.dialogue?.giftMeh;
+        setReaction(pool?.[0] ?? (liked ? `${npc.name} is pleased.` : `${npc.name} accepts it politely.`));
+        setGiftOpen(false);
+        dispatch({ type: 'GIVE_GIFT', npcId: npc.id, itemId, atMs: Date.now() });
+    };
     // Talking requires being at the NPC's location. Engine enforces this
     // too — this is just the UI mirror so the button reads "Travel to X"
     // instead of producing a silent error.
@@ -118,23 +150,45 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
             onClose={onClose}
             zIndex={2100}
         >
-            <AffinityBar affinity={affinity} haveMet={haveMet} />
+            <AffinityBar affinity={affinity} haveMet={haveMet} tier={tier} nextTier={nextTier} />
+
+            <Section title={line.kind === 'firstMeet' ? 'On first meeting' : line.kind === 'questTurnIn' ? 'Expecting you' : 'They say'}>
+                <p className="quote">“{reaction ?? aiLine ?? line.text}”</p>
+                {flavor?.description && (
+                    <p className="small muted">{flavor.description}</p>
+                )}
+            </Section>
 
             {prompts.topic && (
-                <Section title="About">
+                <details className="section">
+                    <summary className="hud-label" style={{ cursor: 'pointer' }}>▸ What you know of them</summary>
                     <p className="prose">{prompts.topic}</p>
-                </Section>
+                </details>
             )}
 
-            {prompts.greeting && (
-                <Section title={haveMet ? 'They say' : 'On first meeting'}>
-                    <p className="quote">“{prompts.greeting}”</p>
-                </Section>
-            )}
-
-            {prompts.questIntro && (
-                <Section title="A favor to ask">
-                    <p className="quote">“{prompts.questIntro}”</p>
+            {giftOpen && (
+                <Section title={giftedToday ? 'They have had a gift today' : 'Offer a gift'}>
+                    {giftable.length === 0 ? (
+                        <p className="small muted">Your pack is empty.</p>
+                    ) : (
+                        <div className="chip-row">
+                            {giftable.slice(0, 24).map(({ stack, def }) => {
+                                const liked = npcLikesItem(npc, def);
+                                return (
+                                    <button
+                                        key={stack.itemId}
+                                        type="button"
+                                        className={liked ? 'btn-sm primary' : 'btn-sm'}
+                                        onClick={() => giveGift(stack.itemId)}
+                                        disabled={giftedToday}
+                                        title={liked ? `${npc.name} would like this.` : 'A polite gift.'}
+                                    >
+                                        {liked ? '★ ' : ''}{def.name} ×{stack.qty}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </Section>
             )}
 
@@ -211,25 +265,27 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
                 </Section>
             )}
 
-            {flavor?.description && (
-                <Section title="Bearing">
-                    <p className="prose">{flavor.description}</p>
+            {locked.length > 0 && (
+                <Section title="Not yet">
+                    <p className="small muted">
+                        {npc.name} has something more to ask of a {tierLabel(getAffinityTier(locked[0].minAffinity ?? 0))}.
+                    </p>
                 </Section>
             )}
-
-            {flavor?.dialogueLines?.length ? (
-                <Section title="Heard before">
-                    {flavor.dialogueLines.map((line, i) => (
-                        <p key={i} className="quote">{line}</p>
-                    ))}
-                </Section>
-            ) : null}
 
             <div className="btn-row section">
                 <button
                     type="button"
+                    onClick={() => { setReaction(null); setGiftOpen(o => !o); }}
+                    disabled={!isHere}
+                    title={isHere ? 'Hand them something from your pack.' : `Travel to ${location?.name ?? npc.locationId} first.`}
+                >
+                    Gift
+                </button>
+                <button
+                    type="button"
                     className="primary"
-                    onClick={greet}
+                    onClick={() => { setReaction(null); greet(); }}
                     disabled={!isHere}
                     title={isHere ? undefined : `Travel to ${location?.name ?? npc.locationId} to speak with them.`}
                 >
@@ -248,7 +304,7 @@ export function NpcDialogueModal({ npc, state, content, dispatch, onClose, recen
 
             {isHere && justGreeted && (
                 <p className="small muted">
-                    Affinity now {(entry?.affinity ?? 1)}.
+                    {talkedToday ? `${npc.name} has had enough of you for one day. Affinity ${affinity}.` : `Affinity now ${affinity}.`}
                 </p>
             )}
         </Modal>
@@ -342,13 +398,21 @@ function describeReward(rp: QuestTemplateDef['rewardPack']): string {
     return parts.join(', ');
 }
 
-function AffinityBar({ affinity, haveMet }: { affinity: number; haveMet: boolean }) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function tierLabel(tier: AffinityTier): string {
+    return { stranger: 'stranger', known: 'known face', friend: 'friend', trusted: 'trusted friend' }[tier];
+}
+
+function AffinityBar({ affinity, haveMet, tier, nextTier }: {
+    affinity: number; haveMet: boolean; tier: AffinityTier; nextTier: { tier: AffinityTier; at: number } | null;
+}) {
     const pct = Math.max(0, Math.min(100, affinity));
     return (
         <div className="progress-row">
-            <span>{haveMet ? 'Affinity' : 'Stranger'}</span>
+            <span style={{ textTransform: 'capitalize' }}>{haveMet ? tierLabel(tier) : 'Stranger'}</span>
             <span className="bar bar-affinity"><i style={{ width: `${pct}%` }} /></span>
-            <span>{pct} / 100</span>
+            <span>{nextTier ? `${pct} / ${nextTier.at} to ${tierLabel(nextTier.tier)}` : `${pct} / 100`}</span>
         </div>
     );
 }

@@ -11,7 +11,10 @@ import type {
   QuestTemplateDef,
   RewardPack,
   ContentIndex,
-  SkillId
+  SkillId,
+  AffinityTier,
+  NpcDef,
+  ItemDef
 } from '@rpg-loom/shared';
 import { parseDynamicTemplateId, buildDynamicTemplateId, assertNever } from './adventure_steps.js';
 
@@ -65,7 +68,20 @@ export const CURRENT_ENGINE_VERSION = 3;
 // gating once that's wired up in 3b/3c.
 const AFFINITY_PER_INTERACTION = 1;
 const AFFINITY_PER_QUEST_COMPLETED = 5;
+const AFFINITY_PER_GIFT_LIKED = 4;
+const AFFINITY_PER_GIFT_MEH = 1;
+/** Talking and gifting raise affinity at most once per NPC per day. */
+const AFFINITY_DAY_MS = 24 * 60 * 60 * 1000;
 export const AFFINITY_CAP = 100;
+/** Lower bound of each tier. Affinity is 0..AFFINITY_CAP. */
+export const AFFINITY_TIERS: Array<{ tier: AffinityTier; min: number }> = [
+  { tier: 'trusted', min: 60 },
+  { tier: 'friend', min: 30 },
+  { tier: 'known', min: 10 },
+  { tier: 'stranger', min: 0 }
+];
+/** Market discount granted by the best relationship at the current location. */
+const TIER_DISCOUNT: Record<AffinityTier, number> = { stranger: 0, known: 0.05, friend: 0.1, trusted: 0.15 };
 
 // Canonical list of skills. Owned by the engine so migrations and
 // createNewState stay in sync.
@@ -411,7 +427,7 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INVALID_QTY', message: `Can't buy ${cmd.qty} ${item.name}` }));
         break;
       }
-      const cost = item.value * cmd.qty;
+      const cost = Math.max(1, Math.round(item.value * (1 - getMarketDiscount(next, content)))) * cmd.qty;
       if (next.player.gold < cost) {
         events.push(ev(next, cmd.atMs, 'ERROR', { code: 'INSUFFICIENT_GOLD', message: `Need ${cost} gold` }));
         break;
@@ -522,7 +538,8 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
       existing.generatedFlavor = {
         description: cmd.flavor.description,
         dialogueLines: cmd.flavor.dialogueLines.slice(0, 8),
-        generatedAtMs: cmd.atMs
+        generatedAtMs: cmd.atMs,
+        affinityTier: cmd.flavor.affinityTier
       };
       next.npcState[cmd.npcId] = existing;
       break;
@@ -557,13 +574,54 @@ export function applyCommand(state: EngineState, cmd: PlayerCommand, content?: C
         entry.firstMetAtMs = cmd.atMs;
       }
       entry.lastInteractionMs = cmd.atMs;
-      entry.affinity = Math.min(AFFINITY_CAP, (entry.affinity ?? 0) + AFFINITY_PER_INTERACTION);
+      // Affinity from talking is once a day: before this cap it was +1
+      // per click, so 100 clicks on "Talk again" maxed anyone out.
+      let affinityGained = 0;
+      if (entry.lastAffinityTalkMs === undefined || cmd.atMs - entry.lastAffinityTalkMs >= AFFINITY_DAY_MS) {
+        const before = entry.affinity ?? 0;
+        entry.affinity = Math.min(AFFINITY_CAP, before + AFFINITY_PER_INTERACTION);
+        affinityGained = entry.affinity - before;
+        entry.lastAffinityTalkMs = cmd.atMs;
+      }
       next.npcState[cmd.npcId] = entry;
       events.push(ev(next, cmd.atMs, 'NPC_INTERACTED', {
         npcId: cmd.npcId,
         affinity: entry.affinity,
-        firstMeet
+        firstMeet,
+        affinityGained
       }));
+      break;
+    }
+
+    case 'GIVE_GIFT': {
+      const npc = content?.npcsById[cmd.npcId];
+      if (!content || !npc) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'NPC_MISSING', message: `Unknown NPC ${cmd.npcId}` }));
+        break;
+      }
+      if (npc.locationId !== next.currentLocationId) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'NPC_NOT_HERE', message: `${npc.name} is not at this location.` }));
+        break;
+      }
+      const item = content.itemsById[cmd.itemId];
+      if (!item || !hasItem(next.inventory, cmd.itemId, 1)) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'ITEM_NOT_OWNED', message: `Item not in inventory: ${cmd.itemId}` }));
+        break;
+      }
+      ensureNpcState(next);
+      const entry = next.npcState[cmd.npcId] ?? { affinity: 0 };
+      if (entry.lastGiftMs !== undefined && cmd.atMs - entry.lastGiftMs < AFFINITY_DAY_MS) {
+        events.push(ev(next, cmd.atMs, 'ERROR', { code: 'GIFT_TOO_SOON', message: `${npc.name} has already accepted a gift today.` }));
+        break;
+      }
+      removeItem(next.inventory, cmd.itemId, 1);
+      const liked = npcLikesItem(npc, item);
+      entry.affinity = Math.min(AFFINITY_CAP, (entry.affinity ?? 0) + (liked ? AFFINITY_PER_GIFT_LIKED : AFFINITY_PER_GIFT_MEH));
+      entry.lastGiftMs = cmd.atMs;
+      entry.lastInteractionMs = cmd.atMs;
+      if (entry.firstMetAtMs === undefined) entry.firstMetAtMs = cmd.atMs;
+      next.npcState[cmd.npcId] = entry;
+      events.push(ev(next, cmd.atMs, 'NPC_GIFTED', { npcId: cmd.npcId, itemId: cmd.itemId, liked, affinity: entry.affinity }));
       break;
     }
 
@@ -2526,6 +2584,7 @@ export function getQuestsOfferedByNpc(
   for (const [templateId, tmpl] of Object.entries(content.questTemplatesById)) {
     if (templateId.startsWith('dynamic_')) continue;
     if (tmpl.questGiverNpcId !== npcId) continue;
+    if (tmpl.minAffinity && (state.npcState?.[npcId]?.affinity ?? 0) < tmpl.minAffinity) continue;
     // Skip when there's already an in-flight copy or one sitting ready
     // for hand-in; otherwise the player could double up.
     if (state.quests.some(q => q.templateId === templateId && (q.status === 'active' || q.status === 'ready_to_turn_in'))) continue;
@@ -2549,4 +2608,92 @@ export function getQuestsOfferedByNpc(
     out.push(tmpl);
   }
   return out;
+}
+
+// ---- NPC relationship helpers ----
+
+export function getAffinityTier(affinity: number): AffinityTier {
+  for (const t of AFFINITY_TIERS) if (affinity >= t.min) return t.tier;
+  return 'stranger';
+}
+
+/** Affinity needed to reach the next tier, or null at the top. */
+export function nextAffinityTier(affinity: number): { tier: AffinityTier; at: number } | null {
+  const above = [...AFFINITY_TIERS].reverse().find(t => t.min > affinity);
+  return above ? { tier: above.tier, at: above.min } : null;
+}
+
+export function npcLikesItem(npc: NpcDef, item: ItemDef): boolean {
+  const likes = npc.likes ?? [];
+  return likes.includes(item.id) || (item.tags ?? []).some(t => likes.includes(t));
+}
+
+/**
+ * Discount on market purchases at the current location: the best tier
+ * among the NPCs who live there. A merchant you have befriended charges
+ * you less, which is the first thing affinity actually buys.
+ */
+export function getMarketDiscount(state: EngineState, content?: ContentIndex): number {
+  if (!content?.npcsById) return 0;
+  let best = 0;
+  for (const npc of Object.values(content.npcsById)) {
+    if (npc.locationId !== state.currentLocationId) continue;
+    const tier = getAffinityTier(state.npcState?.[npc.id]?.affinity ?? 0);
+    best = Math.max(best, TIER_DISCOUNT[tier]);
+  }
+  return best;
+}
+
+/** `minAffinity` quests from this NPC that the player can't see yet, lowest threshold first. */
+export function getLockedQuestsFromNpc(state: EngineState, content: ContentIndex, npcId: string): QuestTemplateDef[] {
+  const affinity = state.npcState?.[npcId]?.affinity ?? 0;
+  return Object.values(content.questTemplatesById)
+    .filter(t => t.questGiverNpcId === npcId && t.minAffinity && affinity < t.minAffinity)
+    .filter(t => !state.quests.some(q => q.templateId === t.id))
+    .sort((a, b) => (a.minAffinity ?? 0) - (b.minAffinity ?? 0));
+}
+
+export interface NpcLine {
+  text: string;
+  /** Which pool the line came from; the UI uses it for a small caption. */
+  kind: 'firstMeet' | 'questTurnIn' | 'questActive' | 'idle' | 'greeting';
+}
+
+/**
+ * The one thing an NPC says when the player opens a conversation. Pure and
+ * deterministic: the pick is seeded by the NPC and the player's last
+ * interaction time, so re-opening the modal shows the same line until the
+ * player actually talks again. Priority: first meeting, then a quest ready
+ * to hand in, then a quest in progress, then small talk by tier (falling
+ * back to a lower tier's pool), then the authored greeting.
+ */
+export function pickNpcLine(npc: NpcDef, state: EngineState, nowMs?: number): NpcLine {
+  const entry = state.npcState?.[npc.id];
+  const pools = npc.dialogue ?? {};
+  const seed = `npcline:${state.saveId}:${npc.id}:${entry?.lastInteractionMs ?? 0}:${nowMs === undefined ? '' : Math.floor(nowMs / AFFINITY_DAY_MS)}`;
+  const pick = (lines: string[] | undefined): string | undefined =>
+    lines && lines.length ? lines[hashInt(seed, 0, lines.length - 1)] : undefined;
+
+  const haveMet = entry?.firstMetAtMs !== undefined;
+  if (!haveMet) {
+    const t = pick(pools.firstMeet);
+    if (t) return { text: t, kind: 'firstMeet' };
+  }
+  const mine = state.quests.filter(q => q.npcId === npc.id && !q.templateId.startsWith('dynamic_'));
+  const ready = mine.find(q => q.status === 'ready_to_turn_in');
+  if (ready) {
+    const t = pools.questComplete?.[ready.templateId] ?? pick(pools.questTurnIn);
+    if (t) return { text: t, kind: 'questTurnIn' };
+  }
+  if (mine.some(q => q.status === 'active')) {
+    const t = pick(pools.questActive);
+    if (t) return { text: t, kind: 'questActive' };
+  }
+  const tier = getAffinityTier(entry?.affinity ?? 0);
+  const order: AffinityTier[] = ['trusted', 'friend', 'known', 'stranger'];
+  for (const t of order.slice(order.indexOf(tier))) {
+    const line = pick(pools.idle?.[t]);
+    if (line) return { text: line, kind: 'idle' };
+  }
+  return { text: npc.prompts?.greeting ?? `${npc.name} nods.`, kind: 'greeting' };
 }

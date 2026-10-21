@@ -1132,6 +1132,13 @@ button.row-card {
   flex: 1;
 }
 
+/* Gift picker in the NPC modal: wrapped item buttons, natural widths. */
+.chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .btn-danger {
   border-color: rgba(224, 112, 95, 0.5);
   color: var(--color-hp);

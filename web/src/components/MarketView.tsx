@@ -3,6 +3,7 @@ import { Coins, Minus, Plus } from 'lucide-react';
 import { EngineState, PlayerCommand, ItemDef } from '@rpg-loom/shared';
 import { ItemIcon } from './ItemIcon';
 import { BULK_FROM, junkStacks, sellPrice, sellUnit } from '../ui/market';
+import { getMarketDiscount } from '@rpg-loom/engine';
 
 interface Props {
     state: EngineState;
@@ -29,6 +30,10 @@ export function MarketView({ state, dispatch, content }: Props) {
     const junkValue = junk.reduce((sum, s) => sum + sellPrice(content.itemsById[s.itemId], s.qty), 0);
     const junkNames = junk.map(s => `${content.itemsById[s.itemId].name} ×${s.qty}`).join(', ');
 
+    // A befriended local lowers buy prices; the engine applies the same rate.
+    const discount = getMarketDiscount(state, content);
+    const priceOf = (item: ItemDef) => Math.max(1, Math.round(item.value * (1 - discount)));
+
     const buy = (item: ItemDef) => dispatch({ type: 'BUY_ITEM', itemId: item.id, qty: 1, atMs: Date.now() });
     const sell = (itemId: string, qty: number, atMs = Date.now()) => {
         dispatch({ type: 'SELL_ITEM', itemId, qty, atMs });
@@ -47,9 +52,13 @@ export function MarketView({ state, dispatch, content }: Props) {
                     <span className="hud-label">Buy</span>
                     <span className="small gold">{player.gold.toLocaleString()} gold</span>
                 </div>
+                {discount > 0 && (
+                    <div className="small ok">A friend here gets you {Math.round(discount * 100)}% off.</div>
+                )}
                 <div className="list">
                     {shopItems.map(item => {
-                        const canAfford = player.gold >= item.value;
+                        const price = priceOf(item);
+                        const canAfford = player.gold >= price;
                         return (
                             <div key={item.id} className="row-card">
                                 <ItemIcon type={item.type} />
@@ -57,8 +66,8 @@ export function MarketView({ state, dispatch, content }: Props) {
                                     <div className="list-title">{item.name}</div>
                                     <div className="list-sub">{item.description}</div>
                                 </div>
-                                <button type="button" className="btn-sm" disabled={!canAfford} onClick={() => buy(item)}>
-                                    {item.value} g
+                                <button type="button" className="btn-sm" disabled={!canAfford} onClick={() => buy(item)} title={price !== item.value ? `Usually ${item.value} g` : undefined}>
+                                    {price} g
                                 </button>
                             </div>
                         );
