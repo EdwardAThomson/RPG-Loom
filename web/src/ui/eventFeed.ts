@@ -170,11 +170,13 @@ function single(ev: GameEvent, content: any): FeedEntry {
         case 'TACTICS_CHANGED':
             return { ...base, tone: 'muted', text: `Stance: ${humanize(ev.payload.tactics).toLowerCase()}` };
         case 'ITEM_CONSUMED':
-            return { ...base, tone: 'normal', text: `Used ${itemName(content, ev.payload.itemId)}` };
+            return { ...base, tone: 'normal', text: ev.payload.healed ? `Used ${itemName(content, ev.payload.itemId)}: +${ev.payload.healed} HP` : `Used ${itemName(content, ev.payload.itemId)}` };
         case 'ITEM_SOLD':
             return { ...base, tone: 'gain', text: `Sold ${ev.payload.qty} ${itemName(content, ev.payload.itemId)} for ${ev.payload.gold} gold` };
-        case 'SKILL_PROCS':
-            return { ...base, tone: 'normal', text: `${skillName(ev.payload.skillId)}: ${humanize(ev.payload.effect).toLowerCase()}`, key: 'proc:' + ev.payload.skillId + ev.payload.effect };
+        case 'SKILL_PROCS': {
+            const effect = ev.payload.effect === 'double_yield' ? 'double yield!' : ev.payload.effect === 'material_save' ? 'materials saved' : humanize(ev.payload.effect).toLowerCase();
+            return { ...base, tone: 'normal', text: `${skillName(ev.payload.skillId)}: ${effect}`, key: 'proc:' + ev.payload.skillId + ev.payload.effect };
+        }
         case 'NPC_INTERACTED': {
             const name = content?.npcsById?.[ev.payload.npcId]?.name ?? humanize(ev.payload.npcId);
             return { ...base, tone: 'normal', text: ev.payload.firstMeet ? `Met ${name}` : `Spoke with ${name}` };
