@@ -62,7 +62,7 @@ function App() {
 
 function AppContent() {
   const {
-    state, events, dispatch, content, exportSave, importSave, hardReset,
+    state, events, feed, dispatch, content, exportSave, importSave, hardReset,
     tickRate, setTickRate, pendingOfflineSummary, dismissOfflineSummary,
     cloudStatus, pendingConflict, syncNow,
     resolveConflictKeepLocal, resolveConflictUseServer
@@ -165,8 +165,12 @@ function AppContent() {
           </div>
 
           <div className="hud-vitals">
-            <div className="vital vital-hp" title={`Health ${hp} / ${hpMax}`}>
-              <span className="vital-label"><Heart size={13} aria-hidden /> {hp} / {hpMax}</span>
+            <div className={`vital vital-hp${hp < hpMax * 0.3 ? ' is-low' : ''}`} title={`Health ${hp} / ${hpMax}`} aria-label={`Health ${hp} of ${hpMax}`}>
+              <div className="vital-row">
+                <Heart size={20} fill="currentColor" aria-hidden />
+                <span className="vital-name">Health</span>
+                <span className="vital-value">{hp}<span className="vital-max"> / {hpMax}</span></span>
+              </div>
               <span className={`bar bar-hp${hp < hpMax * 0.3 ? ' is-low' : ''}`}><i style={{ width: `${hpMax ? (hp / hpMax) * 100 : 0}%` }} /></span>
             </div>
             <dl className="hud-stats">
@@ -211,7 +215,7 @@ function AppContent() {
 
         <aside className="hud-side">
           <NextGoalsPanel goals={nextGoals} onJumpTo={setActiveTab} />
-          <EventView events={events} content={content} />
+          <EventView feed={feed} />
         </aside>
 
         <footer className="hud-footer">

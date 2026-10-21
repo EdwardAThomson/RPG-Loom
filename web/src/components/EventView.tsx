@@ -1,19 +1,14 @@
-import { useMemo } from 'react';
-import { GameEvent } from '@rpg-loom/shared';
-import { buildFeed } from '../ui/eventFeed';
+import type { FeedEntry } from '../ui/eventFeed';
 
 interface Props {
-    events: GameEvent[];
-    content: any;
+    feed: FeedEntry[];
 }
 
 function clock(ms: number) {
     return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-export function EventView({ events, content }: Props) {
-    const feed = useMemo(() => buildFeed(events, content), [events, content]);
-
+export function EventView({ feed }: Props) {
     return (
         <section className="hud-panel feed" aria-label="Event log">
             <div className="hud-label">Log</div>

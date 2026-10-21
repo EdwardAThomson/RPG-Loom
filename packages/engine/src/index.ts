@@ -3,3 +3,4 @@ export * from './rng.js';
 export * from './summary.js';
 export * from './goals.js';
 export * from './adventure_steps.js';
+export * from './market.js';

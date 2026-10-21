@@ -196,21 +196,65 @@ a {
 .vital {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 150px;
-}
-
-.vital-label {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+  min-width: 230px;
+  padding: 8px 12px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(224, 112, 95, 0.1);
+  border: 1px solid rgba(224, 112, 95, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
-.vital-label svg {
+.vital-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.vital-row svg {
+  align-self: center;
   color: var(--color-hp);
+  filter: drop-shadow(0 0 6px rgba(224, 112, 95, 0.6));
+}
+
+.vital-name {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vital-value {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.vital-max {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.vital .bar {
+  height: 8px;
+}
+
+.vital.is-low {
+  border-color: rgba(255, 90, 69, 0.8);
+  animation: vital-low 1.2s ease-in-out infinite;
+}
+
+.vital.is-low .vital-value {
+  color: #ff8a78;
+}
+
+@keyframes vital-low {
+  0%, 100% { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(255, 90, 69, 0); }
+  50% { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 90, 69, 0.25); }
 }
 
 .hud-stats {
@@ -1629,6 +1673,104 @@ textarea.input {
   margin: 0 0 0 8px;
 }
 
+/* --- Market --- */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sell-junk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sell-junk {
+  flex-wrap: wrap;
+}
+
+.sell-junk .grow {
+  flex: 1;
+  min-width: 12em;
+}
+
+.sell-junk>button,
+.sell-confirm {
+  margin-left: auto;
+}
+
+.sell-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sell-row {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* Keep the name readable: the controls drop to their own line instead. */
+.sell-row>.grow {
+  min-width: 10em;
+}
+
+.sell-row .chip {
+  white-space: nowrap;
+}
+
+.sell-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sell-controls .btn-sm {
+  white-space: nowrap;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.stepper button {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+}
+
+.stepper button:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.stepper button:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.stepper .input {
+  width: 3.4em;
+  padding: 4px 2px;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.stepper .input::-webkit-outer-spin-button,
+.stepper .input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* --- Folk --- */
 .affinity {
   display: flex;
@@ -1872,6 +2014,7 @@ textarea {
 
   .scene-art,
   .bar>i,
+  .vital.is-low,
   .bar-hp.is-low>i {
     animation: none;
     transition: none;
