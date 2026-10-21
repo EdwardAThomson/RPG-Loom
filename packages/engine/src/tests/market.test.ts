@@ -93,6 +93,8 @@ describe('sellValue', () => {
   });
 
   it('never pays less for more', () => {
-    for (let q = 1; q < 500; q++) expect(sellValue(3, q + 1)).toBeGreaterThanOrEqual(sellValue(3, q));
+    for (const value of [1, 2, 3, 7, 50, 999]) {
+      for (let q = 1; q < 2000; q++) expect(sellValue(value, q + 1)).toBeGreaterThanOrEqual(sellValue(value, q));
+    }
   });
 });
