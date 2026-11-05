@@ -5,6 +5,8 @@ import content, { CONTENT_VERSION } from '@rpg-loom/content';
 import { fetchSave, pushSave, type CloudSave } from '../services/cloudSave';
 import { getAuthState, onAuthChange } from '../services/auth';
 import { appendFeed, type FeedEntry } from '../ui/eventFeed';
+import { pickSoundCue } from '../ui/soundCues';
+import { playCue } from '../services/sound';
 
 // Simple tick rate for now (1000ms = 1 tick/sec)
 // Later we can go faster if needed, but 1s is good for idle pacing.
@@ -55,6 +57,13 @@ export function useGameEngine() {
         if (newEvents.length === 0) return;
         setEvents(prev => [...prev.slice(-50), ...newEvents]);
         setFeed(prev => appendFeed(prev, newEvents, content));
+    };
+
+    // Sound only for live play (ticks and commands). Offline catch-up can
+    // fold hours of events into one batch; the summary modal covers that.
+    const playEventSound = (newEvents: any[], prev: EngineState | null, next: EngineState) => {
+        const cue = pickSoundCue(newEvents, prev, next);
+        if (cue) playCue(cue);
     };
 
     const saveState = (s: EngineState) => {
@@ -225,13 +234,15 @@ export function useGameEngine() {
             if (tryOfflineCatchup()) return;
 
             const now = Date.now();
-            const res = step(stateRef.current, now, content as any);
+            const prevState = stateRef.current;
+            const res = step(prevState, now, content as any);
 
             stateRef.current = res.state;
             saveState(res.state);
 
             setUiState(res.state);
             pushEvents(res.events);
+            playEventSound(res.events, prevState, res.state);
         }, tickRate);
 
         // Tab visibility: when the player switches back to this tab after
@@ -296,11 +307,13 @@ export function useGameEngine() {
 
     const dispatch = (cmd: PlayerCommand) => {
         if (!stateRef.current) return;
-        const res = applyCommand(stateRef.current, cmd, content as any);
+        const prevState = stateRef.current;
+        const res = applyCommand(prevState, cmd, content as any);
         stateRef.current = res.state;
         saveState(res.state);
         setUiState(stateRef.current);
         pushEvents(res.events);
+        playEventSound(res.events, prevState, res.state);
     };
 
     const hardReset = () => {

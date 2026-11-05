@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Wrench } from 'lucide-react';
+import { Play, Wrench } from 'lucide-react';
+import { getSoundSettings, onSoundSettingsChange, previewCue, setSoundSettings } from '../services/sound';
 import { getAISettings, saveAISettings } from '../services/aiSettings';
 import { gatewayFetch, isGatewayAvailable, onGatewayStatusChange } from '../services/gateway';
 import { CloudSaveSection } from './CloudSaveSection';
@@ -21,6 +22,10 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose, clou
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
     const [showResetModal, setShowResetModal] = useState(false);
     const [resetConfirmText, setResetConfirmText] = useState('');
+
+    // Sound
+    const [sound, setSound] = useState(getSoundSettings);
+    useEffect(() => onSoundSettingsChange(setSound), []);
 
     // AI Settings
     const [aiProvider, setAiProvider] = useState('gemini-cli');
@@ -112,6 +117,58 @@ export function SettingsModal({ exportSave, importSave, hardReset, onClose, clou
         <>
             <Modal title="Settings" onClose={onClose}>
                 <CloudSaveSection cloudStatus={cloudStatus} onSyncNow={onSyncNow} />
+
+                <div className="modal-section">
+                    <h3>Sound</h3>
+                    <p className="prose">
+                        Effects for combat, loot, quests and level-ups. Saved in this browser.
+                    </p>
+
+                    <div className="stack">
+                        <div className="segmented" role="group" aria-label="Sound effects">
+                            <button
+                                type="button"
+                                className={sound.enabled ? 'is-active' : ''}
+                                aria-pressed={sound.enabled}
+                                onClick={() => setSoundSettings({ enabled: true })}
+                            >
+                                On
+                            </button>
+                            <button
+                                type="button"
+                                className={!sound.enabled ? 'is-active' : ''}
+                                aria-pressed={!sound.enabled}
+                                onClick={() => setSoundSettings({ enabled: false })}
+                            >
+                                Off
+                            </button>
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="settings-sound-volume">Volume {Math.round(sound.volume * 100)}%</label>
+                            <div className="range-row">
+                                <input
+                                    id="settings-sound-volume"
+                                    className="range"
+                                    type="range"
+                                    min={0}
+                                    max={100}
+                                    step={5}
+                                    value={Math.round(sound.volume * 100)}
+                                    disabled={!sound.enabled}
+                                    onChange={(e) => setSoundSettings({ volume: Number(e.target.value) / 100 })}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => previewCue('levelUp')}
+                                    disabled={!sound.enabled}
+                                >
+                                    <Play size={14} aria-hidden /> Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div className="modal-section">
                     <h3>AI</h3>
