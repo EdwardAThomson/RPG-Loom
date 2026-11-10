@@ -1187,6 +1187,24 @@ button.row-card {
   color: var(--text-muted);
 }
 
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.range:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .input,
 input.input,
 select.input,

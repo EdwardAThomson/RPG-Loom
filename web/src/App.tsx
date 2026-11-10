@@ -4,7 +4,8 @@ import './index.css';
 import { probeGateway } from './services/gateway';
 import { initAuth } from './services/auth';
 import { getNextGoals } from '@rpg-loom/engine';
-import { CircleHelp, Heart, Settings } from 'lucide-react';
+import { CircleHelp, Heart, Settings, Volume2, VolumeX } from 'lucide-react';
+import { getSoundSettings, installAudioUnlock, onSoundSettingsChange, setSoundSettings } from './services/sound';
 
 // Components
 import { Navigation, TabId } from './components/Navigation';
@@ -76,6 +77,14 @@ function AppContent() {
 
   // Re-hydrate auth state from localStorage (fire-and-forget, sync).
   useEffect(() => { initAuth(); }, []);
+
+  // Sound: browsers need a user gesture before audio can start.
+  const [soundOn, setSoundOn] = useState(() => getSoundSettings().enabled);
+  useEffect(() => {
+    const removeUnlock = installAudioUnlock();
+    const unsub = onSoundSettingsChange(s => setSoundOn(s.enabled));
+    return () => { removeUnlock(); unsub(); };
+  }, []);
 
   // Auto-write journal entries on quest completions (no-op when
   // signed-out or gateway unreachable).
@@ -181,6 +190,16 @@ function AppContent() {
             </dl>
             <button type="button" className="icon-button" onClick={() => setShowHelp(true)} title="How to play" aria-label="How to play" data-tour="help">
               <CircleHelp size={18} strokeWidth={1.8} />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => setSoundSettings({ enabled: !soundOn })}
+              title={soundOn ? 'Mute sound' : 'Unmute sound'}
+              aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+              aria-pressed={!soundOn}
+            >
+              {soundOn ? <Volume2 size={18} strokeWidth={1.8} /> : <VolumeX size={18} strokeWidth={1.8} />}
             </button>
             <button type="button" className="icon-button" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
               <Settings size={18} strokeWidth={1.8} />
