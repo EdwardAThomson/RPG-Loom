@@ -179,7 +179,15 @@ function single(ev: GameEvent, content: any): FeedEntry {
         }
         case 'NPC_INTERACTED': {
             const name = content?.npcsById?.[ev.payload.npcId]?.name ?? humanize(ev.payload.npcId);
-            return { ...base, tone: 'normal', text: ev.payload.firstMeet ? `Met ${name}` : `Spoke with ${name}` };
+            if (ev.payload.firstMeet) return { ...base, tone: 'normal', text: `Met ${name}` };
+            return ev.payload.affinityGained
+                ? { ...base, tone: 'normal', text: `${name} warms to you (affinity ${ev.payload.affinity})` }
+                : { ...base, tone: 'muted', text: `Spoke with ${name}` };
+        }
+        case 'NPC_GIFTED': {
+            const name = content?.npcsById?.[ev.payload.npcId]?.name ?? humanize(ev.payload.npcId);
+            const item = itemName(content, ev.payload.itemId);
+            return { ...base, tone: 'normal', text: ev.payload.liked ? `${name} is delighted with the ${item}` : `${name} accepts the ${item}` };
         }
         case 'ERROR':
             return ev.payload.code === 'INSUFFICIENT_GOLD'

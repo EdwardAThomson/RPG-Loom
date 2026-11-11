@@ -8,6 +8,53 @@
       "greeting": "Good to see another willing pair of hands. The stores are thin, and the road is long.",
       "questIntro": "I'm short on supplies — if you can spare the time, I'd see you well-paid for the trouble.",
       "topic": "He keeps the guild's storeroom and weighs every coin twice. Was a caravan guard before a bad winter cost him three fingers."
+    },
+    "likes": [
+      "item_plank",
+      "item_wood",
+      "item_iron_ingot"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "New face. Don't tell me your name yet; names are for people who come back.",
+        "You'll want the stores. Everyone does. Sign here, and mind the ink, it's the last of it."
+      ],
+      "idle": {
+        "stranger": [
+          "Stores are thin. If you're here to ask for something, ask quick.",
+          "Three fingers, before you ask. Winter on the caravan road. I don't recommend it."
+        ],
+        "known": [
+          "Back again. Good. The ones who come back are the ones I write down.",
+          "Counted the planks twice this morning. Came out different both times. Don't tell Mira."
+        ],
+        "friend": [
+          "Sit a minute. The ledger can wait, which is a thing I don't say to many.",
+          "You remind me of a guard I rode with. He was better at cards and worse at living."
+        ],
+        "trusted": [
+          "If the guild ever asks who I'd trust with the keys, I've already written your name.",
+          "I kept the caravan bell. It's the only thing I brought back from that road. You'll see it someday."
+        ]
+      },
+      "questActive": [
+        "Still on my errand? Good. I'm not paying for half a job.",
+        "The stores don't fill themselves. Go on."
+      ],
+      "questTurnIn": [
+        "There it is. I'll weigh it, but I already know it's right.",
+        "You came back with it. That puts you ahead of most."
+      ],
+      "giftLiked": [
+        "Timber? You've been listening. Over here, by the dry wall.",
+        "Now that's useful. I'll not forget it."
+      ],
+      "giftMeh": [
+        "Kind of you. I'll find a shelf for it."
+      ],
+      "questComplete": {
+        "qt_aldric_road_3": "The road is quieter now. I'll sleep tonight, which I've not done in a while. Take this; it's a better blade than the one that cost me."
+      }
     }
   },
   {
@@ -19,6 +66,53 @@
       "greeting": "Eyes on the treeline. The forest hasn't been quiet since the harvest moon.",
       "questIntro": "Something's been thinning the patrols. I need a blade willing to walk the bad mile.",
       "topic": "Veteran ranger who runs the Haven scouts. Speaks little, watches everything. Carries a bow most archers can't draw."
+    },
+    "likes": [
+      "item_bone_fragment",
+      "item_yeti_fur",
+      "bow"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "You walk loud. We'll fix that, or the forest will.",
+        "Hm. Another one. Keep your eyes on the treeline and your mouth shut, and you'll last."
+      ],
+      "idle": {
+        "stranger": [
+          "Patrol's late. Patrol's always late.",
+          "Don't stand in the doorway. Things watch doorways."
+        ],
+        "known": [
+          "You again. The scouts have started calling you 'the one who comes back.' High praise, from them.",
+          "Something is moving at night that doesn't belong to any beast I've tracked."
+        ],
+        "friend": [
+          "I'll say this once. You've earned a place at my fire.",
+          "When I was young I thought the forest was the enemy. It isn't. It's a witness."
+        ],
+        "trusted": [
+          "There's a mile out past the old markers that none of my scouts will walk. I'd walk it with you.",
+          "If I don't come back one of these days, the bow is yours. No arguing."
+        ]
+      },
+      "questActive": [
+        "Report when it's done, not before.",
+        "The bad mile doesn't walk itself."
+      ],
+      "questTurnIn": [
+        "Done? Show me.",
+        "Good. Quietly done, too. I noticed."
+      ],
+      "giftLiked": [
+        "Trophies. You're learning what matters out there.",
+        "A bow. You know what I carry. That means something."
+      ],
+      "giftMeh": [
+        "I've no use for it, but I'll take the thought."
+      ],
+      "questComplete": {
+        "qt_mira_mile_3": "The bad mile's just a mile now. Take the longbow. It was going to be yours either way."
+      }
     }
   },
   {
@@ -30,6 +124,51 @@
       "greeting": "Mind the jars, dear. Some of these will weep if you stare too long.",
       "questIntro": "I've a recipe that calls for ingredients you won't find on a market stall. Up for a wander?",
       "topic": "Herbalist and rumored hedge witch. Trades remedies for stories and occasionally the truth."
+    },
+    "likes": [
+      "item_herb_green",
+      "item_herb_red",
+      "item_slime_gel",
+      "item_ancient_moss"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Mind the jars, dear. Some of them mind you back.",
+        "Oh, a new one. Don't touch the blue one. The blue one touches back."
+      ],
+      "idle": {
+        "stranger": [
+          "Remedies for coin, stories for free, truth for a price we'll discuss.",
+          "Did you know a slime will cure a fever if you ask it nicely? You have to ask nicely."
+        ],
+        "known": [
+          "You've the look of someone who's been bitten by something. Sit, let me see.",
+          "I dreamt of you last night. Don't be flattered; I dream of everyone."
+        ],
+        "friend": [
+          "Come, I've a tea that will tell you what you're afraid of. Or it's just mint. Hard to say.",
+          "The hedge witch rumours are only half true, and I won't say which half."
+        ],
+        "trusted": [
+          "I'll teach you the recipe my mother wouldn't teach me. Seems fair.",
+          "You've become one of my favourite stories. Don't end badly."
+        ]
+      },
+      "questActive": [
+        "Did you find them? The green ones, not the greenish ones.",
+        "Patience. Plants don't hurry and neither should you."
+      ],
+      "questTurnIn": [
+        "Let me smell those. Yes. Yes, those are the ones.",
+        "Lovely. Still damp with the swamp, just as they should be."
+      ],
+      "giftLiked": [
+        "Oh! Fresh. You've a good eye for a leaf.",
+        "Gel from a slime. You asked it nicely, I hope."
+      ],
+      "giftMeh": [
+        "It's not an ingredient, but it'll do as a paperweight."
+      ]
     }
   },
   {
@@ -41,6 +180,54 @@
       "greeting": "Ah — a willing reader? Or a willing climber? The library has need of both.",
       "questIntro": "There are places marked on these maps that have no business existing. Walk one with me, even if only in proxy.",
       "topic": "Catalogs ruins, ledgers, and bestiary entries. Believes the world is older than the histories admit."
+    },
+    "likes": [
+      "item_bone_fragment",
+      "item_ghostly_essence",
+      "item_crystal_shard",
+      "item_brass_gear"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Ah. You have the look of a reader. Or a climber. The library needs both, and pays neither.",
+        "Don't mind the dust. It's older than the books, and the books are older than Haven."
+      ],
+      "idle": {
+        "stranger": [
+          "The histories say Haven is four hundred years old. The foundations say otherwise.",
+          "I catalogue things. Ruins, ledgers, monsters. Mostly ledgers."
+        ],
+        "known": [
+          "I've marked a room on the catacomb map that shouldn't be there. It's there.",
+          "You've been places I've only read about. Tell me one true thing about them."
+        ],
+        "friend": [
+          "Between us, I think the bestiary is wrong about ghosts. I think they remember.",
+          "I've started a page with your name on it. I hope to fill it slowly."
+        ],
+        "trusted": [
+          "There is a door under the peak. I've never told anyone. I'm telling you.",
+          "Whatever we find down there, promise you'll write it down. That's all I ask."
+        ]
+      },
+      "questActive": [
+        "Have you reached it yet? Describe the stonework when you return.",
+        "Take notes. Take more than you think you need."
+      ],
+      "questTurnIn": [
+        "You're back, and whole. Both are good for the record.",
+        "Show me what you found. Slowly."
+      ],
+      "giftLiked": [
+        "A specimen! You have no idea what this confirms.",
+        "Gears from the Enclave. I have theories. So many theories."
+      ],
+      "giftMeh": [
+        "Not for the collection, but thank you. I'll note the gesture."
+      ],
+      "questComplete": {
+        "qt_vidar_old_3": "Then the histories are wrong, and we are the only two who know it. Take the staff; it came out of a ruin older than any of this."
+      }
     }
   },
   {
@@ -52,6 +239,50 @@
       "greeting": "Walk softly past this table. The wrong ears could undo a year of careful work.",
       "questIntro": "A favor for a friend, paid in coin and quieter gratitudes. Are you discreet?",
       "topic": "Speaks for several factions, owes loyalty to none. Treaties she's drafted have outlasted the kings who signed them."
+    },
+    "likes": [
+      "item_pearl",
+      "item_gold_ingot",
+      "item_silver_ingot"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Walk softly past this table. I'm doing three people's work and none of it is mine.",
+        "A stranger. Good. Strangers can carry things that friends can't."
+      ],
+      "idle": {
+        "stranger": [
+          "I speak for several factions. None of them are speaking to each other this week.",
+          "Discretion is the only coin worth hoarding."
+        ],
+        "known": [
+          "You've kept your mouth shut about me. I notice who doesn't talk.",
+          "Half of diplomacy is knowing which fire to sit at. The other half is leaving before it goes out."
+        ],
+        "friend": [
+          "I'll tell you a treaty's real terms some day. Not today. But some day.",
+          "The kings I've outlasted would envy you your simple problems."
+        ],
+        "trusted": [
+          "If a letter comes for you with my seal and no words, run. That's the deal.",
+          "You're the only one in Haven who's never asked me what I want. Ask, if you like."
+        ]
+      },
+      "questActive": [
+        "Quietly. Whatever it is, quietly.",
+        "The favour stands. So does the gratitude, once it's done."
+      ],
+      "questTurnIn": [
+        "Done, and no one the wiser? You'd make a passable courier.",
+        "Good. Say nothing, as before."
+      ],
+      "giftLiked": [
+        "Pearls. You understand that some gifts are also messages.",
+        "Silver speaks in rooms where I can't."
+      ],
+      "giftMeh": [
+        "Thoughtful. I'll pass it along to someone who needs it more."
+      ]
     }
   },
   {
@@ -63,6 +294,51 @@
       "greeting": "Hot iron first, conversation second. Bench's free if you've got steady hands.",
       "questIntro": "I need ore the merchants won't sell, of a kind that doesn't sing in the cart. You game?",
       "topic": "Built the gates of Haven himself. Half the guild's swords carry his maker's mark; the other half wish they did."
+    },
+    "likes": [
+      "item_iron_ingot",
+      "item_steel_ingot",
+      "item_copper_ingot",
+      "item_iron_ore"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Don't lean on that. It's cooling. Everything in here is cooling or burning.",
+        "A customer or an apprentice? Both pay, one way or another."
+      ],
+      "idle": {
+        "stranger": [
+          "I built the gates. Every time they hold, I take it personally.",
+          "Bronze is for learning. Iron is for keeping."
+        ],
+        "known": [
+          "Your blade's holding an edge? Good. Means you're swinging it right.",
+          "Half the guild's swords have my mark. The other half will, eventually."
+        ],
+        "friend": [
+          "Come by the forge after dark some night. I'll show you the fold I don't teach.",
+          "You've got smith's hands. Pity you keep hitting monsters with them."
+        ],
+        "trusted": [
+          "When I'm gone, someone needs to keep the gates. I'm starting to think it's you.",
+          "I made a thing for you. It's not done. It won't be for a while. But it's yours."
+        ]
+      },
+      "questActive": [
+        "Ore doesn't dig itself. Back to it.",
+        "I've the forge hot. Don't make me let it cool."
+      ],
+      "questTurnIn": [
+        "Hand it here. Let me feel the weight.",
+        "That's good metal. That's good work."
+      ],
+      "giftLiked": [
+        "Iron! Now you're speaking my language.",
+        "Ingots. Someone's been listening at the forge."
+      ],
+      "giftMeh": [
+        "Not metal. But I'll find a use, or Marrick will."
+      ]
     }
   },
   {
@@ -74,6 +350,50 @@
       "greeting": "Sit, sit. The fire knows you, even if I don't yet.",
       "questIntro": "There's a thread I've been pulling on for forty years. I think I finally need a younger hand to follow it.",
       "topic": "The Haven elder. Tells stories that turn out to be maps. Knows more than he lets on, and lets on more than is wise."
+    },
+    "likes": [
+      "item_simple_potion",
+      "item_herb_green",
+      "item_wood"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Sit. No, not there, that's where the cat sits. Sit anywhere else.",
+        "Ah, a young one. I've a story for you. Several. We'll start with the short one."
+      ],
+      "idle": {
+        "stranger": [
+          "Did I ever tell you about the quarry? No? That's because I haven't yet.",
+          "Everything's a map if you fold it right."
+        ],
+        "known": [
+          "You've the look of someone who's been listening. Dangerous habit. Keep it.",
+          "The elder before me said the forest whispers. He was half right. It mutters."
+        ],
+        "friend": [
+          "I'll tell you where the old road goes, one of these days. When you're ready to not come back the same.",
+          "You know, you're in one of my stories now. Not a big part. Yet."
+        ],
+        "trusted": [
+          "The thing in the catacombs has a name. I'll say it once, and only to you.",
+          "When I'm gone, the stories go with me, unless someone's been writing them down. Hint, hint."
+        ]
+      },
+      "questActive": [
+        "Patience, young one. The story isn't finished and neither are you.",
+        "Go on, then. I'll be here. I'm always here."
+      ],
+      "questTurnIn": [
+        "Back already? Then I owe you the rest of the tale.",
+        "Good. Now I've a new story, and it's about you."
+      ],
+      "giftLiked": [
+        "Ah, for the knees. You're a kind one.",
+        "Firewood. The young never think of firewood. You did."
+      ],
+      "giftMeh": [
+        "That's very… what is it? Never mind. Thank you."
+      ]
     }
   },
   {
@@ -85,6 +405,50 @@
       "greeting": "Step where I step. The forest forgives mistakes only twice.",
       "questIntro": "Something's been moving against the grain in here. I want a second pair of eyes, and a sharper pair of teeth.",
       "topic": "Lives among the boughs and won't say where she sleeps. Reads tracks the way scholars read books."
+    },
+    "likes": [
+      "item_yeti_fur",
+      "item_bone_fragment",
+      "item_wood"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "You didn't see me until I let you. Remember that.",
+        "Quiet now. There's a wolf behind you that hasn't decided yet."
+      ],
+      "idle": {
+        "stranger": [
+          "The tracks here are wrong. Something walks on two legs and four.",
+          "I don't sleep where people can find me. Nothing personal."
+        ],
+        "known": [
+          "You've learned to step on the roots, not the leaves. Took you long enough.",
+          "The forest tolerates you. That's further than most get."
+        ],
+        "friend": [
+          "I'll show you the hollow where I keep the rain off. Don't tell the scouts.",
+          "Mira sends her captains. I only talk to the ones who come back twice."
+        ],
+        "trusted": [
+          "The forest told me your name before you did. Don't ask how.",
+          "If the trees ever go quiet, come find me. That's the only warning you'll get."
+        ]
+      },
+      "questActive": [
+        "Not done? The forest can tell.",
+        "Tread lightly. The bandits have ears in the bracken."
+      ],
+      "questTurnIn": [
+        "The tracks say you did it. Show me anyway.",
+        "Well. The forest was right about you."
+      ],
+      "giftLiked": [
+        "Fur. Warm. You know what the nights are like up here.",
+        "A clean bone. The wolves will respect that."
+      ],
+      "giftMeh": [
+        "I've nowhere to put it, but I'll remember you brought it."
+      ]
     }
   },
   {
@@ -96,6 +460,51 @@
       "greeting": "Mind the loose stone. The Quarry takes a finger before it takes a friend.",
       "questIntro": "The deep seams have gone strange. I need ore from a face most won't touch.",
       "topic": "Runs the cutting crews. His grandfather opened these tunnels; his cousin closed half of them. He doesn't talk about which."
+    },
+    "likes": [
+      "item_stone",
+      "item_iron_ore",
+      "item_copper_ore",
+      "item_plank"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Crew's full. Unless you can swing a pick, in which case the crew's not full.",
+        "Mind the east tunnel. It's closed. It'll stay closed."
+      ],
+      "idle": {
+        "stranger": [
+          "Grandfather opened these tunnels. We don't talk about who closed the others.",
+          "Stone doesn't lie. Men do. I prefer stone."
+        ],
+        "known": [
+          "You've got dust in the right creases now. That's how I tell.",
+          "The golems don't come from nowhere. Somebody made them. Long time ago."
+        ],
+        "friend": [
+          "There's a seam in the north face nobody's touched. I'll show you, and only you.",
+          "My cousin was a good man before the east tunnel. Don't ask what after."
+        ],
+        "trusted": [
+          "If you ever hear hammering from the closed tunnels, that's not us. Leave.",
+          "When I retire, which is never, the crews would follow you. I've asked them."
+        ]
+      },
+      "questActive": [
+        "Ore first, talk after.",
+        "Crew's counting on you. Don't make me count again."
+      ],
+      "questTurnIn": [
+        "Let's see the haul. Good weight.",
+        "Clean cut. You've learned."
+      ],
+      "giftLiked": [
+        "Ore. You get it. Most don't.",
+        "Planks for the shoring. You've been in the tunnels."
+      ],
+      "giftMeh": [
+        "Not much use underground. But the crew'll like it."
+      ]
     }
   },
   {
@@ -107,6 +516,51 @@
       "greeting": "You waded all this way. I'd say I'm flattered, but the swamp does most of the inviting.",
       "questIntro": "There's a bloom that only opens when the water is wrong. I'd fetch it myself, but my hip's been wrong for a decade.",
       "topic": "Lives where the road ends. Trades cures no one else can make for favors that come due years later."
+    },
+    "likes": [
+      "item_herb_red",
+      "item_slime_gel",
+      "item_ghostly_essence",
+      "item_ancient_moss"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "The road ends here. Most people turn around. You didn't.",
+        "Don't drink from the pools. Don't ask why. Sit."
+      ],
+      "idle": {
+        "stranger": [
+          "I trade cures for favours. The favours come due later. Always later.",
+          "The mist knows your name. I know it too, now."
+        ],
+        "known": [
+          "You came back through the swamp. Few do that twice on purpose.",
+          "There's a fever in the frogs this year. Nothing to do with me."
+        ],
+        "friend": [
+          "I'll make you the cure no one else can. Payment will be strange. It always is.",
+          "You've a favour owed to me. I haven't decided what it is yet."
+        ],
+        "trusted": [
+          "The hermit before me vanished into the mist. I'm telling you so that someone knows where to look.",
+          "I'll teach you the one remedy that costs nothing. That's the rarest kind."
+        ]
+      },
+      "questActive": [
+        "The swamp will give you what I need. Let it.",
+        "You're owed nothing until it's done. Even then, not much."
+      ],
+      "questTurnIn": [
+        "Give them here. Yes. These will do.",
+        "Good. The favour is paid. Mostly."
+      ],
+      "giftLiked": [
+        "Red herb. You know what grows where.",
+        "Essence. You've been among the dead. I can smell it."
+      ],
+      "giftMeh": [
+        "Not a thing I'd use. But the mist takes all gifts."
+      ]
     }
   },
   {
@@ -118,6 +572,50 @@
       "greeting": "You hear it too, don't you. Down here, even the silence has a name.",
       "questIntro": "I came down to find someone. I think I found her, but she's not… finished. I need a witness.",
       "topic": "Wanderer who never quite leaves the catacombs. Speaks gently to no one in particular and waits for answers."
+    },
+    "likes": [
+      "item_ghostly_essence",
+      "item_bone_fragment",
+      "item_silver_ingot"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Oh. You're alive. That's rarer down here than you'd think.",
+        "Don't be afraid. They're mostly not listening."
+      ],
+      "idle": {
+        "stranger": [
+          "I came down for someone. I think. It's been a while.",
+          "The dead keep good time. Better than I do."
+        ],
+        "known": [
+          "You again. The skeletons have started to leave you a path. Have you noticed?",
+          "I speak to them. Sometimes I think one answers."
+        ],
+        "friend": [
+          "I remember her name now. I'll tell you, if you'll remember it after I forget again.",
+          "Sit. There's a quiet corner that the ghosts leave alone. It's mine. It can be yours."
+        ],
+        "trusted": [
+          "I think I'm one of them. I think I have been for some time. Thank you for not saying so.",
+          "If you find a way out that isn't the way in, take it. Don't wait for me."
+        ]
+      },
+      "questActive": [
+        "Are they still there? They'll be there. They're always there.",
+        "Careful with the ghost. It doesn't know it's doing harm."
+      ],
+      "questTurnIn": [
+        "You came back. They told me you might.",
+        "Yes. Thank you. The halls feel lighter."
+      ],
+      "giftLiked": [
+        "Essence. It hums. Can you hear it hum?",
+        "Silver. They don't like silver. I do."
+      ],
+      "giftMeh": [
+        "I've nowhere to keep it. I'll leave it for whoever comes next."
+      ]
     }
   },
   {
@@ -129,6 +627,51 @@
       "greeting": "Mind the gears. They don't dislike you yet, but they're working on it.",
       "questIntro": "The Enclave's old escapements are slipping. I need parts that the workshops in Haven simply don't make any more.",
       "topic": "Inherited the Clockwork Enclave from a teacher who walked into one of its rooms and never came back out."
+    },
+    "likes": [
+      "item_brass_gear",
+      "item_steam_canister",
+      "item_obsidian",
+      "item_crystal_shard"
+    ],
+    "dialogue": {
+      "firstMeet": [
+        "Don't touch anything that ticks. Don't touch anything that doesn't tick, either.",
+        "Visitor. Rare. The automatons must like you, or you'd not have reached the door."
+      ],
+      "idle": {
+        "stranger": [
+          "My teacher walked into the third chamber and never walked out. I keep the door oiled.",
+          "Everything here was built by someone who meant well. That's the frightening part."
+        ],
+        "known": [
+          "You survive the drones. That's a credential, around here.",
+          "I've nearly worked out what the Enclave is for. Nearly. I've been nearly for six years."
+        ],
+        "friend": [
+          "Come and see the engine room. No one has, since him.",
+          "If I show you my notes, you'll see where I stopped being sure. Don't laugh."
+        ],
+        "trusted": [
+          "I'm going to open the third chamber. I'd like you there. I'd like someone there.",
+          "Whatever my teacher found in there, I think it's still running. I think it's waiting."
+        ]
+      },
+      "questActive": [
+        "The parts don't come out of the machines willingly.",
+        "Back to it. The Enclave doesn't repair itself. Actually, it does. That's the problem."
+      ],
+      "questTurnIn": [
+        "Let me see. Oh, that's a good one. That's an early one.",
+        "You got it out intact. I've lost three apprentices trying."
+      ],
+      "giftLiked": [
+        "Gears! From where? No, don't tell me, let me guess by the teeth.",
+        "A canister with pressure in it still. You are careful. Good."
+      ],
+      "giftMeh": [
+        "Not mechanical, but I'll put it on the shelf with the other mysteries."
+      ]
     }
   }
 ]

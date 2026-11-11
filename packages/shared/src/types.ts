@@ -164,6 +164,8 @@ export interface QuestTemplateDef {
    * the giver on the quest board and in the NPC's dialogue modal.
    */
   questGiverNpcId?: NpcId;
+  /** The giver only offers this once their affinity reaches this value. */
+  minAffinity?: number;
 
   // Quest replenishment configuration (optional)
   replenishment?: {
@@ -193,6 +195,34 @@ export interface NpcDef {
     questIntro?: string;
     topic?: string;
   };
+  /**
+   * Authored dialogue, chosen by situation and affinity tier by
+   * `pickNpcLine` in the engine. Every pool is optional: the engine falls
+   * back to `prompts.greeting`. The game must read well without AI, so
+   * these are the primary voice; AI flavor is layered on top.
+   */
+  dialogue?: NpcDialoguePools;
+  /** Item ids or item tags this NPC is pleased to receive as a gift. */
+  likes?: string[];
+}
+
+export type AffinityTier = 'stranger' | 'known' | 'friend' | 'trusted';
+
+export interface NpcDialoguePools {
+  /** Said the first time the player greets them. */
+  firstMeet?: string[];
+  /** Small talk by relationship. Falls back to the nearest lower tier. */
+  idle?: Partial<Record<AffinityTier, string[]>>;
+  /** While the player carries one of this NPC's quests. */
+  questActive?: string[];
+  /** When one of their quests is ready to hand in. */
+  questTurnIn?: string[];
+  /** Per-template lines on offer / hand-in, keyed by quest template id. */
+  questOffer?: Record<string, string>;
+  questComplete?: Record<string, string>;
+  /** Reaction to a gift they like / don't care for. */
+  giftLiked?: string[];
+  giftMeh?: string[];
 }
 
 export interface NpcStateEntry {
@@ -203,6 +233,10 @@ export interface NpcStateEntry {
    * this NPC. Capped at AFFINITY_CAP in the engine.
    */
   affinity: number;
+  /** Last time talking raised affinity; talk only counts once per day. */
+  lastAffinityTalkMs?: number;
+  /** Last time a gift was accepted; one gift per NPC per day. */
+  lastGiftMs?: number;
   /**
    * AI-generated flavor for this NPC, persisted so subsequent visits
    * show the same dialogue rather than re-generating each time.
@@ -212,6 +246,8 @@ export interface NpcStateEntry {
     description: string;
     dialogueLines: string[];
     generatedAtMs?: number;
+    /** Tier the flavor was written for; the UI regenerates when it changes. */
+    affinityTier?: AffinityTier;
   };
 }
 
@@ -519,6 +555,13 @@ export type PlayerCommand =
     atMs: number;
   }
   | {
+    /** Hand an inventory item to an NPC at the player's location. */
+    type: 'GIVE_GIFT';
+    npcId: NpcId;
+    itemId: ItemId;
+    atMs: number;
+  }
+  | {
     // Phase 3c: persist AI-generated dialogue/flavor for an NPC into
     // `state.npcState[npcId].generatedFlavor`. Generation itself happens
     // in `web/src/services/npcDialogue.ts` (calls the gateway); the
@@ -529,6 +572,7 @@ export type PlayerCommand =
     flavor: {
       description: string;
       dialogueLines: string[];
+      affinityTier?: AffinityTier;
     };
     atMs: number;
   };
@@ -585,7 +629,8 @@ export type GameEvent =
   | BaseEvent<'ITEM_SOLD', { itemId: ItemId; qty: number; gold: number }>
   | BaseEvent<'ERROR', { code: string; message: string }>
   | BaseEvent<'FLAVOR_TEXT', { message: string }>
-  | BaseEvent<'NPC_INTERACTED', { npcId: NpcId; affinity: number; firstMeet: boolean }>
+  | BaseEvent<'NPC_INTERACTED', { npcId: NpcId; affinity: number; firstMeet: boolean; affinityGained?: number }>
+  | BaseEvent<'NPC_GIFTED', { npcId: NpcId; itemId: ItemId; liked: boolean; affinity: number }>
   ;
 
 export interface BaseEvent<TType extends string, TPayload> {

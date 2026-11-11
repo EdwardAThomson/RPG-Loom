@@ -15,6 +15,7 @@
 import type { ContentIndex, EngineState, GameEvent, NpcDef } from '@rpg-loom/shared';
 import { gatewayFetch, isGatewayAvailable } from './gateway';
 import { getAISettings } from './aiSettings';
+import { getAffinityTier } from '@rpg-loom/engine';
 
 export interface NpcGeneratedFlavor {
     description: string;
@@ -89,6 +90,11 @@ function buildNpcDialoguePrompt(
     if (seed.topic) seedLines.push(`About them: ${seed.topic}`);
     if (seed.greeting) seedLines.push(`Their usual greeting: "${seed.greeting}"`);
     if (seed.questIntro) seedLines.push(`How they pitch work: "${seed.questIntro}"`);
+    // Authored small talk for this tier is the style guide: the AI lines
+    // sit in the same rotation, so they should sound like the same person.
+    const tier = getAffinityTier(affinity);
+    const samples = npc.dialogue?.idle?.[tier] ?? npc.dialogue?.idle?.stranger ?? [];
+    for (const l of samples.slice(0, 2)) seedLines.push(`Something they have said: "${l}"`);
 
     return [
         `You are writing the persistent voice of a single NPC in a dark-fantasy idle RPG.`,
@@ -102,7 +108,7 @@ function buildNpcDialoguePrompt(
         ``,
         `Player context:`,
         `  level: ${state.player.level}`,
-        `  affinity with this NPC: ${affinity} / 100`,
+        `  relationship: ${tier} (affinity ${affinity} / 100)`,
         `  status: ${haveMet ? 'returning visitor' : 'first meeting'}`,
         recentLines.length > 0 ? `  recently: ${recentLines.join('; ')}` : `  no notable events yet`,
         ``,

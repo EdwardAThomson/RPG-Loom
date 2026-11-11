@@ -10,6 +10,7 @@ import {
 import type { ContentIndex } from '@rpg-loom/shared';
 
 const NPC_ID = 'npc_test';
+const DAY = 24 * 60 * 60 * 1000;
 
 const CONTENT: ContentIndex = {
   itemsById: {},
@@ -75,11 +76,13 @@ describe('TALK_TO_NPC command', () => {
   it('subsequent interactions keep firstMetAtMs and bump affinity', () => {
     let state = freshState();
     state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 2000 }, CONTENT).state;
-    const res = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 3500 }, CONTENT);
+    // A day later, so the second talk counts for affinity too.
+    const later = 2000 + 24 * 60 * 60 * 1000;
+    const res = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: later }, CONTENT);
 
     const entry = res.state.npcState[NPC_ID];
     expect(entry.firstMetAtMs).toBe(2000);
-    expect(entry.lastInteractionMs).toBe(3500);
+    expect(entry.lastInteractionMs).toBe(later);
     expect(entry.affinity).toBe(2);
 
     const interactedEv = res.events.find(e => e.type === 'NPC_INTERACTED');
@@ -90,7 +93,7 @@ describe('TALK_TO_NPC command', () => {
     let state = freshState();
     // Talk way more than the cap allows. The cap should hold.
     for (let i = 0; i < AFFINITY_CAP + 20; i++) {
-      state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 1000 + i }, CONTENT).state;
+      state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 1000 + i * 24 * 60 * 60 * 1000 }, CONTENT).state;
     }
     expect(state.npcState[NPC_ID].affinity).toBe(AFFINITY_CAP);
   });
@@ -105,7 +108,7 @@ describe('TALK_TO_NPC command', () => {
   it('is independent across NPCs', () => {
     let state = freshState();
     state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 2000 }, CONTENT).state;
-    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 3000 }, CONTENT).state;
+    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 2000 + DAY }, CONTENT).state;
     // Make a second NPC known.
     const content2 = {
       ...CONTENT,
@@ -116,7 +119,7 @@ describe('TALK_TO_NPC command', () => {
         } as any
       }
     };
-    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: 'npc_other', atMs: 4000 }, content2).state;
+    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: 'npc_other', atMs: 4000 + DAY }, content2).state;
     expect(state.npcState[NPC_ID].affinity).toBe(2);
     expect(state.npcState['npc_other'].affinity).toBe(1);
   });
@@ -144,7 +147,7 @@ describe('TALK_TO_NPC command', () => {
   it('SET_NPC_FLAVOR preserves existing affinity and interaction history', () => {
     let state = freshState();
     state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 2000 }, CONTENT).state;
-    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 3000 }, CONTENT).state;
+    state = applyCommand(state, { type: 'TALK_TO_NPC', npcId: NPC_ID, atMs: 3000 + DAY }, CONTENT).state;
     const before = state.npcState[NPC_ID];
     expect(before.affinity).toBe(2);
 
@@ -158,7 +161,7 @@ describe('TALK_TO_NPC command', () => {
     const after = state.npcState[NPC_ID];
     expect(after.affinity).toBe(2);
     expect(after.firstMetAtMs).toBe(2000);
-    expect(after.lastInteractionMs).toBe(3000);
+    expect(after.lastInteractionMs).toBe(3000 + DAY);
     expect(after.generatedFlavor?.description).toBe('x');
   });
 

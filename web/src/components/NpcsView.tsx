@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react';
 import type { ContentIndex, EngineState, GameEvent, NpcDef, PlayerCommand } from '@rpg-loom/shared';
 import { NpcDialogueModal } from './NpcDialogueModal';
 import { humanize } from '../ui/labels';
+import { getAffinityTier } from '@rpg-loom/engine';
+
+const TIER_LABEL = { stranger: 'Stranger', known: 'Known face', friend: 'Friend', trusted: 'Trusted' } as const;
 
 interface Props {
     state: EngineState;
@@ -107,7 +110,7 @@ function NpcRow({ npc, state, content, onClick, showLocation }: {
             </div>
             {known && (
                 <div className="affinity">
-                    <span className="slot-label">Affinity</span>
+                    <span className="slot-label">{TIER_LABEL[getAffinityTier(affinity)]}</span>
                     <span className="ok">{affinity}</span>
                 </div>
             )}

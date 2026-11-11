@@ -965,5 +965,245 @@
       "chainId": "woodcutting_mastery",
       "chainStep": 3
     }
+  },
+  {
+    "id": "qt_aldric_road_1",
+    "name": "The Caravan Road I",
+    "description": "Aldric wants the old supply wagons rebuilt before he'll say why.",
+    "objectiveType": "gather",
+    "qtyMin": 10,
+    "qtyMax": 10,
+    "questGiverNpcId": "npc_aldric",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 200,
+      "gold": 60,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "aldric_road",
+      "chainStep": 1
+    },
+    "targetItemId": "item_plank"
+  },
+  {
+    "id": "qt_aldric_road_2",
+    "name": "The Caravan Road II",
+    "description": "The bandits who work the winter road. Aldric remembers every face.",
+    "objectiveType": "kill",
+    "qtyMin": 6,
+    "qtyMax": 6,
+    "questGiverNpcId": "npc_aldric",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 80,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "aldric_road",
+      "chainStep": 2
+    },
+    "targetEnemyId": "enemy_bandit"
+  },
+  {
+    "id": "qt_aldric_road_3",
+    "name": "The Caravan Road III",
+    "description": "Their leader took three fingers. Aldric would like the rest of the debt settled.",
+    "objectiveType": "kill",
+    "qtyMin": 2,
+    "qtyMax": 2,
+    "questGiverNpcId": "npc_aldric",
+    "locationPool": [
+      "loc_quarry"
+    ],
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 500,
+      "gold": 150,
+      "items": [
+        {
+          "itemId": "item_silver_sword",
+          "qty": 1
+        }
+      ]
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "aldric_road",
+      "chainStep": 3
+    },
+    "targetEnemyId": "enemy_bandit_leader"
+  },
+  {
+    "id": "qt_mira_mile_1",
+    "name": "The Bad Mile I",
+    "description": "Something is thinning the patrols. Mira wants the wolves culled first, to rule them out.",
+    "objectiveType": "kill",
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "questGiverNpcId": "npc_mira",
+    "locationPool": [
+      "loc_forest"
+    ],
+    "difficulty": 2,
+    "rewardPack": {
+      "xp": 220,
+      "gold": 60,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "mira_mile",
+      "chainStep": 1
+    },
+    "targetEnemyId": "enemy_wolf"
+  },
+  {
+    "id": "qt_mira_mile_2",
+    "name": "The Bad Mile II",
+    "description": "Bring back bones from the quarry so Mira can see what has been feeding there.",
+    "objectiveType": "gather",
+    "qtyMin": 8,
+    "qtyMax": 8,
+    "questGiverNpcId": "npc_mira",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 350,
+      "gold": 90,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "mira_mile",
+      "chainStep": 2
+    },
+    "targetItemId": "item_bone_fragment"
+  },
+  {
+    "id": "qt_mira_mile_3",
+    "name": "The Bad Mile III",
+    "description": "Mira has marked the ghost that walks the bad mile. Walk it with her blessing.",
+    "objectiveType": "kill",
+    "qtyMin": 3,
+    "qtyMax": 3,
+    "questGiverNpcId": "npc_mira",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 600,
+      "gold": 160,
+      "items": [
+        {
+          "itemId": "item_yew_longbow",
+          "qty": 1
+        }
+      ]
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "mira_mile",
+      "chainStep": 3
+    },
+    "targetEnemyId": "enemy_ghost"
+  },
+  {
+    "id": "qt_vidar_old_1",
+    "name": "Older Than the Histories I",
+    "description": "Vidar needs silver from the catacomb seams to date the stonework.",
+    "objectiveType": "gather",
+    "qtyMin": 5,
+    "qtyMax": 5,
+    "questGiverNpcId": "npc_vidar",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "difficulty": 3,
+    "rewardPack": {
+      "xp": 300,
+      "gold": 80,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "vidar_old",
+      "chainStep": 1
+    },
+    "targetItemId": "item_silver_ore"
+  },
+  {
+    "id": "qt_vidar_old_2",
+    "name": "Older Than the Histories II",
+    "description": "The bestiary says ghosts don't remember. Vidar wants proof either way.",
+    "objectiveType": "kill",
+    "qtyMin": 3,
+    "qtyMax": 3,
+    "questGiverNpcId": "npc_vidar",
+    "locationPool": [
+      "loc_catacombs"
+    ],
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 450,
+      "gold": 120,
+      "items": []
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "vidar_old",
+      "chainStep": 2
+    },
+    "targetEnemyId": "enemy_ghost"
+  },
+  {
+    "id": "qt_vidar_old_3",
+    "name": "Older Than the Histories III",
+    "description": "Frost stone from the peak, chipped from the door Vidar has never told anyone about.",
+    "objectiveType": "gather",
+    "qtyMin": 6,
+    "qtyMax": 6,
+    "questGiverNpcId": "npc_vidar",
+    "locationPool": [
+      "loc_peak"
+    ],
+    "difficulty": 4,
+    "rewardPack": {
+      "xp": 700,
+      "gold": 180,
+      "items": [
+        {
+          "itemId": "item_runed_staff",
+          "qty": 1
+        }
+      ]
+    },
+    "minAffinity": 30,
+    "replenishment": {
+      "type": "chain",
+      "chainId": "vidar_old",
+      "chainStep": 3
+    },
+    "targetItemId": "item_frost_stone"
   }
 ]
