@@ -182,5 +182,5 @@ MIT
 
 ---
 
-&copy; 2026 Edward Thomson ([Octonion Software](https://octonion.io/))
+&copy; 2026 Edward Thomson ([Octonion Games](https://octonion.io/))
 

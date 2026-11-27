@@ -238,7 +238,7 @@ function AppContent() {
         </aside>
 
         <footer className="hud-footer">
-          &copy; 2026 Edward Thomson (<a href="https://octonion.io/" target="_blank" rel="noopener noreferrer">Octonion Software</a>)
+          &copy; 2026 Edward Thomson (<a href="https://octonion.io/" target="_blank" rel="noopener noreferrer">Octonion Games</a>)
         </footer>
       </div>
 
